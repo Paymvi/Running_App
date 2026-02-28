@@ -88,3 +88,182 @@ body {
   margin-top: 6px;
   letter-spacing: 0.2px;
 }
+
+
+
+
+/* -------------------------------- */
+
+/* Floating button */
+.floating-btn {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #fc4c02;
+  color: white;
+  font-size: 30px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+/* Overlay */
+/* .overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+} */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 999;
+}
+
+/* Modal */
+/* .modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  max-width: 100%;
+  height: 100%;
+  background: white;
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+
+  color:#0b0c10;
+} */
+
+.modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background: white;
+  padding: 20px;
+  overflow-y: auto;
+
+  z-index: 1000;
+  color:#0b0c10;
+}
+
+/* Slide animation */
+.slide-in {
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Cards */
+.card {
+  background: #5b5b5b;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 7px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.modal input,
+.modal textarea,
+.modal select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 7px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  background: white;
+}
+
+.modal textarea {
+  resize: none;
+  min-height: 80px;
+}
+
+.modal select {
+  cursor: pointer;
+}
+
+.modal h3 {
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+
+
+
+
+
+page {
+  color: black;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.toggle-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.toggle-group button {
+  flex: 1;
+  background: #e5e7eb;
+}
+
+.toggle-group button.active {
+  background: #fc4c02;
+  color: white;
+}
+
+
+
+
+
+.row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.row > * {
+  flex: 1;
+}

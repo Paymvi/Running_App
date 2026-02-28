@@ -1,5 +1,10 @@
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import "./App.css";
+import { useState } from "react";
+import Activity from "./pages/Activity";
+import FloatingButton from "./components/FloatingButton";
+import AddActivityModal from "./components/AddActivityModal";
+
 
 
 // to → the route path
@@ -39,13 +44,13 @@ function Home() {
     </>
   );
 }
-function Activity() {
-  return (
-    <>
-      <h1>Activity</h1>
-    </>
-  );
-}
+// function Activity() {
+//   return (
+//     <>
+//       <h1>Activity</h1>
+//     </>
+//   );
+// }
 function Profile() {
   return (
     <>
@@ -55,6 +60,7 @@ function Profile() {
 }
 
 export default function App() {
+  const [open, setOpen] = useState(false);
   return (
     <div className="app">
       <Routes>
@@ -62,6 +68,18 @@ export default function App() {
         <Route path="/activity" element={<Activity />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
+
+      <FloatingButton onClick={() => setOpen(true)} />
+
+      <AddActivityModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onSave={(activity) => {
+          const saved = JSON.parse(localStorage.getItem("activities")) || [];
+          const updated = [...saved, activity];
+          localStorage.setItem("activities", JSON.stringify(updated));
+        }}
+      />
 
       <TabBar />
     </div>
