@@ -17,6 +17,18 @@ export default function Activity() {
     localStorage.setItem("activities", JSON.stringify(updated));
   };
 
+    const clearAllActivities = () => {
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete all activity history?"
+        );
+
+        if (confirmDelete) {
+            setActivities([]);
+            localStorage.removeItem("activities"); 
+            // OR localStorage.setItem("activities", JSON.stringify([]));
+        }
+    };
+
     const runImages = {
         easy: "Run-Easy.png",
         long: "Run-Long.png",
@@ -34,6 +46,21 @@ export default function Activity() {
   return (
     <div className="page">
       <h1>Activity</h1>
+
+        <button 
+            onClick={clearAllActivities} 
+            style={{
+                backgroundColor: "#ff4d4d",
+                color: "white",
+                border: "none",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                marginBottom: "16px"
+            }}
+            >
+            Delete All Activities
+        </button>
 
 
 

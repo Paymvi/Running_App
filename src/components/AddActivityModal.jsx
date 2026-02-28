@@ -49,8 +49,14 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
         
 
 
+
       <div className="modal slide-in">
+
         <h2>Manual Activity</h2>
+
+        <button className="close-btn" onClick={onClose}>
+          ✕
+        </button>
 
         <input name="title" placeholder="Title your run" onChange={handleChange} />
         <textarea
