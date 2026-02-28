@@ -44,13 +44,7 @@ function Home() {
     </>
   );
 }
-// function Activity() {
-//   return (
-//     <>
-//       <h1>Activity</h1>
-//     </>
-//   );
-// }
+
 function Profile() {
   return (
     <>

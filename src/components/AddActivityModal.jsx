@@ -46,6 +46,8 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
   return (
     <>
       <div className="overlay" onClick={onClose}></div>
+        
+
 
       <div className="modal slide-in">
         <h2>Manual Activity</h2>
