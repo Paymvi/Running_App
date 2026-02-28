@@ -1,0 +1,90 @@
+/* Basic mobile-app look */
+:root {
+  --bg: #0b0c10;
+  --card: #12141b;
+  --text: #f4f6ff;
+  --muted: rgba(244, 246, 255, 0.7);
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* App wrapper */
+.app {
+  min-height: 100vh;
+  /* leaves space so content doesn’t get hidden behind bottom bar */
+  padding-bottom: 84px;
+}
+
+/* Screen content */
+.screen {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 18px;
+}
+
+.muted { color: var(--muted); }
+
+/* Bottom tab bar */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 72px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+
+  background: rgba(18, 20, 27, 0.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Each tab */
+.tab {
+  text-decoration: none;
+  color: var(--muted);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+  transition: transform 0.08s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.tab:active {
+  transform: scale(0.97);
+}
+
+/* Active tab (selected page) */
+.tab.active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  outline: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tab-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 12px;
+  margin-top: 6px;
+  letter-spacing: 0.2px;
+}
