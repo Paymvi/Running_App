@@ -22,11 +22,39 @@ export default function Activity() {
       <h1>Activity</h1>
 
       {activities.map((a, index) => (
-        <div key={index} className="card">
-          <h3>{a.title}</h3>
-          <p>{a.description}</p>
-          <small>{a.date}</small>
-        </div>
+        <div key={index} className="activity-card">
+            <div className="card-left">
+                <h3 className="card-title">{a.title}</h3>
+
+                <div className="stats-row">
+                <div className="stat">
+                    <span className="stat-label">Distance</span>
+                    <span className="stat-value">{a.miles || "4.06"} mi</span>
+                </div>
+
+                <div className="stat">
+                    <span className="stat-label">Pace</span>
+                    <span className="stat-value">10:30</span>
+                </div>
+
+                <div className="stat">
+                    <span className="stat-label">Time</span>
+                    <span className="stat-value">{a.duration || "40"} min</span>
+                </div>
+                </div>
+
+                <div className="mph-badge">6.0 mph</div>
+            </div>
+
+            <div className="card-right">
+                {a.photo ? (
+                <img src={a.photo} alt="activity" />
+                ) : (
+                <div className="image-placeholder"></div>
+                )}
+            </div>
+            </div>
+
       ))}
 
 
