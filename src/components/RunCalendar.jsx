@@ -63,7 +63,7 @@ export default function RunCalendar({ activities }) {
       <div className="run-calendar-header">
         <h2 className="run-calendar-title">Training Calendar</h2>
         <div className="run-calendar-sub">
-          Brighter = longer run (scaled to your max day)
+          {/* Brighter = longer run (scaled to your max day) */}
         </div>
       </div>
 

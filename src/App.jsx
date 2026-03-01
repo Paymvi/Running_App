@@ -5,6 +5,7 @@ import Activity from "./pages/Activity";
 import FloatingButton from "./components/FloatingButton";
 import AddActivityModal from "./components/AddActivityModal";
 import RunCalendar from "./components/RunCalendar";
+import Profile from "./pages/Profile";
 
 
 
@@ -49,20 +50,12 @@ function Home() {
 
   return (
     <div className="page">
-      <h1>Welcome back!</h1>
       <RunCalendar activities={activities} />
     </div>
   );
 
 }
 
-function Profile() {
-  return (
-    <>
-      <h1>Profile</h1>
-    </>
-  );
-}
 
 export default function App() {
   const [open, setOpen] = useState(false);
