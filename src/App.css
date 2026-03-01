@@ -582,8 +582,9 @@ page {
 .profile-stat-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 14px;
+
+  gap: 10px;              /* Gap horizontal*/
+  margin-bottom: 10px;    /* Gap veritcal*/
 }
 
 .profile-stat {
@@ -608,7 +609,7 @@ page {
 .profile-pill-row {
   display: grid;
   grid-template-columns: 170px 1fr;
-  gap: 14px;
+  gap: 10px;              /* Gap horizontal*/
 }
 
 .profile-pill {
@@ -636,7 +637,7 @@ page {
 /* MID: graph left, PR box right */
 .profile-mid {
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
   margin-top: 18px;
@@ -697,21 +698,21 @@ page {
 
 .pr-table {
   display: grid;
-  gap: 12px;
+  gap: 4px;
   font-size: 12px;
 }
 
 .pr-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 4px;
 }
 
 .pr-cell {
   background: rgba(0,0,0,0.20);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 10px;
-  padding: 14px;
+  padding: 10px;
   text-align: center;
 }
 
@@ -736,7 +737,7 @@ page {
 
 .month-snap-row {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   overflow-x: auto;
   padding-bottom: 6px;
 }
@@ -774,3 +775,17 @@ page {
   font-weight: 800;
 }
 
+@media (max-width: 500px) {
+  .pr-cell {
+    padding: 5px;
+    font-size: 11px;
+  }
+
+  .profile-panel {
+    padding: 10px;
+  }
+
+  .pace-svg {
+    height: 120px;
+  }
+}
