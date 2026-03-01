@@ -214,10 +214,10 @@ body {
 
 .card-right {
   /* flex: 1; */
-  width: 120px;
+  width: 100px;
   display: flex;
   justify-content: flex-end;
-  width: 160px;         /* fixed image column */
+  
 }
 
 .card-right img,

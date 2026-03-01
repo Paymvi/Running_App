@@ -30,10 +30,10 @@ export default function Activity() {
     };
 
     const runImages = {
-        easy: "Run-Easy.png",
-        long: "Run-Long.png",
-        tempo: "Run-Tempo.png",
-        intervals: "Run-Intervals.png",
+        easy: "Run-Easy-2.png",
+        long: "Run-Long-2.png",
+        tempo: "Run-Tempo-2.png",
+        intervals: "Run-SprintsHills-2.png",
         };
 
     const getDefaultImage = (type, intensity) => {
