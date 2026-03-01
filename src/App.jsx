@@ -1,9 +1,10 @@
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import "./App.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Activity from "./pages/Activity";
 import FloatingButton from "./components/FloatingButton";
 import AddActivityModal from "./components/AddActivityModal";
+import RunCalendar from "./components/RunCalendar";
 
 
 
@@ -38,11 +39,21 @@ function TabBar() {
 }
 
 function Home() {
+
+  const [activities, setActivities] = useState([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("activities");
+    if (saved) setActivities(JSON.parse(saved));
+  }, []);
+
   return (
-    <>
-      <h1>Home</h1>
-    </>
+    <div className="page">
+      <h1>Welcome back!</h1>
+      <RunCalendar activities={activities} />
+    </div>
   );
+
 }
 
 function Profile() {

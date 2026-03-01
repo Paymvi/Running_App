@@ -198,7 +198,7 @@ body {
 }
 
 .stat-value {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: bold;
 }
 
@@ -207,7 +207,7 @@ body {
   padding: 6px 12px;
   background: #fc4c02;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   margin-top: 6px;
 }
@@ -334,3 +334,126 @@ page {
 }
 
 /* ---------------------------------------------------------*/
+
+
+.run-calendar-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 18px;
+}
+
+.run-calendar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.run-calendar-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.run-calendar-sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* react-calendar overrides */
+.run-calendar-card .react-calendar {
+  width: 100%;
+  /* max-width: 100%; */
+  border: none;
+  background: transparent;
+  color: var(--text);
+
+  max-width: 420px;   /* 360px – 440px works best for calendars*/
+  margin: 0 auto;     /* centers it */
+}
+
+.run-calendar-card .react-calendar__tile {
+  width: auto !important;
+  height: 60px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.run-calendar-card .react-calendar__navigation button {
+  color: var(--text);
+  background: transparent;
+  border-radius: 10px;
+}
+
+.run-calendar-card .react-calendar__month-view__weekdays {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.run-calendar-card .react-calendar__tile {
+  border-radius: 10px;
+  padding: 10px 6px;
+  color: white !important;
+}
+
+
+.run-calendar-card .react-calendar__tile:enabled:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* legend */
+.run-calendar-legend {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.legend-dot.low { background: rgba(252, 76, 2, 0.25); }
+.legend-dot.mid { background: rgba(252, 76, 2, 0.55); }
+.legend-dot.high { background: rgba(252, 76, 2, 0.9); }
+
+.run-calendar-card .react-calendar__tile--active {
+  background: transparent !important;
+}
+
+
+/* allow overlay inside each tile */
+.run-calendar-card .react-calendar__tile {
+  position: relative;
+  overflow: hidden;
+}
+
+/* the heat background layer */
+.run-calendar-card .tile-heat {
+  position: absolute;
+  inset: 6px;
+  border-radius: 10px;
+  z-index: 0;
+}
+
+/* ensure the day number + miles sit above the heat */
+.run-calendar-card .react-calendar__tile abbr,
+.run-calendar-card .tile-miles {
+  position: relative;
+  z-index: 1;
+}
