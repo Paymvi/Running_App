@@ -472,15 +472,15 @@ page {
 /* TOP */
 .profile-top {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: auto 1fr;
   gap: 22px;
   align-items: start;
   margin-bottom: 22px;
 }
 
-.profile-avatar-lg {
-  width: 120px;
-  height: 120px;
+/* .profile-avatar-lg {
+  width: 70px;
+  height: 70px;
   border-radius: 999px;
   background: #1f2937;
   border: 1px solid rgba(255,255,255,0.06);
@@ -491,7 +491,75 @@ page {
 
 .profile-avatar-emoji {
   font-size: 44px;
+} */
+
+
+/* Big circular container */
+.profile-avatar-lg {
+
+  /* 
+  Minimum size: 60px
+  Responsive size: 15% of viewport width
+  Maximum size: 90px */
+
+  width: clamp(60px, 15vw, 90px);
+  height: clamp(60px, 15vw, 90px);
+
+  border-radius: 50%;          /* makes it a circle */
+  overflow: hidden;            /* THIS is what crops the image */
+
+  background: #1f2937;
+  border: 1px solid rgba(255,255,255,0.08);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+/* The image inside */
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;           /* prevents stretching, crops instead */
+  object-position: center;     /* centers crop */
+
+  display: block;
+}
+
+/* Hide the actual input */
+.avatar-file {
+  display: none;
+}
+
+/* Buttons under avatar */
+.avatar-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.avatar-btn {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(31, 41, 55, 0.55);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.avatar-btn:hover {
+  border-color: rgba(255,255,255,0.16);
+}
+
+.avatar-btn.subtle {
+  background: transparent;
+  opacity: 0.75;
+}
+
+/* --- */
 
 .profile-name-row {
   display: flex;
@@ -501,13 +569,13 @@ page {
 }
 
 .profile-flag {
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1;
 }
 
 .profile-name {
   margin: 0;
-  font-size: 34px;
+  font-size: 24px;
   letter-spacing: 0.2px;
 }
 
@@ -526,13 +594,13 @@ page {
 }
 
 .profile-stat-title {
-  font-size: 12px;
+  font-size: 10px;
   opacity: 0.65;
   margin-bottom: 6px;
 }
 
 .profile-stat-value {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -555,20 +623,20 @@ page {
 }
 
 .pill-title {
-  font-size: 12px;
+  font-size: 10px;
   opacity: 0.65;
   margin-bottom: 6px;
 }
 
 .pill-value {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 /* MID: graph left, PR box right */
 .profile-mid {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 3fr 1fr;
   gap: 18px;
   align-items: start;
   margin-top: 18px;
@@ -584,7 +652,7 @@ page {
 }
 
 .panel-title {
-  font-size: 14px;
+  font-size: 12px;
   opacity: 0.75;
   margin-bottom: 12px;
 }
@@ -619,7 +687,7 @@ page {
 
 .pace-empty {
   fill: rgba(255,255,255,0.6);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 /* PR panel like sketch: label | time */
@@ -630,6 +698,7 @@ page {
 .pr-table {
   display: grid;
   gap: 12px;
+  font-size: 12px;
 }
 
 .pr-row {
@@ -662,7 +731,7 @@ page {
 
 .section-title {
   margin: 0 0 14px 0;
-  font-size: 28px;
+  font-size: 20px;
 }
 
 .month-snap-row {
@@ -681,7 +750,7 @@ page {
 }
 
 .month-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   margin-bottom: 12px;
 }
@@ -701,7 +770,7 @@ page {
 }
 
 .metric-value {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 800;
 }
 

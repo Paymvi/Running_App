@@ -9,6 +9,31 @@ function formatTime(min) {
 
 export default function Profile() {
   const [activities, setActivities] = useState([]);
+  const [avatar, setAvatar] = useState(() => localStorage.getItem("profileAvatar") || "");
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // optional: limit size so localStorage doesn’t explode
+    if (file.size > 2 * 1024 * 1024) {
+        alert("Please choose an image under 2MB.");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        const dataUrl = reader.result; // base64 string
+        setAvatar(dataUrl);
+        localStorage.setItem("profileAvatar", dataUrl);
+    };
+    reader.readAsDataURL(file);
+};
+
+const removeAvatar = () => {
+  setAvatar("");
+  localStorage.removeItem("profileAvatar");
+};
 
   useEffect(() => {
     const saved = localStorage.getItem("activities");
@@ -189,12 +214,47 @@ export default function Profile() {
       {/* TOP AREA (matches sketch) */}
       <div className="profile-top">
 
-        {/* big avatar circle (left) */}
+        {/* LEFT COLUMN */}
+        <div className="profile-left">
+
         <div className="profile-avatar-lg">
-          <span className="profile-avatar-emoji">🏃</span>
+            {avatar ? (
+            <img
+                className="profile-avatar-img"
+                src={avatar}
+                alt="Profile avatar"
+            />
+            ) : (
+            <span className="profile-avatar-emoji">🏃</span>
+            )}
+
+            <input
+            id="avatarUpload"
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="avatar-file"
+            />
         </div>
 
-        {/* right side */}
+        <div className="avatar-actions">
+            <label htmlFor="avatarUpload" className="avatar-btn">
+            {avatar ? "Change" : "Upload"}
+            </label>
+
+            {avatar && (
+            <button
+                className="avatar-btn subtle"
+                onClick={removeAvatar}
+            >
+                Remove
+            </button>
+            )}
+        </div>
+
+        </div>
+
+        {/* RIGHT COLUMN */}
         <div className="profile-top-right">
 
           {/* flag + name */}
