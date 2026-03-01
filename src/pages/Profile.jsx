@@ -275,19 +275,10 @@ const removeAvatar = () => {
               <div className="profile-stat-value">{stats.thisMonthMiles.toFixed(1)} mi</div>
             </div>
 
-            <div className="profile-stat">
-              <div className="profile-stat-title">Distance this year</div>
-              <div className="profile-stat-value">{stats.thisYearMiles.toFixed(1)} mi</div>
-            </div>
           </div>
 
-          {/* second row: 5k + funny tag */}
+          {/* second row: funny tag */}
           <div className="profile-pill-row">
-            <div className="profile-pill">
-              <div className="pill-title">5K</div>
-              <div className="pill-value">{fiveKDisplay}</div>
-            </div>
-
             <div className="profile-pill wide">
               <div className="pill-title">Funny tag</div>
               <div className="pill-value muted">“Built different.”</div>
@@ -380,3 +371,34 @@ const removeAvatar = () => {
     </div>
   );
 }
+
+
+
+// Slow is smooth... smooth is fast
+// Zone 5 enthusiast
+// Suffering Efficiently
+// Powered by Delusion
+// New Pace Who Dis
+// Pace Questionable
+// Sub-35 loading...
+// Sub-30 loading...
+// Sub-25 loading...
+// Sub-20 loading...
+// Sub-whatever
+// Elite (Locally)
+// Consistently Mid
+// Optimizing… Probably
+// DOMS Specialist
+// Breathing Optional
+// Fueling: Vibes
+// Built Different (Unfortunately)
+// Mentally at Mile 20
+// Succumbed to the zone 2 propaganda
+// Carb Loading Daily
+// Why Am I Like This
+// No Plan Just Miles
+// Fasted & Confused
+// Perpetually Tired
+// Soft Launching a PR
+// Negative Split Era
+// Hill Trauma Survivor

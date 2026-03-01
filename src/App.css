@@ -575,13 +575,13 @@ page {
 
 .profile-name {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   letter-spacing: 0.2px;
 }
 
 .profile-stat-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 10px;              /* Gap horizontal*/
   margin-bottom: 10px;    /* Gap veritcal*/
@@ -608,8 +608,9 @@ page {
 /* second row like sketch: 5k + funny tag */
 .profile-pill-row {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;              /* Gap horizontal*/
+  
 }
 
 .profile-pill {
@@ -617,6 +618,8 @@ page {
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 12px;
   padding: 12px 14px;
+  
+  
 }
 
 .profile-pill.wide {
@@ -712,7 +715,7 @@ page {
   background: rgba(0,0,0,0.20);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 10px;
-  padding: 10px;
+  padding: 7px;
   text-align: center;
 }
 
@@ -777,12 +780,8 @@ page {
 
 @media (max-width: 500px) {
   .pr-cell {
-    padding: 5px;
+    padding: 6px;
     font-size: 11px;
-  }
-
-  .profile-panel {
-    padding: 10px;
   }
 
   .pace-svg {
