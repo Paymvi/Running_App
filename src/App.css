@@ -865,3 +865,192 @@ page {
   opacity: 0.9;
   margin-bottom: 14px;
 }
+
+
+
+
+
+
+/* ---------------- EASY JAR (MINIMAL) ---------------- */
+
+.jar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.jar-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.jar-sub {
+  font-size: 11px;
+  opacity: 0.65;
+  white-space: nowrap;
+}
+
+/* Make the canvas feel clean + minimal */
+.jar-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+
+  /* minimal: no “card inside a card” */
+  background: transparent;
+  border: none;
+
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Slightly shorter by default (less “poster” feel) */
+.jar-svg {
+  width: 100%;
+  height: 190px;
+  display: block;
+}
+
+/* Minimal jar outline: no fill, crisp stroke */
+.jar-glass {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Remove the “glass shine” */
+.jar-highlight {
+  display: none;
+}
+
+/* Remove base shadow to stay flat */
+.jar-shadow {
+  display: none;
+}
+
+/* Minimal balls: flat, clean circles */
+.jar-ball {
+  stroke: none;          /* remove outline */
+  opacity: 0.95;
+}
+
+/* Remove the little specular highlight dot (the second circle) */
+.jar-wrap circle[fill="rgba(255,255,255,0.35)"] {
+  display: none;
+}
+
+/* If using the glow filter, keep it VERY subtle (or turn off) */
+.jar-ball-new,
+.jar-wrap g[filter="url(#ballGlow)"] {
+  /* comment this out if you still want glow on long runs */
+  filter: none !important;
+}
+
+/* Empty state still centered */
+.jar-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 16px;
+  color: rgba(255,255,255,0.72);
+  font-size: 12px;
+}
+
+/* Completion text */
+.jar-complete {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* Past jars modal */
+.jar-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  z-index: 999;
+}
+
+.jar-modal {
+  width: min(980px, 100%);
+  max-height: 86vh;
+  overflow: auto;
+  background: rgba(31, 41, 55, 0.92);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+  padding: 14px;
+}
+
+.jar-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.jar-modal-title {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.jar-close {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.22);
+  color: white;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.jar-close:hover {
+  border-color: rgba(255,255,255,0.22);
+}
+
+.jar-modal-empty {
+  padding: 14px;
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.jar-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Small thumbs */
+.jar-thumb .jar-svg {
+  height: 170px;
+}
+
+@media (max-width: 720px) {
+  .jar-grid { grid-template-columns: 1fr; }
+}
+
+
+.avatar-btn {
+  background: rgba(0,0,0,0.22);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.avatar-btn:hover {
+  border-color: rgba(255,255,255,0.22);
+}

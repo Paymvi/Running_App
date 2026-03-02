@@ -41,6 +41,213 @@ function formatTime(min) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+
+
+
+function chunkArray(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+function hashString(str) {
+  // deterministic hash for colors/positions
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed) {
+  // deterministic PRNG
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+
+
+function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
+  // SVG coordinate system
+  const W = 340;
+  const H = 220;
+
+  // jar interior bounds (where balls can be placed)
+  const inner = {
+    x: 70,
+    y: 45,
+    w: 200,
+    h: 150,
+  };
+
+  // compute max duration for brightness scaling
+  const durations = runs.map((r) => r.duration || 0).filter(Boolean);
+  const maxDur = Math.max(30, ...durations); // at least 30 so it doesn't blow out
+
+  // place circles with a simple deterministic packing attempt
+  const circles = useMemo(() => {
+    const placed = [];
+    const baseSeed = hashString(runs.map((r) => r.key).join("|") || "empty");
+    const rand = mulberry32(baseSeed);
+
+    function collides(x, y, rr) {
+      for (const c of placed) {
+        const dx = c.cx - x;
+        const dy = c.cy - y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < c.r + rr + 1.2) return true;
+      }
+      return false;
+    }
+
+    for (let i = 0; i < runs.length; i++) {
+      const r = runs[i];
+
+      // radius slightly increases with duration (cute variety)
+      const dur = r.duration || 0;
+      const t = Math.min(1, dur / 75); // cap effect around ~75 min
+      const rad = 7 + t * 4; // 7..11
+
+      // try a bunch of random positions; fall back if crowded
+      let cx = inner.x + inner.w / 2;
+      let cy = inner.y + inner.h / 2;
+
+      let found = false;
+      for (let tries = 0; tries < 400; tries++) {
+        const x = inner.x + rad + rand() * (inner.w - rad * 2);
+        const y = inner.y + rad + rand() * (inner.h - rad * 2);
+        if (!collides(x, y, rad)) {
+          cx = x;
+          cy = y;
+          found = true;
+          break;
+        }
+      }
+
+        // scale duration relative to max duration in this jar (0 → 1)
+        const tDur = Math.max(0, Math.min(1, dur / maxDur));
+
+        // brand orange (same as calendar)
+        const rColor = 252;
+        const gColor = 76;
+        const bColor = 2;
+
+        // match calendar alpha scaling
+        const alpha = 0.25 + tDur * 0.75; // 0.25 → 1.0
+
+        placed.push({
+            cx,
+            cy,
+            r: rad,
+            fill: `rgba(${rColor}, ${gColor}, ${bColor}, ${alpha})`,
+            glow: tDur, // normalized for glow threshold
+            key: r.key,
+            label: r.label,
+            dur,
+            miles: r.miles,
+            date: r.date,
+        });
+    }
+
+    return placed;
+  }, [runs, maxDur]);
+
+  return (
+    <div className="jar-card">
+      <div className="jar-head">
+        <div className="jar-title">{title}</div>
+        <div className="jar-sub">{subtitle}</div>
+      </div>
+
+      <div className="jar-wrap" aria-label="Easy Jar">
+        <svg viewBox={`0 0 ${W} ${H}`} className="jar-svg" role="img">
+          {/* Glow filter */}
+          <defs>
+            <filter id="ballGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2.8" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* Glass gradient */}
+            <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.20)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.06)" />
+            </linearGradient>
+          </defs>
+
+          {/* Jar outline */}
+          <path
+            className="jar-glass"
+            d="
+              M120 35
+              Q120 25 130 25
+              L210 25
+              Q220 25 220 35
+              L220 45
+              Q220 55 230 60
+              Q250 70 250 95
+              L250 185
+              Q250 205 230 205
+              L110 205
+              Q90 205 90 185
+              L90 95
+              Q90 70 110 60
+              Q120 55 120 45
+              Z
+            "
+          />
+
+          {/* Glass highlight */}
+          <path
+            className="jar-highlight"
+            d="M110 78 Q105 120 110 175"
+          />
+
+          {/* Balls */}
+          {circles.map((c) => (
+            <g key={c.key} filter={c.glow > 0.75 ? "url(#ballGlow)" : undefined}>
+              <circle
+                cx={c.cx}
+                cy={c.cy}
+                r={c.r}
+                fill={c.fill}
+                className="jar-ball"
+              />
+              {/* tiny specular highlight */}
+              <circle
+                cx={c.cx - c.r * 0.25}
+                cy={c.cy - c.r * 0.25}
+                r={Math.max(1.6, c.r * 0.25)}
+                fill="rgba(255,255,255,0.35)"
+              />
+            </g>
+          ))}
+
+          {/* Base shadow */}
+          <ellipse cx="170" cy="208" rx="95" ry="10" className="jar-shadow" />
+        </svg>
+
+        {runs.length === 0 && (
+          <div className="jar-empty">
+            Add an <b>EASY</b> run to drop a ball 🫙
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
+
 export default function Profile() {
   const [activities, setActivities] = useState([]);
   const [avatar, setAvatar] = useState(() => localStorage.getItem("profileAvatar") || "");
@@ -48,6 +255,7 @@ export default function Profile() {
     () => localStorage.getItem("profileTag") || "Built Different (Unfortunately)"
   );
   const fileInputRef = useRef(null);
+  const [showJarHistory, setShowJarHistory] = useState(false);
 
 
   useEffect(() => {
@@ -147,51 +355,34 @@ const removeAvatar = () => {
   // -------------------------
   const fiveKDisplay = prs.fiveK;
 
-  // -------------------------
-  // Easy pace “graph”
-  // (simple: last 6 easy runs pace)
-  // -------------------------
-  const easyPaces = useMemo(() => {
-    const easyRuns = activities
-      .filter((a) => a.intensity === "easy")
-      .filter((a) => parseFloat(a.miles) && parseFloat(a.duration))
-      .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+    // -------------------------
+    // EASY JAR (25 easy runs per jar)
+    // -------------------------
+    const easyRuns = useMemo(() => {
+    return activities
+        .filter((a) => a.intensity === "easy")
+        .filter((a) => parseFloat(a.miles) && parseFloat(a.duration))
+        .map((a, idx) => {
+        const dateStr = a.date || "";
+        // stable key: date+miles+duration+idx (good enough for local demo)
+        const key = `${dateStr}|${a.miles}|${a.duration}|${idx}`;
+        return {
+            key,
+            date: dateStr,
+            miles: parseFloat(a.miles),
+            duration: parseFloat(a.duration), // minutes
+            label: "Easy Run",
+        };
+        })
+        .sort((x, y) => new Date(x.date || 0) - new Date(y.date || 0));
+    }, [activities]);
 
-    const last = easyRuns.slice(-6);
+    const jarGroups = useMemo(() => chunkArray(easyRuns, 25), [easyRuns]);
 
-    return last.map((a) => {
-      const miles = parseFloat(a.miles);
-      const duration = parseFloat(a.duration);
-      const pace = duration / miles; // min/mi
-      return pace;
-    });
-  }, [activities]);
-
-  // convert pace array -> SVG points
-  const pacePath = useMemo(() => {
-    if (easyPaces.length < 2) return "";
-
-    const W = 520;
-    const H = 160;
-    const pad = 18;
-
-    const minP = Math.min(...easyPaces);
-    const maxP = Math.max(...easyPaces);
-
-    const scaleX = (i) =>
-      pad + (i * (W - pad * 2)) / (easyPaces.length - 1);
-
-    const scaleY = (p) => {
-      if (maxP === minP) return H / 2;
-      // lower pace = faster = higher line (invert)
-      const t = (p - minP) / (maxP - minP);
-      return pad + t * (H - pad * 2);
-    };
-
-    return easyPaces
-      .map((p, i) => `${i === 0 ? "M" : "L"} ${scaleX(i)} ${scaleY(p)}`)
-      .join(" ");
-  }, [easyPaces]);
+    const currentJarIndex = Math.max(0, jarGroups.length - 1);
+    const currentJar = jarGroups[currentJarIndex] || [];
+    const completedJars = jarGroups.length > 1 ? jarGroups.slice(0, -1) : [];
+  
 
   // -------------------------
   // Monthly snapshot:
@@ -283,6 +474,12 @@ const removeAvatar = () => {
         />
         </div>
 
+        <div className="avatar-actions">
+        <button className="avatar-btn" onClick={() => setShowJarHistory(true)}>
+            Past Jars 🫙
+        </button>
+        </div>
+
 
         </div>
 
@@ -332,26 +529,19 @@ const removeAvatar = () => {
       {/* MIDDLE AREA: graph left + PR panel right */}
       <div className="profile-mid">
 
-        {/* easy pace graph */}
+        {/* EASY JAR */}
         <div className="profile-panel">
-          <div className="panel-title">Easy Pace graph</div>
+        <EasyJar
+            title="Easy Jar"
+            subtitle={`${currentJar.length}/25 balls • longer runs glow brighter ✨`}
+            runs={currentJar}
+        />
 
-          <div className="pace-graph">
-            <svg viewBox="0 0 520 180" className="pace-svg" aria-label="Easy pace graph">
-              {/* axes */}
-              <line x1="30" y1="20" x2="30" y2="160" className="axis" />
-              <line x1="30" y1="160" x2="500" y2="160" className="axis" />
-
-              {/* line */}
-              {pacePath ? (
-                <path d={pacePath} className="pace-line" />
-              ) : (
-                <text x="40" y="90" className="pace-empty">
-                  Add a couple EASY runs to see the graph
-                </text>
-              )}
-            </svg>
-          </div>
+        {currentJar.length === 25 && (
+            <div className="jar-complete">
+            Jar complete! You’re officially annoying (in a good way). 🏆
+            </div>
+        )}
         </div>
 
         {/* PRs panel (matches sketch box) */}
@@ -408,6 +598,42 @@ const removeAvatar = () => {
           ))}
         </div>
       </div>
+
+
+
+    {showJarHistory && (
+    <div className="jar-modal-backdrop" onClick={() => setShowJarHistory(false)}>
+        <div className="jar-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="jar-modal-head">
+            <div className="jar-modal-title">Past Jars</div>
+            <button className="jar-close" onClick={() => setShowJarHistory(false)}>
+            ✕
+            </button>
+        </div>
+
+        {completedJars.length === 0 ? (
+            <div className="jar-modal-empty">
+            No completed jars yet. Fill your first one 😈
+            </div>
+        ) : (
+            <div className="jar-grid">
+            {completedJars
+                .slice()
+                .reverse()
+                .map((jar, idx) => (
+                <div key={idx} className="jar-thumb">
+                    <EasyJar
+                    title={`Jar #${completedJars.length - idx}`}
+                    subtitle="25/25"
+                    runs={jar}
+                    />
+                </div>
+                ))}
+            </div>
+        )}
+        </div>
+    </div>
+    )}
 
     </div>
   );
