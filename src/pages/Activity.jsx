@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import FloatingButton from "../components/FloatingButton";
 import AddActivityModal from "../components/AddActivityModal";
+import { generateCoachAlert } from "../utils/coachAlert";
 
 export default function Activity() {
   const [activities, setActivities] = useState([]);
@@ -55,6 +56,10 @@ export default function Activity() {
         return "Run-Default.png";
     };
 
+    const coachAlert = useMemo(() => {
+        return generateCoachAlert(activities);
+    }, [activities]);
+
   return (
     <div className="page">
       <h1>Activity</h1>
@@ -73,6 +78,12 @@ export default function Activity() {
             >
             Delete All Activities
         </button>
+
+
+        <div className={`coach-alert ${coachAlert.toneClass}`}>
+            <div className="coach-alert-title">{coachAlert.title}</div>
+            {coachAlert.detail && <div className="coach-alert-detail">{coachAlert.detail}</div>}
+        </div>
 
 
 

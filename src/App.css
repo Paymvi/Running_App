@@ -734,7 +734,7 @@ page {
 }
 
 .avatar-metric-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -775,6 +775,11 @@ page {
 .profile-flag {
   font-size: 18px;
   line-height: 1;
+}
+
+.profile-flag:hover {
+  transform: scale(1.05);
+  transition: transform 0.15s ease;
 }
 
 .profile-name {
@@ -1364,4 +1369,26 @@ page {
 
 .avatar-btn:hover {
   border-color: rgba(255,255,255,0.22);
+}
+
+
+
+
+.coach-alert {
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.coach-alert-title {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+
+.coach-alert-detail {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.85;
+  line-height: 1.35;
 }
