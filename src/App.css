@@ -974,6 +974,94 @@ page {
   }
 }
 
+
+.month-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.2s ease;
+}
+
+.month-card:hover {
+  transform: translateY(-3px);
+}
+
+.month-title {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.month-hero {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* Easy % Pill */
+
+.easy-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.easy-percent {
+  font-weight: 700;
+}
+
+.easy-label {
+  opacity: 0.85;
+  font-size: 12px;
+}
+
+/* RED */
+.easy-zone-red {
+  background: rgba(255, 80, 80, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 80, 80, 0.3);
+}
+
+/* YELLOW */
+.easy-zone-yellow {
+  background: rgba(255, 190, 0, 0.15);
+  color: #ffb703;
+  border: 1px solid rgba(255, 190, 0, 0.3);
+}
+
+/* GREEN */
+.easy-zone-green {
+  background: rgba(80, 200, 120, 0.15);
+  color: #52d273;
+  border: 1px solid rgba(80, 200, 120, 0.3);
+}
+
+/* BLUE */
+.easy-zone-blue {
+  background: rgba(100, 170, 255, 0.15);
+  color: #74b9ff;
+  border: 1px solid rgba(100, 170, 255, 0.3);
+}
+
+.month-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+}
+
 /* ---------- PROFILE TAG SELECT ---------- */
 
 .profile-pill {

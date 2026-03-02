@@ -275,6 +275,32 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
 
 
 
+function getEasyZone(pct) {
+  if (pct < 50) {
+    return {
+      label: "Workout Heavy",
+      className: "easy-zone-red",
+    };
+  }
+  if (pct < 70) {
+    return {
+      label: "Workout Leaning",
+      className: "easy-zone-yellow",
+    };
+  }
+  if (pct <= 85) {
+    return {
+      label: "Balanced Aerobic",
+      className: "easy-zone-green",
+    };
+  }
+  return {
+    label: "Recovery / Base",
+    className: "easy-zone-blue",
+  };
+}
+
+
 
 export default function Profile() {
   const [activities, setActivities] = useState([]);
@@ -639,31 +665,38 @@ const removeAvatar = () => {
         <h2 className="section-title">Monthly snapshot</h2>
 
         <div className="month-snap-row">
-          {monthlySnapshot.map((m, i) => (
-            <div key={i} className="month-card">
-              <div className="month-title">{m.month}</div>
+          {monthlySnapshot.map((m, i) => {
+            const zone = getEasyZone(m.pctEasy);
 
-              <div className="month-metric">
-                <div className="metric-label">Total Mileage</div>
-                <div className="metric-value">{m.mileage} mi</div>
-              </div>
+            return (
+                <div key={i} className="month-card">
+                <div className="month-title">{m.month}</div>
 
-              <div className="month-metric">
-                <div className="metric-label">Avg Easy</div>
-                <div className="metric-value">{m.avgEasy}</div>
-              </div>
+                {/* HERO METRIC */}
+                <div className="month-hero">
+                    {m.mileage} mi
+                </div>
 
-              <div className="month-metric">
-                <div className="metric-label">% Easy</div>
-                <div className="metric-value">{m.pctEasy}%</div>
-              </div>
+                {/* Easy % with color meaning */}
+                <div className={`easy-pill ${zone.className}`}>
+                    <span className="easy-percent">{m.pctEasy}% Easy</span>
+                    <span className="easy-label">{zone.label}</span>
+                </div>
 
-              <div className="month-metric">
-                <div className="metric-label">Longest Run</div>
-                <div className="metric-value">{m.longest} mi</div>
-              </div>
-            </div>
-          ))}
+                <div className="month-secondary">
+                    <div className="metric-row">
+                    <span>Avg Easy Pace</span>
+                    <span>{m.avgEasy}</span>
+                    </div>
+
+                    <div className="metric-row">
+                    <span>Longest Run</span>
+                    <span>{m.longest} mi</span>
+                    </div>
+                </div>
+                </div>
+            );
+            })}
         </div>
       </div>
 
