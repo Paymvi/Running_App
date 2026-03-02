@@ -192,7 +192,7 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
         <div className="jar-sub">{subtitle}</div>
       </div>
 
-      <div className="jar-wrap" aria-label="Easy Jar">
+      <div className="jar-wrap" aria-label="Easy Run Jar">
         <svg viewBox={`0 0 ${W} ${H}`} className="jar-svg" role="img">
           {/* Glow filter */}
           <defs>
@@ -384,7 +384,7 @@ const removeAvatar = () => {
   const fiveKDisplay = prs.fiveK;
 
     // -------------------------
-    // EASY JAR (25 easy runs per jar)
+    // EASY RUN JAR (25 easy runs per jar)
     // -------------------------
     const easyRuns = useMemo(() => {
     return activities
@@ -560,7 +560,7 @@ const removeAvatar = () => {
         {/* EASY JAR */}
         <div className="profile-panel">
         <EasyJar
-            title="Easy Jar"
+            title="Easy Run Jar"
             subtitle={`${currentJar.length}/25 balls`}
             runs={currentJar}
         />
@@ -574,7 +574,7 @@ const removeAvatar = () => {
 
         {/* PRs panel (matches sketch box) */}
         <div className="profile-panel pr-panel">
-          <div className="panel-title">PRs</div>
+          <div className="panel-title">🎖️ PRs</div>
 
           <div className="pr-table">
             <div className="pr-row">

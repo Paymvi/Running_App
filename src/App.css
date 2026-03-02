@@ -834,8 +834,9 @@ page {
 
 .panel-title {
   font-size: 12px;
-  opacity: 0.75;
+  opacity: 1;
   margin-bottom: 12px;
+  font-weight: 600;
 }
 
 /* pace graph */

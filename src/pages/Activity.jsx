@@ -7,16 +7,27 @@ export default function Activity() {
   const [open, setOpen] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(null);
 
-  useEffect(() => {
+    useEffect(() => {
     const saved = localStorage.getItem("activities");
-    if (saved) setActivities(JSON.parse(saved));
-  }, []);
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        parsed.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setActivities(parsed);
+    }
+    }, []);
 
-  const saveActivity = (activity) => {
-    const updated = [...activities, activity];
-    setActivities(updated);
-    localStorage.setItem("activities", JSON.stringify(updated));
-  };
+    const saveActivity = (activity) => {
+        const newActivity = {
+            ...activity,
+            id: Date.now(), // simple unique id
+        };
+
+        const updated = [newActivity, ...activities];
+        updated.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        setActivities(updated);
+        localStorage.setItem("activities", JSON.stringify(updated));
+    };
 
     const clearAllActivities = () => {
         const confirmDelete = window.confirm(
@@ -82,7 +93,7 @@ export default function Activity() {
 
         return (
             <div
-                key={index}
+                key={a.id}
                 className={`activity-card ${expandedIndex === index ? "expanded" : ""}`}
                 onClick={() =>
                     setExpandedIndex(expandedIndex === index ? null : index)
