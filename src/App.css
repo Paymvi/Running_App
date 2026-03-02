@@ -167,6 +167,7 @@ body {
 .card-left {
   flex: 2;
   padding: 15px 5px 25px 15px;  /* smaller top/bottom padding */
+  padding-right: 14px;
 }
 
 .card-title {
@@ -838,4 +839,29 @@ page {
   font-size: 12px;
   opacity: 0.6;
   color: var(--muted);
+}
+
+
+.activity-card {
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.activity-card.expanded {
+  transform: scale(1.01);
+}
+
+.private-notes {
+  margin-top: 12px;
+  padding: 1px 12px 12px 12px; /* smaller top padding */
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.description-preview {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-bottom: 14px;
 }

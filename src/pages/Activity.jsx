@@ -5,6 +5,7 @@ import AddActivityModal from "../components/AddActivityModal";
 export default function Activity() {
   const [activities, setActivities] = useState([]);
   const [open, setOpen] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("activities");
@@ -80,7 +81,13 @@ export default function Activity() {
         }
 
         return (
-            <div key={index} className="activity-card">
+            <div
+                key={index}
+                className={`activity-card ${expandedIndex === index ? "expanded" : ""}`}
+                onClick={() =>
+                    setExpandedIndex(expandedIndex === index ? null : index)
+                }
+            >
             <div className="card-left">
 
 
@@ -99,12 +106,12 @@ export default function Activity() {
                 <h3 className="card-title" style={{ fontWeight: "bold" }}>
                     {a.title || "Untitled Activity"}
                 </h3>
-                
-                
-                {a.notes && (
-                    <p className="notes-preview">{a.notes}</p>
+
+                {a.description && (
+                    <p className="description-preview">{a.description}</p>
                 )}
-                
+
+
 
                 <div className="stats-row">
                 <div className="stat">
@@ -130,6 +137,14 @@ export default function Activity() {
                 </div>
 
                 {mph && <div className="mph-badge">{mph} mph</div>}
+
+                {expandedIndex === index && a.notes && (
+                    <div className="private-notes">
+                        <h4>Notes:</h4>
+                        <p>{a.notes}</p>
+                    </div>
+                )}
+                
 
 
             </div>
