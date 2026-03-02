@@ -7,6 +7,7 @@ import AddActivityModal from "./components/AddActivityModal";
 import RunCalendar from "./components/RunCalendar";
 import Profile from "./pages/Profile";
 
+
 import { FiSun, FiBarChart2, FiUser } from "react-icons/fi";
 
 // To browse icons:

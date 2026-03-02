@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-
+import ReactCountryFlag from "react-country-flag";
 
 const TAG_OPTIONS = [
   "Slow is smooth... smooth is fast",
@@ -463,6 +463,7 @@ const removeAvatar = () => {
     const currentJarIndex = Math.max(0, jarGroups.length - 1);
     const currentJar = jarGroups[currentJarIndex] || [];
     const completedJars = jarGroups.length > 1 ? jarGroups.slice(0, -1) : [];
+    const jarCount = completedJars.length;
   
 
   // -------------------------
@@ -556,9 +557,16 @@ const removeAvatar = () => {
         </div>
 
         <div className="avatar-actions">
-        <button className="avatar-btn" onClick={() => setShowJarHistory(true)}>
-            Past Jars 🫙
-        </button>
+
+            <button className="avatar-btn" onClick={() => setShowJarHistory(true)}>
+                Past Jars 🫙
+            </button>
+
+            <div className="avatar-metric">
+                <div className="avatar-metric-value">{jarCount}</div>
+                <div className="avatar-metric-label">Jars Completed</div>
+            </div>
+
         </div>
 
 
@@ -569,7 +577,17 @@ const removeAvatar = () => {
 
           {/* flag + name */}
           <div className="profile-name-row">
-            <span className="profile-flag">🇺🇸</span>
+            <span className="profile-flag">
+                <ReactCountryFlag
+                    countryCode="US"
+                    svg
+                    style={{
+                        width: "28px",
+                        height: "20px",
+                        borderRadius: "4px"
+                    }}
+                />
+            </span>
             <h1 className="profile-name">Your Name</h1>
           </div>
 
