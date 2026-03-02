@@ -74,16 +74,16 @@ function mulberry32(seed) {
 
 function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
   // SVG coordinate system
-  const W = 340;
+  const W = 240;
   const H = 220;
 
   // jar interior bounds (where balls can be placed)
-  const inner = {
-    x: 70,
-    y: 45,
-    w: 200,
-    h: 150,
-  };
+    const inner = {
+        x: 40,
+        y: 45,
+        w: 160,
+        h: 150,
+    };
 
   // compute max duration for brightness scaling
   const durations = runs.map((r) => r.duration || 0).filter(Boolean);
@@ -92,70 +92,98 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
   // place circles with a simple deterministic packing attempt
   const circles = useMemo(() => {
     const placed = [];
-    const baseSeed = hashString(runs.map((r) => r.key).join("|") || "empty");
-    const rand = mulberry32(baseSeed);
 
-    function collides(x, y, rr) {
-      for (const c of placed) {
-        const dx = c.cx - x;
-        const dy = c.cy - y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < c.r + rr + 1.2) return true;
-      }
-      return false;
-    }
+    if (!runs.length) return placed;
+
+    const rowGap = 4;
+
+    // scale radius based on duration
+    const radii = runs.map((r) => {
+        const dur = r.duration || 0;
+        const t = Math.min(1, dur / 75);
+        return 7 + t * 4;
+    });
+
+    const bottomY = inner.y + inner.h - 4;
+    let currentY = bottomY;
+
+    let row = [];
+    let rowWidth = 0;
 
     for (let i = 0; i < runs.length; i++) {
-      const r = runs[i];
+        const r = runs[i];
+        const rad = radii[i];
 
-      // radius slightly increases with duration (cute variety)
-      const dur = r.duration || 0;
-      const t = Math.min(1, dur / 75); // cap effect around ~75 min
-      const rad = 7 + t * 4; // 7..11
-
-      // try a bunch of random positions; fall back if crowded
-      let cx = inner.x + inner.w / 2;
-      let cy = inner.y + inner.h / 2;
-
-      let found = false;
-      for (let tries = 0; tries < 400; tries++) {
-        const x = inner.x + rad + rand() * (inner.w - rad * 2);
-        const y = inner.y + rad + rand() * (inner.h - rad * 2);
-        if (!collides(x, y, rad)) {
-          cx = x;
-          cy = y;
-          found = true;
-          break;
+        if (row.length === 0) {
+        row.push({ r, rad });
+        rowWidth = rad * 2;
+        continue;
         }
-      }
 
-        // scale duration relative to max duration in this jar (0 → 1)
-        const tDur = Math.max(0, Math.min(1, dur / maxDur));
+        const nextWidth = rowWidth + rowGap + rad * 2;
 
-        // brand orange (same as calendar)
-        const rColor = 252;
-        const gColor = 76;
-        const bColor = 2;
+        // prevent overflow near jar shoulders
+        if (nextWidth > inner.w - 24) {
+        const startX = inner.x + (inner.w - rowWidth) / 2;
+        let xCursor = startX;
 
-        // match calendar alpha scaling
-        const alpha = 0.25 + tDur * 0.75; // 0.25 → 1.0
+        for (const item of row) {
+            placed.push({
+            cx: xCursor + item.rad,
+            cy: currentY - item.rad,
+            r: item.rad,
+            data: item.r,
+            });
 
-        placed.push({
-            cx,
-            cy,
-            r: rad,
-            fill: `rgba(${rColor}, ${gColor}, ${bColor}, ${alpha})`,
-            glow: tDur, // normalized for glow threshold
-            key: r.key,
-            label: r.label,
-            dur,
-            miles: r.miles,
-            date: r.date,
-        });
+            xCursor += item.rad * 2 + rowGap;
+        }
+
+        currentY -= Math.max(...row.map((x) => x.rad)) * 2 + rowGap;
+
+        row = [{ r, rad }];
+        rowWidth = rad * 2;
+        } else {
+        row.push({ r, rad });
+        rowWidth = nextWidth;
+        }
     }
 
-    return placed;
-  }, [runs, maxDur]);
+    // render last row
+    if (row.length > 0) {
+        const startX = inner.x + (inner.w - rowWidth) / 2;
+        let xCursor = startX;
+
+        for (const item of row) {
+        placed.push({
+            cx: xCursor + item.rad,
+            cy: currentY - item.rad,
+            r: item.rad,
+            data: item.r,
+        });
+
+        xCursor += item.rad * 2 + rowGap;
+        }
+    }
+
+    return placed.map((p) => {
+        const dur = p.data.duration || 0;
+        const tDur = Math.max(0, Math.min(1, dur / maxDur));
+        const alpha = 0.25 + tDur * 0.75;
+
+        return {
+        cx: p.cx,
+        cy: p.cy,
+        r: p.r,
+        fill: `rgba(252,76,2,${alpha})`,
+        glow: tDur,
+        key: p.data.key,
+        label: p.data.label,
+        dur,
+        miles: p.data.miles,
+        date: p.data.date,
+        };
+    });
+    }, [runs, maxDur]);
 
   return (
     <div className="jar-card">
@@ -187,21 +215,21 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
           <path
             className="jar-glass"
             d="
-              M120 35
-              Q120 25 130 25
-              L210 25
-              Q220 25 220 35
-              L220 45
-              Q220 55 230 60
-              Q250 70 250 95
-              L250 185
-              Q250 205 230 205
-              L110 205
-              Q90 205 90 185
-              L90 95
-              Q90 70 110 60
-              Q120 55 120 45
-              Z
+            M70 35
+            Q70 25 80 25
+            L160 25
+            Q170 25 170 35
+            L170 45
+            Q170 55 180 60
+            Q200 70 200 95
+            L200 185
+            Q200 205 180 205
+            L60 205
+            Q40 205 40 185
+            L40 95
+            Q40 70 60 60
+            Q70 55 70 45
+            Z
             "
           />
 
@@ -533,7 +561,7 @@ const removeAvatar = () => {
         <div className="profile-panel">
         <EasyJar
             title="Easy Jar"
-            subtitle={`${currentJar.length}/25 balls • longer runs glow brighter ✨`}
+            subtitle={`${currentJar.length}/25 balls`}
             runs={currentJar}
         />
 
