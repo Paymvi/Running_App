@@ -355,28 +355,55 @@ const removeAvatar = () => {
   // -------------------------
   // PRs (min time at distance)
   // -------------------------
-  const prs = useMemo(() => {
-    let bestMile = Infinity;
-    let best5k = Infinity;
-    let best10k = Infinity;
+    const prs = useMemo(() => {
+    let bestMile = { time: Infinity, date: null };
+    let best5k = { time: Infinity, date: null };
+    let best10k = { time: Infinity, date: null };
 
     activities.forEach((a) => {
-      const miles = parseFloat(a.miles);
-      const duration = parseFloat(a.duration);
-      if (!miles || !duration) return;
+        const miles = parseFloat(a.miles);
+        const duration = parseFloat(a.duration);
+        if (!miles || !duration) return;
 
-      // if they ran at least the distance, treat the whole run as a "PR attempt" (simple version)
-      if (miles >= 1 && duration < bestMile) bestMile = duration;
-      if (miles >= 3.1 && duration < best5k) best5k = duration;
-      if (miles >= 6.2 && duration < best10k) best10k = duration;
+        const date = a.date || null;
+
+        if (miles >= 1 && duration < bestMile.time) {
+        bestMile = { time: duration, date };
+        }
+
+        if (miles >= 3.1 && duration < best5k.time) {
+        best5k = { time: duration, date };
+        }
+
+        if (miles >= 6.2 && duration < best10k.time) {
+        best10k = { time: duration, date };
+        }
     });
 
+    // Find most recent PR date
+    const dates = [bestMile.date, best5k.date, best10k.date]
+        .filter(Boolean)
+        .map((d) => new Date(d));
+
+    const latestPRDate =
+        dates.length > 0
+        ? new Date(Math.max(...dates.map((d) => d.getTime())))
+        : null;
+
     return {
-      mile: formatTime(bestMile),
-      fiveK: formatTime(best5k),
-      tenK: formatTime(best10k),
+        mile: bestMile,
+        fiveK: best5k,
+        tenK: best10k,
+        latestPRDate,
     };
-  }, [activities]);
+    }, [activities]);
+
+    function daysAgo(dateObj) {
+        if (!dateObj) return null;
+        const diff = new Date() - dateObj;
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+
 
   // -------------------------
   // “5K box” value (use PR 5k)
@@ -579,17 +606,30 @@ const removeAvatar = () => {
           <div className="pr-table">
             <div className="pr-row">
               <div className="pr-cell label">Mile</div>
-              <div className="pr-cell value">{prs.mile}</div>
+              <div className="pr-cell value">
+                {formatTime(prs.mile.time)}
+              </div>
             </div>
             <div className="pr-row">
               <div className="pr-cell label">5K</div>
-              <div className="pr-cell value">{prs.fiveK}</div>
+              <div className="pr-cell value">
+                {formatTime(prs.fiveK.time)}
+              </div>
             </div>
             <div className="pr-row">
               <div className="pr-cell label">10K</div>
-              <div className="pr-cell value">{prs.tenK}</div>
+              <div className="pr-cell value">
+                {formatTime(prs.tenK.time)}
+              </div>
             </div>
           </div>
+
+          {prs.latestPRDate && (
+            <div className="pr-latest">
+                Last PR: {daysAgo(prs.latestPRDate)} days ago
+            </div>
+            )}
+
         </div>
 
       </div>

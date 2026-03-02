@@ -911,6 +911,13 @@ page {
   margin-top: 10px;
 }
 
+.pr-latest {
+  margin-top: 12px;
+  font-size: 10px;
+  opacity: 0.55;
+  text-align: right;
+}
+
 .section-title {
   margin: 0 0 14px 0;
   font-size: 20px;
