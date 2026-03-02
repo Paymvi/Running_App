@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 
 
 const TAG_OPTIONS = [
@@ -47,6 +47,9 @@ export default function Profile() {
   const [tag, setTag] = useState(
     () => localStorage.getItem("profileTag") || "Built Different (Unfortunately)"
   );
+  const fileInputRef = useRef(null);
+
+
   useEffect(() => {
     localStorage.setItem("profileTag", tag);
     }, [tag]);
@@ -257,40 +260,29 @@ const removeAvatar = () => {
         {/* LEFT COLUMN */}
         <div className="profile-left">
 
-        <div className="profile-avatar-lg">
-            {avatar ? (
+        <div
+        className="profile-avatar-lg clickable"
+        onClick={() => fileInputRef.current?.click()}
+        >
+        {avatar ? (
             <img
-                className="profile-avatar-img"
-                src={avatar}
-                alt="Profile avatar"
+            className="profile-avatar-img"
+            src={avatar}
+            alt="Profile avatar"
             />
-            ) : (
+        ) : (
             <span className="profile-avatar-emoji">🏃</span>
-            )}
+        )}
 
-            <input
-            id="avatarUpload"
+        <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={handleAvatarChange}
             className="avatar-file"
-            />
+        />
         </div>
 
-        <div className="avatar-actions">
-            <label htmlFor="avatarUpload" className="avatar-btn">
-            {avatar ? "Change" : "Upload"}
-            </label>
-
-            {avatar && (
-            <button
-                className="avatar-btn subtle"
-                onClick={removeAvatar}
-            >
-                Remove
-            </button>
-            )}
-        </div>
 
         </div>
 
