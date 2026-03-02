@@ -1,5 +1,39 @@
 import React, { useEffect, useState, useMemo } from "react";
 
+
+const TAG_OPTIONS = [
+  "Slow is smooth... smooth is fast",
+  "Zone 5 enthusiast",
+  "Suffering Efficiently",
+  "Powered by Delusion",
+  "New Pace Who Dis",
+  "Pace Questionable",
+  "Sub-35 loading...",
+  "Sub-30 loading...",
+  "Sub-25 loading...",
+  "Sub-20 loading...",
+  "Sub-whatever",
+  "Elite (Locally)",
+  "Consistently Mid",
+  "Optimizing… Probably",
+  "DOMS Specialist",
+  "Breathing Optional",
+  "Fueling: Vibes",
+  "Built Different (Unfortunately)",
+  "Mentally at Mile 20",
+  "Succumbed to the zone 2 propaganda",
+  "Carb Loading Daily",
+  "Why Am I Like This",
+  "No Plan Just Miles",
+  "Fasted & Confused",
+  "Perpetually Tired",
+  "Soft Launching a PR",
+  "Negative Split Era",
+  "Hill Trauma Survivor",
+];
+
+
+
 function formatTime(min) {
   if (!isFinite(min)) return "-";
   const m = Math.floor(min);
@@ -10,6 +44,12 @@ function formatTime(min) {
 export default function Profile() {
   const [activities, setActivities] = useState([]);
   const [avatar, setAvatar] = useState(() => localStorage.getItem("profileAvatar") || "");
+  const [tag, setTag] = useState(
+    () => localStorage.getItem("profileTag") || "Built Different (Unfortunately)"
+  );
+  useEffect(() => {
+    localStorage.setItem("profileTag", tag);
+    }, [tag]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -271,22 +311,31 @@ const removeAvatar = () => {
             </div>
 
             <div className="profile-stat">
-              <div className="profile-stat-title">Distance this month</div>
+              <div className="profile-stat-title">This month</div>
               <div className="profile-stat-value">{stats.thisMonthMiles.toFixed(1)} mi</div>
             </div>
 
           </div>
 
           {/* second row: funny tag */}
-          <div className="profile-pill-row">
-            <div className="profile-pill wide">
-              <div className="pill-title">Funny tag</div>
-              <div className="pill-value muted">“Built different.”</div>
-            </div>
-          </div>
+        <div className="profile-pill">
+        <div className="pill-title">Today’s Energy</div>
 
+        <select
+            className="tag-select"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+        >
+            {TAG_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+                {option}
+            </option>
+            ))}
+        </select>
         </div>
-      </div>
+
+                </div> {/* profile-top-right */}
+            </div>   {/* profile-top */}
 
       {/* MIDDLE AREA: graph left + PR panel right */}
       <div className="profile-mid">
@@ -319,15 +368,15 @@ const removeAvatar = () => {
 
           <div className="pr-table">
             <div className="pr-row">
-              <div className="pr-cell label">mile</div>
+              <div className="pr-cell label">Mile</div>
               <div className="pr-cell value">{prs.mile}</div>
             </div>
             <div className="pr-row">
-              <div className="pr-cell label">5k</div>
+              <div className="pr-cell label">5K</div>
               <div className="pr-cell value">{prs.fiveK}</div>
             </div>
             <div className="pr-row">
-              <div className="pr-cell label">10k</div>
+              <div className="pr-cell label">10K</div>
               <div className="pr-cell value">{prs.tenK}</div>
             </div>
           </div>
@@ -345,22 +394,22 @@ const removeAvatar = () => {
               <div className="month-title">{m.month}</div>
 
               <div className="month-metric">
-                <div className="metric-label">mileage</div>
+                <div className="metric-label">Total Mileage</div>
                 <div className="metric-value">{m.mileage} mi</div>
               </div>
 
               <div className="month-metric">
-                <div className="metric-label">Avg easy</div>
+                <div className="metric-label">Avg Easy</div>
                 <div className="metric-value">{m.avgEasy}</div>
               </div>
 
               <div className="month-metric">
-                <div className="metric-label">% easy</div>
+                <div className="metric-label">% Easy</div>
                 <div className="metric-value">{m.pctEasy}%</div>
               </div>
 
               <div className="month-metric">
-                <div className="metric-label">longest run</div>
+                <div className="metric-label">Longest Run</div>
                 <div className="metric-value">{m.longest} mi</div>
               </div>
             </div>
@@ -371,34 +420,3 @@ const removeAvatar = () => {
     </div>
   );
 }
-
-
-
-// Slow is smooth... smooth is fast
-// Zone 5 enthusiast
-// Suffering Efficiently
-// Powered by Delusion
-// New Pace Who Dis
-// Pace Questionable
-// Sub-35 loading...
-// Sub-30 loading...
-// Sub-25 loading...
-// Sub-20 loading...
-// Sub-whatever
-// Elite (Locally)
-// Consistently Mid
-// Optimizing… Probably
-// DOMS Specialist
-// Breathing Optional
-// Fueling: Vibes
-// Built Different (Unfortunately)
-// Mentally at Mile 20
-// Succumbed to the zone 2 propaganda
-// Carb Loading Daily
-// Why Am I Like This
-// No Plan Just Miles
-// Fasted & Confused
-// Perpetually Tired
-// Soft Launching a PR
-// Negative Split Era
-// Hill Trauma Survivor

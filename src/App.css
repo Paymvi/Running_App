@@ -64,7 +64,7 @@ body {
   align-items: center;
   justify-content: center;
 
-  border-radius: 14px;
+  border-radius: 11px;
   transition: transform 0.08s ease, background 0.12s ease, color 0.12s ease;
 }
 
@@ -76,7 +76,6 @@ body {
 .tab.active {
   color: var(--text);
   background: rgba(255, 255, 255, 0.06);
-  outline: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .tab-icon {
@@ -605,7 +604,7 @@ page {
   font-weight: 700;
 }
 
-/* second row like sketch: 5k + funny tag */
+/* second row: "Today's Energy" */
 .profile-pill-row {
   display: grid;
   grid-template-columns: 1fr;
@@ -640,7 +639,7 @@ page {
 /* MID: graph left, PR box right */
 .profile-mid {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
   margin-top: 18px;
@@ -707,25 +706,25 @@ page {
 
 .pr-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.5fr;
   gap: 4px;
 }
 
 .pr-cell {
   background: rgba(0,0,0,0.20);
   border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px;
+  border-radius: 5px;
   padding: 7px;
   text-align: center;
 }
 
 .pr-cell.label {
-  text-transform: lowercase;
-  font-weight: 700;
+  /* text-transform: lowercase; */
+  font-weight: 500;
 }
 
 .pr-cell.value {
-  font-weight: 800;
+  font-weight: 400;
 }
 
 /* MONTHLY SNAPSHOT like sketch cards */
@@ -755,7 +754,7 @@ page {
 
 .month-title {
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 12px;
 }
 
@@ -775,7 +774,7 @@ page {
 
 .metric-value {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 @media (max-width: 500px) {
@@ -787,4 +786,56 @@ page {
   .pace-svg {
     height: 120px;
   }
+}
+
+/* ---------- PROFILE TAG SELECT ---------- */
+
+.profile-pill {
+  position: relative;
+  background: #1f2937;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 12px 40px 12px 14px; /* extra right padding for arrow */
+  transition: border 0.15s ease, background 0.15s ease;
+}
+
+.profile-pill:hover {
+  border-color: rgba(255,255,255,0.14);
+}
+
+/* Select */
+.tag-select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+
+  color: var(--text);
+  background: transparent;
+
+  /* line-height: 20; */
+}
+
+.tag-select option {
+  background: #1f2937;
+  color: var(--text);
+  /* padding: 15px; */
+}
+
+/* Dropdown arrow */
+.profile-pill::after {
+  content: "▾";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 12px;
+  opacity: 0.6;
+  color: var(--muted);
 }

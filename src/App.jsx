@@ -7,6 +7,12 @@ import AddActivityModal from "./components/AddActivityModal";
 import RunCalendar from "./components/RunCalendar";
 import Profile from "./pages/Profile";
 
+import { FiSun, FiBarChart2, FiUser } from "react-icons/fi";
+
+// To browse icons:
+// https://react-icons.github.io/react-icons/ 
+
+
 
 
 // to → the route path
@@ -15,9 +21,9 @@ import Profile from "./pages/Profile";
 
 function TabBar() {
   const tabs = [
-    { to: "/", label: "Home", icon: "🏠" },
-    { to: "/activity", label: "Activity", icon: "📈" },
-    { to: "/profile", label: "Profile", icon: "👤" },
+    { to: "/", label: "Home", icon: <FiSun /> },
+    { to: "/activity", label: "Activity", icon: <FiBarChart2 /> },
+    { to: "/profile", label: "Profile", icon: <FiUser />},
   ];
 
   return (
