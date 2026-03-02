@@ -121,18 +121,17 @@ body {
   position: fixed;
   top: 0;
   right: 0;
-
   width: 100%;
   height: 100%;
 
-  background: white;
-  padding: 20px;
+  background: var(--bg); /* dark like app */
+  color: var(--text);
+
+  padding: 24px 18px 120px 18px;
   overflow-y: auto;
 
   z-index: 1000;
-  color:#0b0c10;
 }
-
 /* Slide animation */
 .slide-in {
   animation: slideIn 0.3s ease forwards;
@@ -141,6 +140,7 @@ body {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
+
 
 /* ------------------------- Cards -------------------------*/
 .activity-card {
@@ -252,17 +252,37 @@ body {
 .modal textarea,
 .modal select {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 14px;
-  border-radius: 7px;
-  border: 1px solid #ddd;
+  padding: 14px;
+  margin-bottom: 12px;
+
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+
+  background: #1f2937;
+  color: var(--text);
+
   font-size: 14px;
-  background: white;
+  transition: border 0.15s ease, background 0.15s ease;
+}
+
+.modal input:focus,
+.modal textarea:focus,
+.modal select:focus {
+  outline: none;
+  border-color: #fc4c02;
+  background: rgba(31, 41, 55, 0.85);
 }
 
 .modal textarea {
   resize: none;
   min-height: 80px;
+}
+
+.modal input::placeholder,
+.modal textarea::placeholder {
+  color: rgba(250, 242, 228, 0.4); /* brighter */
+  opacity: 1;  /* override browser default fade */
+  font-family: inherit;
 }
 
 .modal select {
@@ -290,18 +310,174 @@ page {
 .toggle-group {
   display: flex;
   gap: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .toggle-group button {
   flex: 1;
-  background: #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+
+  background: #1f2937;
+  color: var(--muted);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  font-size: 13px;
+  font-weight: 600;
+
+  transition: all 0.15s ease;
+}
+
+.toggle-group button:hover {
+  border-color: rgba(255,255,255,0.18);
 }
 
 .toggle-group button.active {
   background: #fc4c02;
   color: white;
+  border-color: #fc4c02;
 }
+
+.modal-section {
+  margin-bottom: 28px;
+}
+
+.modal-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.6;
+  margin-bottom: 12px;
+  letter-spacing: 0.4px;
+}
+
+/* ---------- Upload Box ---------- */
+
+.upload-box {
+  position: relative;
+  width: 100%;
+  height: 160px;
+
+  border: 2px dashed rgba(252, 76, 2, 0.6);
+  border-radius: 8px;
+
+  background: rgba(31, 41, 55, 0.6);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  margin-bottom: 20px;
+}
+
+/* Hide actual input */
+.upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Content inside */
+.upload-content {
+  text-align: center;
+  pointer-events: none;
+}
+
+.upload-icon {
+  font-size: 34px;
+  margin-bottom: 10px;
+  color: #fc4c02;
+}
+
+.upload-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fc4c02;
+}
+
+/* Hover effect */
+.upload-box:hover {
+  border-color: #fc4c02;
+  background: rgba(31, 41, 55, 0.85);
+  transform: scale(1.01);
+}
+/* -------------- */
+
+
+/* --- Activity Type Icon Buttons --- */
+
+.activity-type-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.activity-type {
+  flex: 1;
+  padding: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: #1f2937;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.activity-type svg {
+  font-size: 16px;
+}
+
+.activity-type:hover {
+  border-color: rgba(255,255,255,0.18);
+}
+
+.activity-type.active {
+  background: #fc4c02;
+  border-color: #fc4c02;
+  color: white;
+}
+
+.activity-type.active svg {
+  color: white;
+}
+
+/* --------- */
+
+.primary-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+
+  background: #fc4c02;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+
+  margin-top: 20px;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+
+.primary-btn:active {
+  transform: scale(0.97);
+}
+
+.primary-btn:hover {
+  opacity: 0.9;
+}
+
 
 
 .row {
@@ -327,6 +503,7 @@ page {
   border: none;
   font-size: 20px;
   cursor: pointer;
+  color: white;
 }
 
 .close-btn:hover {
