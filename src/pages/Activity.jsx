@@ -101,6 +101,65 @@ export default function Activity() {
         });
         };
 
+    
+    const handleExportCSV = () => {
+        if (!activities.length) {
+            alert("No activities to export.");
+            return;
+        }
+
+        // Define headers
+        const headers = [
+            "title",
+            "description",
+            "type",
+            "intensity",
+            "feel",
+            "date",
+            "time",
+            "miles",
+            "duration",
+            "notes"
+        ];
+
+        // Convert activities to CSV rows
+        const rows = activities.map((activity) => [
+            activity.title || "",
+            activity.description || "",
+            activity.type || "",
+            activity.intensity || "",
+            activity.feel || "",
+            activity.date || "",
+            activity.time || "",
+            activity.miles || "",
+            activity.duration || "",
+            activity.notes || ""
+        ]);
+
+        // Combine header + rows
+        const csvContent =
+            [headers, ...rows]
+            .map((row) =>
+                row
+                .map((field) =>
+                    `"${String(field).replace(/"/g, '""')}"` // escape quotes
+                )
+                .join(",")
+            )
+            .join("\n");
+
+        // Create downloadable file
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "my_running_data.csv";
+        link.click();
+
+        URL.revokeObjectURL(url);
+    };
+
   return (
     <div className="page">
         <h1>Activity</h1>
@@ -118,6 +177,21 @@ export default function Activity() {
                     }}
                 />
             </label>
+
+            <button
+                onClick={handleExportCSV}
+                style={{
+                    backgroundColor: "#1f2937",
+                    color: "white",
+                    border: "none",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    marginBottom: "10px"
+                }}
+                >
+                Export CSV
+            </button>
 
             <button 
                 onClick={clearAllActivities} 
