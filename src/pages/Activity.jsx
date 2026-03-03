@@ -5,6 +5,7 @@ import { generateCoachAlert } from "../utils/coachAlert";
 import { FiEdit2 } from "react-icons/fi";
 import Papa from "papaparse";
 
+
 // Fix for YYYY-MM-DD timezone shift bug
 function parseLocalYMD(input) {
   if (!input) return null;
@@ -103,6 +104,58 @@ export default function Activity() {
         return generateCoachAlert(activities);
     }, [activities]);
 
+    // -------------------------
+    // PR Detection (official-distance only)
+    // -------------------------
+
+    const prs = useMemo(() => {
+
+    let bestMile = { time: Infinity, id: null };
+    let best5k = { time: Infinity, id: null };
+    let best10k = { time: Infinity, id: null };
+
+    for (const a of activities) {
+
+        if (a.type !== "run") continue;
+
+        const miles = Number(a.miles);
+        const duration = Number(a.duration);
+
+        if (!Number.isFinite(miles) || !Number.isFinite(duration)) continue;
+        if (miles <= 0 || duration <= 0) continue;
+
+        // Allow small GPS drift tolerance
+        if (Math.abs(miles - 1.0) <= 0.1) {
+        if (duration < bestMile.time) {
+            bestMile = { time: duration, id: a.id };
+        }
+        }
+
+        if (Math.abs(miles - 3.1) <= 0.25) {
+        if (duration < best5k.time) {
+            best5k = { time: duration, id: a.id };
+        }
+        }
+
+        if (Math.abs(miles - 6.2) <= 0.45) {
+        if (duration < best10k.time) {
+            best10k = { time: duration, id: a.id };
+        }
+        }
+    }
+
+    return { mile: bestMile, fiveK: best5k, tenK: best10k };
+
+    }, [activities]);
+
+    useEffect(() => {
+        console.log("PRS:", prs);
+    }, [prs]);
+
+    const prIds = useMemo(() => {
+        return new Set([prs.mile.id, prs.fiveK.id, prs.tenK.id].filter(Boolean));
+    }, [prs]);
+
     const handleCSVImport = (file) => {
         Papa.parse(file, {
             header: true,
@@ -110,7 +163,7 @@ export default function Activity() {
             complete: function (results) {
             const importedActivities = results.data.map((row) => {
                 return {
-                id: Date.now() + Math.random(),
+                id: crypto.randomUUID(),
                 title: row.title || "",
                 description: row.description || "",
                 type: row.type || "run",
@@ -295,15 +348,21 @@ export default function Activity() {
             return (
                 <div
                     key={a.id}
-                    className={`activity-card ${expandedIndex === index ? "expanded" : ""}`}
-                    onClick={() =>
-                        setExpandedIndex(expandedIndex === index ? null : index)
-                    }
+                    className={`
+                        activity-card
+                        ${expandedIndex === index ? "expanded" : ""}
+                        ${prIds.has(a.id) ? "pr-gold" : ""}
+                    `}
                 >
                 <div className="card-left">
 
+                    {prIds.has(a.id) && (
+                        <div className="pr-badge">🏆 PR</div>
+                    )}
 
                     <div className="meta-row">
+
+                        
                         <span className="meta-date">
                             {a.date
                             ? (() => {
