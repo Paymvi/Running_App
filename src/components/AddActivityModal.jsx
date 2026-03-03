@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiImage, FiUpload } from "react-icons/fi";
 import { FaRunning, FaBiking, FaSwimmingPool } from "react-icons/fa";
 
-export default function AddActivityModal({ isOpen, onClose, onSave }) {
+export default function AddActivityModal({ isOpen, onClose, onSave, initialActivity }) {
+  
   const today = new Date().toISOString().split("T")[0];
 
-  const [form, setForm] = useState({
+  const emptyForm = {
+    id: null,
     title: "",
     description: "",
     type: "run",
@@ -18,8 +20,31 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
     miles: "",
     splits: [{ mph: "", distance: "" }],
     notes: "",
-    photo: null,
-  });
+    photo: null, // will be base64 string
+  };
+
+  const [form, setForm] = useState(emptyForm);
+
+  // When the modal opens, if we're editing, preload the form.
+  // If we're adding, reset to empty defaults.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialActivity) {
+      setForm({
+        ...emptyForm,
+        ...initialActivity,
+        id: initialActivity.id, // keep id
+        date: initialActivity.date || today,
+        splits: initialActivity.splits?.length
+          ? initialActivity.splits
+          : [{ mph: "", distance: "" }],
+      });
+    } else {
+      setForm(emptyForm);
+    }
+  }, [isOpen, initialActivity]);
+
 
   if (!isOpen) return null;
 
@@ -54,16 +79,23 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
 
       <div className="modal slide-in">
 
-        <h2>Manual Activity</h2>
+        <h2>{initialActivity ? "Edit Activity" : "Manual Activity"}</h2>
 
         <button className="close-btn" onClick={onClose}>
           ✕
         </button>
 
-        <input name="title" placeholder="Title your run" onChange={handleChange} />
+        <input
+          name="title"
+          placeholder="Title your run"
+          value={form.title}
+          onChange={handleChange}
+        />
+
         <textarea
           name="description"
           placeholder="How'd it go?"
+          value={form.description}
           onChange={handleChange}
         />
 
@@ -83,20 +115,23 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
         </button>
       </div>
 
-        {form.mode === "timeMiles" && (
-          <>
-            <input
-              name="miles"
-              placeholder="Miles"
-              onChange={handleChange}
-            />
-            <input
-              name="duration"
-              placeholder="Duration (minutes)"
-              onChange={handleChange}
-            />
-          </>
-        )}
+      {form.mode === "timeMiles" && (
+        <>
+          <input
+            name="miles"
+            placeholder="Miles"
+            value={form.miles}
+            onChange={handleChange}
+          />
+
+          <input
+            name="duration"
+            placeholder="Duration (minutes)"
+            value={form.duration}
+            onChange={handleChange}
+          />
+        </>
+      )}
 
         {form.mode === "splits" && (
           <>
@@ -157,19 +192,19 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
 
         {/* Keep these as selects */}
         <div className="row">
-          <select name="type" onChange={handleChange}>
+          <select name="type" value={form.type} onChange={handleChange}>
             <option value="run">🏃‍➡️ Run</option>
             <option value="bike">🚲 Bike</option>
             <option value="swim">🥽 Swim</option>
           </select>
-          <select name="intensity" onChange={handleChange}>
+          <select name="intensity" value={form.intensity} onChange={handleChange}>
             <option value="easy">🟢 Easy</option>
             <option value="tempo">🟡 Tempo</option>
             <option value="intervals">🔴 Intervals</option>
             <option value="long">🟣 Long</option>
           </select>
 
-          <select name="feel" onChange={handleChange}>
+          <select name="feel" value={form.feel} onChange={handleChange}>
             <option value="easy">☺️ Light</option>
             <option value="medium">😎 Steady</option>
             <option value="hard">😤 Tough</option>
@@ -181,9 +216,16 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
           <input
             type="file"
             className="upload-input"
-            onChange={(e) =>
-              setForm({ ...form, photo: e.target.files[0] })
-            }
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setForm({ ...form, photo: reader.result }); // base64 string
+              };
+              reader.readAsDataURL(file);
+            }}
           />
 
           <div className="upload-content">
@@ -194,11 +236,21 @@ export default function AddActivityModal({ isOpen, onClose, onSave }) {
           </div>
         </label>
 
+        {form.photo && (
+          <div style={{ marginTop: 10 }}>
+            <img
+              src={form.photo}
+              alt="preview"
+              style={{ width: "100%", borderRadius: 12 }}
+            />
+          </div>
+        )}
+
         <h3>Activity Stats</h3>
 
         <div className="row">
-          <input type="date" name="date" defaultValue={today} onChange={handleChange} />
-          <input type="time" name="time" onChange={handleChange} />
+          <input type="date" name="date" value={form.date} onChange={handleChange} />
+          <input type="time" name="time" value={form.time} onChange={handleChange} />
         </div>
 
 

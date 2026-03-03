@@ -479,6 +479,28 @@ page {
 }
 
 
+.secondary-btn {
+  width: 100%;
+  /* background: transparent; */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.secondary-btn svg {
+  position: relative;
+  top: 2px; /*Move the icon down 2 pixels*/
+}
+
 
 .row {
   display: flex;

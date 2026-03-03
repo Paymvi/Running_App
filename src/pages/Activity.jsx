@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo } from "react";
 import FloatingButton from "../components/FloatingButton";
 import AddActivityModal from "../components/AddActivityModal";
 import { generateCoachAlert } from "../utils/coachAlert";
+import { FiEdit2 } from "react-icons/fi";
 
 export default function Activity() {
   const [activities, setActivities] = useState([]);
   const [open, setOpen] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(null);
+  const [editingActivity, setEditingActivity] = useState(null);
 
     useEffect(() => {
     const saved = localStorage.getItem("activities");
@@ -18,12 +20,17 @@ export default function Activity() {
     }, []);
 
     const saveActivity = (activity) => {
-        const newActivity = {
-            ...activity,
-            id: Date.now(), // simple unique id
-        };
+        // If it has an id, we UPDATE. If not, we CREATE.
+        const isEditing = !!activity.id;
 
-        const updated = [newActivity, ...activities];
+        let updated;
+        if (isEditing) {
+            updated = activities.map((a) => (a.id === activity.id ? activity : a));
+        } else {
+            const newActivity = { ...activity, id: Date.now() };
+            updated = [newActivity, ...activities];
+        }
+
         updated.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         setActivities(updated);
@@ -160,11 +167,21 @@ export default function Activity() {
 
                 {mph && <div className="mph-badge">{mph} mph</div>}
 
-                {expandedIndex === index && a.notes && (
-                    <div className="private-notes">
-                        <h4>Notes:</h4>
-                        <p>{a.notes}</p>
-                    </div>
+                {expandedIndex === index && (
+                <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+                    <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={(e) => {
+                        e.stopPropagation(); // IMPORTANT: prevents card collapse
+                        setEditingActivity(a);
+                        setOpen(true);
+                    }}
+                    style={{ padding: "10px 12px" }}
+                    >
+                    <FiEdit2 /> Edit
+                    </button>
+                </div>
                 )}
                 
 
@@ -189,12 +206,21 @@ export default function Activity() {
         );
         })}
 
-        <FloatingButton onClick={() => setOpen(true)} />
+        <FloatingButton
+            onClick={() => {
+                setEditingActivity(null);
+                setOpen(true);
+            }}
+        />
 
         <AddActivityModal
-            isOpen={open}
-            onClose={() => setOpen(false)}
-            onSave={saveActivity}
+        isOpen={open}
+        initialActivity={editingActivity}
+        onClose={() => {
+            setOpen(false);
+            setEditingActivity(null);
+        }}
+        onSave={saveActivity}
         />
 
 
