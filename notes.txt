@@ -2,3 +2,7 @@
 
 npm i react-icons
 npm install react-icons
+npm install react-country-flag
+
+For csv parser:
+npm install papaparse

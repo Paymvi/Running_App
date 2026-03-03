@@ -1198,6 +1198,22 @@ page {
 }
 
 
+.import-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  background: #1f2937;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.import-btn:hover {
+  background: #2d3748;
+}
+
+
 .activity-card {
   transition: all 0.25s ease;
   cursor: pointer;

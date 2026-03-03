@@ -3,6 +3,7 @@ import FloatingButton from "../components/FloatingButton";
 import AddActivityModal from "../components/AddActivityModal";
 import { generateCoachAlert } from "../utils/coachAlert";
 import { FiEdit2 } from "react-icons/fi";
+import Papa from "papaparse";
 
 export default function Activity() {
   const [activities, setActivities] = useState([]);
@@ -67,25 +68,74 @@ export default function Activity() {
         return generateCoachAlert(activities);
     }, [activities]);
 
+    const handleCSVImport = (file) => {
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+            const importedActivities = results.data.map((row) => {
+                return {
+                id: Date.now() + Math.random(),
+                title: row.title || "",
+                description: row.description || "",
+                type: row.type || "run",
+                intensity: row.intensity || "easy",
+                feel: row.feel || "medium",
+                date: row.date,
+                time: row.time || "",
+                mode: "timeMiles",
+                duration: row.duration || "",
+                miles: row.miles || "",
+                splits: [{ mph: "", distance: "" }],
+                notes: row.notes || "",
+                photo: null,
+                };
+            });
+
+            const updated = [...importedActivities, ...activities];
+            updated.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            setActivities(updated);
+            localStorage.setItem("activities", JSON.stringify(updated));
+            },
+        });
+        };
+
   return (
     <div className="page">
-      <h1>Activity</h1>
+        <h1>Activity</h1>
 
-        <button 
-            onClick={clearAllActivities} 
-            style={{
-                backgroundColor: "#ff4d4d",
-                color: "white",
-                border: "none",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                marginBottom: "16px"
-            }}
-            >
-            Delete All Activities
-        </button>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <label className="import-btn">
+                Import CSV
+                <input
+                    type="file"
+                    accept=".csv"
+                    hidden
+                    onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) handleCSVImport(file);
+                    }}
+                />
+            </label>
 
+            <button 
+                onClick={clearAllActivities} 
+                style={{
+                    backgroundColor: "#ff4d4d",
+                    color: "white",
+                    border: "none",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    marginBottom: "10px"
+                }}
+                >
+                Delete All Activities
+            </button>
+
+        </div>
+        
 
         <div className={`coach-alert ${coachAlert.toneClass}`}>
             <div className="coach-alert-title">{coachAlert.title}</div>
