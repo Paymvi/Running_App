@@ -348,6 +348,9 @@ export default function Activity() {
             return (
                 <div
                     key={a.id}
+                    onClick={() =>
+                        setExpandedIndex(expandedIndex === index ? null : index)
+                    }
                     className={`
                         activity-card
                         ${expandedIndex === index ? "expanded" : ""}

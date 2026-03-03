@@ -40,6 +40,16 @@ function formatTime(min) {
   const s = Math.round((min - m) * 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 
 
@@ -310,6 +320,7 @@ export default function Profile() {
   );
   const fileInputRef = useRef(null);
   const [showJarHistory, setShowJarHistory] = useState(false);
+  const [selectedPR, setSelectedPR] = useState(null);
 
 
   useEffect(() => {
@@ -646,25 +657,66 @@ const removeAvatar = () => {
         {/* PRs panel (matches sketch box) */}
         <div className="profile-panel pr-panel">
           <div className="panel-title">🎖️ PRs</div>
+          {selectedPR && selectedPR.date && (
+            <div className="pr-selected-date">
+                {selectedPR.label} PR: {formatDate(selectedPR.date)}
+            </div>
+            )}
 
           <div className="pr-table">
             <div className="pr-row">
               <div className="pr-cell label">Mile</div>
-              <div className="pr-cell value">
+                <div
+                className="pr-cell value clickable"
+                onClick={() => {
+                    if (selectedPR?.label === "Mile") {
+                        setSelectedPR(null);
+                    } else {
+                        setSelectedPR({
+                        label: "Mile",
+                        date: prs.mile.date,
+                        });
+                    }
+                }}
+                >
                 {formatTime(prs.mile.time)}
-              </div>
+                </div>
             </div>
             <div className="pr-row">
               <div className="pr-cell label">5K</div>
-              <div className="pr-cell value">
+                <div
+                className="pr-cell value clickable"
+                onClick={() => {
+                    if (selectedPR?.label === "5K") {
+                        setSelectedPR(null);
+                    } else {
+                        setSelectedPR({
+                        label: "5K",
+                        date: prs.fiveK.date,
+                        });
+                    }
+                }}
+                >
                 {formatTime(prs.fiveK.time)}
-              </div>
+                </div>
             </div>
             <div className="pr-row">
               <div className="pr-cell label">10K</div>
-              <div className="pr-cell value">
+                <div
+                className="pr-cell value clickable"
+                    onClick={() => {
+                        if (selectedPR?.label === "10K") {
+                        setSelectedPR(null);
+                    } else {
+                        setSelectedPR({
+                        label: "10K",
+                        date: prs.tenK.date,
+                        });
+                    }
+                }}
+                >
                 {formatTime(prs.tenK.time)}
-              </div>
+                </div>
             </div>
           </div>
 

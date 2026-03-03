@@ -1010,6 +1010,27 @@ page {
   font-weight: 400;
 }
 
+
+.pr-cell.value.clickable {
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.pr-cell.value.clickable:hover {
+  opacity: 0.7;
+}
+
+.pr-selected-date {
+  margin-top: 8px;
+  margin-bottom: 12px;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+
+
+
+
 /* MONTHLY SNAPSHOT like sketch cards */
 .profile-section {
   margin-top: 10px;
