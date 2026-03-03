@@ -523,6 +523,27 @@ page {
   top: 2px; /*Move the icon down 2 pixels*/
 }
 
+
+/* Delete button */
+.danger-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 80, 80, 0.35);
+  background: rgba(255, 80, 80, 0.08);
+  color: #ff6b6b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 12px;
+  margin-bottom: 10px;
+}
+
+.danger-btn:hover {
+  background: rgba(255, 80, 80, 0.15);
+  border-color: rgba(255, 80, 80, 0.55);
+}
+
+
 .edit-row {
   display: flex;
   justify-content: flex-end;

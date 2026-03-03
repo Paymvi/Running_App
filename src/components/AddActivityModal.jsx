@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiImage, FiUpload } from "react-icons/fi";
 import { FaRunning, FaBiking, FaSwimmingPool } from "react-icons/fa";
 
-export default function AddActivityModal({ isOpen, onClose, onSave, initialActivity }) {
+export default function AddActivityModal({ isOpen, onClose, onSave, initialActivity, onDelete }) {
   
   const today = new Date().toISOString().split("T")[0];
 
@@ -74,9 +74,6 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     <>
       <div className="overlay" onClick={onClose}></div>
         
-
-
-
       <div className="modal slide-in">
 
         <h2>{initialActivity ? "Edit Activity" : "Manual Activity"}</h2>
@@ -262,9 +259,26 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
           onChange={handleChange}
         />
 
+        {/* Save button */}
         <button className="primary-btn" onClick={handleSubmit}>
           Save Activity
         </button>
+
+        {/* Delete button */}
+        {initialActivity && (
+          <button
+            type="button"
+            className="danger-btn"
+            onClick={() => {
+              if (!form.id) return;
+              onDelete(form.id);
+            }}
+          >
+            Delete Activity
+          </button>
+        )}
+
+
       </div>
     </>
   );
