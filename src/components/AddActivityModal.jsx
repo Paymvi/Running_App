@@ -2,9 +2,17 @@ import React, { useState, useEffect } from "react";
 import { FiImage, FiUpload } from "react-icons/fi";
 import { FaRunning, FaBiking, FaSwimmingPool } from "react-icons/fa";
 
+function getLocalTodayYMD() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function AddActivityModal({ isOpen, onClose, onSave, initialActivity, onDelete }) {
-  
-  const today = new Date().toISOString().split("T")[0];
+
+  const today = getLocalTodayYMD();
 
   const emptyForm = {
     id: null,

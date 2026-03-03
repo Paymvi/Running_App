@@ -5,6 +5,32 @@ import { generateCoachAlert } from "../utils/coachAlert";
 import { FiEdit2 } from "react-icons/fi";
 import Papa from "papaparse";
 
+// Fix for YYYY-MM-DD timezone shift bug
+function parseLocalYMD(input) {
+  if (!input) return null;
+
+  if (input instanceof Date) return input;
+
+  // Remove time if present
+  const clean = String(input).split("T")[0];
+
+  // Case 1: YYYY-MM-DD
+  if (clean.includes("-")) {
+    const [y, m, d] = clean.split("-").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+
+  // Case 2: M/D/YYYY or MM/DD/YYYY
+  if (clean.includes("/")) {
+    const [m, d, y] = clean.split("/").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+
+  return null;
+}
+
 export default function Activity() {
   const [activities, setActivities] = useState([]);
   const [open, setOpen] = useState(false);
@@ -15,7 +41,7 @@ export default function Activity() {
     const saved = localStorage.getItem("activities");
     if (saved) {
         const parsed = JSON.parse(saved);
-        parsed.sort((a, b) => new Date(b.date) - new Date(a.date));
+        parsed.sort((a, b) => parseLocalYMD(b.date) - parseLocalYMD(a.date));
         setActivities(parsed);
     }
     }, []);
@@ -32,7 +58,7 @@ export default function Activity() {
             updated = [newActivity, ...activities];
         }
 
-        updated.sort((a, b) => new Date(b.date) - new Date(a.date));
+        updated.sort((a, b) => parseLocalYMD(b.date) - parseLocalYMD(a.date));
 
         setActivities(updated);
         localStorage.setItem("activities", JSON.stringify(updated));
@@ -102,7 +128,7 @@ export default function Activity() {
             });
 
             const updated = [...importedActivities, ...activities];
-            updated.sort((a, b) => new Date(b.date) - new Date(a.date));
+            updated.sort((a, b) => parseLocalYMD(b.date) - parseLocalYMD(a.date));
 
             setActivities(updated);
             localStorage.setItem("activities", JSON.stringify(updated));
@@ -280,12 +306,15 @@ export default function Activity() {
                     <div className="meta-row">
                         <span className="meta-date">
                             {a.date
-                            ? new Date(a.date).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                                })
-                            : ""}
+                            ? (() => {
+                                const d = parseLocalYMD(a.date);
+                                if (!d || isNaN(d)) return "";
+                                return d.toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                });
+                                })() : ""}
                         </span>
                     </div>
 
