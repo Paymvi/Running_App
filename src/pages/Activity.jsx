@@ -168,19 +168,30 @@ export default function Activity() {
                 {mph && <div className="mph-badge">{mph} mph</div>}
 
                 {expandedIndex === index && (
-                <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
-                    <button
-                    type="button"
-                    className="secondary-btn"
-                    onClick={(e) => {
-                        e.stopPropagation(); // IMPORTANT: prevents card collapse
-                        setEditingActivity(a);
-                        setOpen(true);
-                    }}
-                    style={{ padding: "10px 12px" }}
-                    >
-                    <FiEdit2 /> Edit
-                    </button>
+                <div style={{ marginTop: 16 }}>
+                    
+
+                    {a.notes && (
+                    <div className="expanded-section private-notes" >
+                        <strong>Notes</strong>
+                        <p>{a.notes}</p>
+                    </div>
+                    )}
+
+                    <div className="edit-row" style={{ marginTop: 6 }}>
+                        <button
+                            type="button"
+                            className="tertiary-btn"
+                            onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingActivity(a);
+                            setOpen(true);
+                            }}
+                        >
+                            <FiEdit2 /> Edit
+                        </button>
+                    </div>
+
                 </div>
                 )}
                 

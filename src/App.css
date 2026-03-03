@@ -470,6 +470,7 @@ page {
   transition: transform 0.08s ease, opacity 0.15s ease;
 }
 
+/* Bright orange button */
 .primary-btn:active {
   transform: scale(0.97);
 }
@@ -478,12 +479,13 @@ page {
   opacity: 0.9;
 }
 
-
+/* Unused so far */
 .secondary-btn {
   width: 100%;
   /* background: transparent; */
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.09);
   border: 1px solid var(--border);
+  /* border: 1px solid #293544; */
   color: var(--text);
   padding: 10px 12px;
   border-radius: 10px;
@@ -492,13 +494,40 @@ page {
 }
 
 .secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.secondary-btn svg {
+
+/* For the edit button */
+.tertiary-btn {
+  text-align: right;
+  background: transparent;
+  color: var(--text);
+  opacity: 0.5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  margin-bottom: 0px;
+  padding: 10px 14px 0px 10px;  /*This bremovees the bottom space*/
+}
+
+.tertiary-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+
+.tertiary-btn svg {
   position: relative;
   top: 2px; /*Move the icon down 2 pixels*/
+}
+
+.edit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  margin-bottom: 0;  /* remove bottom space */
 }
 
 
@@ -1180,12 +1209,15 @@ page {
 
 .private-notes {
   margin-top: 12px;
-  padding: 1px 12px 12px 12px; /* smaller top padding */
+  padding: 14px; 
   background: rgba(255,255,255,0.05);
   border-radius: 10px;
   font-size: 14px;
   opacity: 0.9;
+  /* border: 1px solid rgba(255,255,255,0.06); */
+  border: 1px solid #293544;
 }
+
 
 .description-preview {
   font-size: 13px;

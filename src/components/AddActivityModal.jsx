@@ -258,6 +258,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
         <textarea
           name="notes"
           placeholder="Private Notes"
+          value={form.notes}
           onChange={handleChange}
         />
 
