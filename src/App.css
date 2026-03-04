@@ -1125,6 +1125,36 @@ page {
   font-weight: 700;
 }
 
+
+.trend {
+  font-size: 13px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.trend-small {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trend-up {
+  color: #22c55e; /* green */
+}
+
+.trend-down {
+  color: #ef4444; /* red */
+}
+
+.trend-neutral {
+  color: #9ca3af;
+}
+
+
+
+
+
+
 /* Easy % Pill */
 
 .easy-pill {

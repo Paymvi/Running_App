@@ -536,77 +536,91 @@ const removeAvatar = () => {
     const jarCount = completedJars.length;
   
 
-  // -------------------------
-  // Monthly snapshot:
-  // mileage, avg easy, % easy, longest
-  // -------------------------
- const monthlySnapshot = useMemo(() => {
-  const map = new Map();
+    // -------------------------
+    // Monthly snapshot:
+    // mileage, avg easy, % easy, longest
+    // -------------------------
+    const monthlySnapshot = useMemo(() => {
+    const map = new Map();
 
-  activities.forEach((a) => {
-    // Only count RUN activities (prevents bike/swim inflation)
-    if (a.type && a.type !== "run") return;
+    activities.forEach((a) => {
+        const d = parseDateSafe(a.date);
+        if (!d) return;
 
-    const d = parseDateSafe(a.date);
-    if (!d) return;
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
 
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (!map.has(key)) {
+        map.set(key, {
+            label:
+            d.toLocaleString("en-US", { month: "short" }) +
+            " " +
+            d.getFullYear(),
+            mileage: 0,
+            longest: 0,
+            easyMiles: 0,
+            totalMiles: 0,
+            easyPaceSum: 0,
+            easyPaceCount: 0,
+            sortKey: new Date(d.getFullYear(), d.getMonth(), 1).getTime(),
+        });
+        }
 
-    if (!map.has(key)) {
-      map.set(key, {
-        label:
-          d.toLocaleString("en-US", { month: "short" }) +
-          " " +
-          d.getFullYear(),
-        mileage: 0,
-        longest: 0,
-        easyMiles: 0,
-        totalMiles: 0,
-        easyPaceSum: 0,
-        easyPaceCount: 0,
-        sortKey: new Date(d.getFullYear(), d.getMonth(), 1).getTime(),
-      });
-    }
+        const m = map.get(key);
 
-    const m = map.get(key);
+        const miles = Number(a.miles) || 0;
+        const duration = parseDurationMinutes(a.duration);
 
-    const miles = Number(a.miles) || 0;
-    const duration = parseDurationMinutes(a.duration);
+        m.mileage += miles;
+        m.totalMiles += miles;
 
-    m.mileage += miles;
-    m.totalMiles += miles;
+        if (miles > m.longest) m.longest = miles;
 
-    if (miles > m.longest) m.longest = miles;
+        if (a.intensity === "easy" && miles > 0 && duration > 0) {
+        m.easyMiles += miles;
+        m.easyPaceSum += duration / miles;
+        m.easyPaceCount += 1;
+        }
+    });
 
-    if (a.intensity === "easy" && miles > 0 && duration > 0) {
-      m.easyMiles += miles;
-      m.easyPaceSum += duration / miles;
-      m.easyPaceCount += 1;
-    }
-  });
+    const arr = Array.from(map.values())
+        .sort((a, b) => b.sortKey - a.sortKey)
+        // .slice(0, 12);
 
-  const arr = Array.from(map.values())
-    .sort((a, b) => b.sortKey - a.sortKey)
-    // .slice(0, 12);
+    return arr.map((m, index) => {
+        const avgEasy = m.easyPaceCount
+        ? formatTime(m.easyPaceSum / m.easyPaceCount)
+        : "-";
 
-  return arr.map((m) => {
-    const avgEasy = m.easyPaceCount
-      ? formatTime(m.easyPaceSum / m.easyPaceCount)
-      : "-";
+        const pctEasy = m.totalMiles
+        ? Math.round((m.easyMiles / m.totalMiles) * 100)
+        : 0;
 
-    const pctEasy = m.totalMiles
-      ? Math.round((m.easyMiles / m.totalMiles) * 100)
-      : 0;
+        const prev = arr[index + 1];
 
-    return {
-      month: m.label,
-      mileage: m.mileage.toFixed(1),
-      avgEasy,
-      pctEasy,
-      longest: m.longest.toFixed(1),
-    };
-  });
-}, [activities]);
+        let mileageDelta = null;
+        let easyDelta = null;
+
+        if (prev) {
+        mileageDelta = m.mileage - prev.mileage;
+
+        const prevPct = prev.totalMiles
+            ? Math.round((prev.easyMiles / prev.totalMiles) * 100)
+            : 0;
+
+        easyDelta = pctEasy - prevPct;
+        }
+
+        return {
+        month: m.label,
+        mileage: m.mileage.toFixed(1),
+        avgEasy,
+        pctEasy,
+        longest: m.longest.toFixed(1),
+        mileageDelta,
+        easyDelta,
+        };
+    });
+    }, [activities]);
 
   return (
     <div className="profile-page">
@@ -817,7 +831,24 @@ const removeAvatar = () => {
 
                 {/* HERO METRIC */}
                 <div className="month-hero">
-                    {m.mileage} mi
+                {m.mileage} mi
+
+                {m.mileageDelta !== null && (
+                    <div
+                    className={`trend ${
+                        m.mileageDelta > 0
+                        ? "trend-up"
+                        : m.mileageDelta < 0
+                        ? "trend-down"
+                        : "trend-neutral"
+                    }`}
+                    >
+                    {m.mileageDelta > 0 && "▲ "}
+                    {m.mileageDelta < 0 && "▼ "}
+                    {m.mileageDelta !== 0 && `${Math.abs(m.mileageDelta).toFixed(1)} mi`}
+                    {m.mileageDelta === 0 && "No change"}
+                    </div>
+                )}
                 </div>
 
                 {/* Easy % with color meaning */}
@@ -825,6 +856,22 @@ const removeAvatar = () => {
                     <span className="easy-percent">{m.pctEasy}% Easy</span>
                     <span className="easy-label">{zone.label}</span>
                 </div>
+
+                    {/* {m.easyDelta !== null && (
+                    <div
+                        className={`trend-small ${
+                        m.easyDelta > 0
+                            ? "trend-up"
+                            : m.easyDelta < 0
+                            ? "trend-down"
+                            : "trend-neutral"
+                        }`}
+                    >
+                        {m.easyDelta > 0 && "▲ "}
+                        {m.easyDelta < 0 && "▼ "}
+                        {m.easyDelta !== 0 && `${Math.abs(m.easyDelta)}% vs last month`}
+                    </div>
+                    )} */}
 
                 <div className="month-secondary">
                     <div className="metric-row">
