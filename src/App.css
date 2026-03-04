@@ -713,6 +713,21 @@ page {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
+.run-calendar-card .react-calendar__tile--now {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.run-calendar-card .react-calendar__tile--now::after {
+  content: "";
+  position: absolute;
+  bottom: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fc4c02;
+}
+
 /* legend */
 .run-calendar-legend {
   display: flex;
