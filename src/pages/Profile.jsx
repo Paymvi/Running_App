@@ -405,12 +405,13 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
   // SVG coord system
     const H = 220;
     const pad = { l: 42, r: 18, t: 18, b: 34 };
+    const axisW = pad.l; // fixed y-axis column width
 
     const innerH = H - pad.t - pad.b;
 
     // spacing per week (controls how wide the chart is)
-    const slot = 54; // px per week (tweak to taste)
-    const visibleWeeks = 13; // about 3 months
+    const slot = 20; // px per week (tweak to taste)
+    const visibleWeeks = 4; // about 3 months
     // const W = Math.max(520, pad.l + pad.r + (weeks.length - 1) * slot);
     const W = pad.l + pad.r + weeks.length * slot;
 
@@ -515,57 +516,69 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
         {/* <div className="weekly-title">Weekly mileage</div> */}
       </div>
 
-        <div
-            className="weekly-chart-scroll"
-            ref={scrollerRef}
-            style={{
-                width: "100%",
-                overflowX: "auto"
-            }}
-        >
-        <svg
-        width={W}
-        height={H}
-        viewBox={`0 0 ${W} ${H}`}
-        className="weekly-svg"
-        shapeRendering="geometricPrecision"
-        role="img"
-        aria-label="Weekly mileage chart"
-        >
-          <defs>
-            <linearGradient id="weeklyFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(252,76,2,0.40)" />
-              <stop offset="100%" stopColor="rgba(252,76,2,0.06)" />
-            </linearGradient>
-          </defs>
+        
+    <div className="weekly-chart-row">
+        {/* LEFT: sticky Y axis */}
+        <div className="weekly-yaxis">
+            <svg
+            width={axisW}
+            height={H}
+            viewBox={`0 0 ${axisW} ${H}`}
+            className="weekly-axis-svg"
+            aria-hidden="true"
+            >
+            {/* top label */}
+            <text x="8" y={pad.t} className="weekly-axis">
+                {Math.round(visibleMax)} mi
+            </text>
 
-          {/* y-axis labels (rough) */}
-          <text x="8" y={pad.t} className="weekly-axis">
-            {Math.round(visibleMax)} mi
-          </text>
-          <text x="12" y={pad.t + innerH} className="weekly-axis">
+            {/* bottom label */}
+            <text
+                x="12"
+                y={pad.t + innerH - 2}
+                className="weekly-axis"
+                dominantBaseline="middle"
+            >
             0 mi
-          </text>
+            </text>
+            
+            </svg>
+        </div>
 
-          {/* area */}
-          {points.length > 0 && (
-            <path d={areaPath} fill="url(#weeklyFill)" />
-          )}
+        {/* RIGHT: scrolling chart */}
+        <div className="weekly-chart-scroll" ref={scrollerRef}>
+            <svg
+            width={W}
+            height={H}
+            viewBox={`0 0 ${W} ${H}`}
+            className="weekly-svg"
+            shapeRendering="geometricPrecision"
+            role="img"
+            aria-label="Weekly mileage chart"
+            >
+            <defs>
+                <linearGradient id="weeklyFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgba(252,76,2,0.40)" />
+                <stop offset="100%" stopColor="rgba(252,76,2,0.06)" />
+                </linearGradient>
+            </defs>
 
-          {/* line */}
-          {points.length > 0 && (
-            <path
+            {/* area */}
+            {points.length > 0 && <path d={areaPath} fill="url(#weeklyFill)" />}
+
+            {/* line */}
+            {points.length > 0 && (
+                <path
                 d={linePath}
                 fill="none"
                 stroke="rgb(252,76,2)"
-                strokeWidth="3"
-                className="weekly-line"
-            />
-          )}
+                strokeWidth="2.5"
+                />
+            )}
 
-          {/* selected vertical marker */}
-          {selectedPoint && (
-            <line
+            {/* selected marker */}
+            {selectedPoint && (
+                <line
                 className="weekly-marker"
                 x1="0"
                 x2="0"
@@ -574,101 +587,68 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
                 transform={`translate(${selectedPoint.x},0)`}
                 stroke="rgba(252,76,2,0.85)"
                 strokeWidth="2"
-            />
-          )}
-
-          {/* dots */}
-          {points.map((p) => {
-            const isSel = p.i === selectedIndex;
-            return (
-              <g
-                key={p.i}
-                className="weekly-dot clickable"
-                onClick={() => onSelect?.(p.i)}
-              >
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={isSel ? 8 : 6}
-                  className="weekly-circle"
-                  fill={isSel ? "rgb(252,76,2)" : "rgba(252,76,2,0.35)"}
-                  stroke="rgb(252,76,2)"
-                  strokeWidth={isSel ? 2 : 1.5}
                 />
-              </g>
-            );
-          })}
+            )}
 
-          {/* Month labels */}
-            {/* {weeks.map((w, i) => {
-            const prev = weeks[i - 1];
-            const isNewMonth =
-                !prev ||
-                new Date(prev.weekStart).getMonth() !==
-                new Date(w.weekStart).getMonth();
-
-            if (!isNewMonth) return null;
-
-            const x =
-                pad.l +
-                (weeks.length === 1
-                ? innerW / 2
-                : (i / (weeks.length - 1)) * innerW);
-
-            const label = new Date(w.weekStart)
-                .toLocaleString("en-US", { month: "short" })
-                .toUpperCase();
-
-            return (
-                <text
-                key={"month-" + i}
-                x={x}
-                y={H - 8}
-                textAnchor="middle"
-                className="weekly-month"
+            {/* dots */}
+            {points.map((p) => {
+                const isSel = p.i === selectedIndex;
+                return (
+                <g
+                    key={p.i}
+                    className="weekly-dot clickable"
+                    onClick={() => onSelect?.(p.i)}
                 >
-                {label}
-                </text>
-            );
-            })} */}
-
-            {/* Month labels (first week of each month) */}
-            {weeks.map((w, i) => {
-            const prev = weeks[i - 1];
-            const wDate = w.weekStart;
-            const prevDate = prev?.weekStart;
-
-            const isNewMonth =
-                !prevDate || wDate.getMonth() !== prevDate.getMonth() || wDate.getFullYear() !== prevDate.getFullYear();
-
-            if (!isNewMonth) return null;
-
-            const x = pad.l + i * slot;
-            const label = wDate
-                .toLocaleString("en-US", { month: "short" })
-                .toUpperCase();
-
-            return (
-                <text
-                key={`m-${i}`}
-                x={x}
-                y={H - 8}
-                textAnchor="middle"
-                className="weekly-month"
-                >
-                {label}
-                </text>
-            );
+                    <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={isSel ? 6 : 4}
+                    className="weekly-circle"
+                    fill={isSel ? "rgb(252,76,2)" : "rgba(252,76,2,0.35)"}
+                    stroke="rgb(252,76,2)"
+                    strokeWidth={isSel ? 2 : 1.5}
+                    />
+                </g>
+                );
             })}
 
-        </svg>
+            {/* Month labels */}
+            {weeks.map((w, i) => {
+                const prev = weeks[i - 1];
+                const wDate = w.weekStart;
+                const prevDate = prev?.weekStart;
 
-        {weeks.length === 0 && (
-          <div className="weekly-empty">
-            No weekly data yet — log a run and we’ll flex 📈
-          </div>
-        )}
-      </div>
+                const isNewMonth =
+                !prevDate ||
+                wDate.getMonth() !== prevDate.getMonth() ||
+                wDate.getFullYear() !== prevDate.getFullYear();
+
+                if (!isNewMonth) return null;
+
+                const x = pad.l + i * slot;
+                const label = wDate
+                .toLocaleString("en-US", { month: "short" })
+                .toUpperCase();
+
+                return (
+                <text
+                    key={`m-${i}`}
+                    x={x}
+                    y={H - 8}
+                    textAnchor="middle"
+                    className="weekly-month"
+                >
+                    {label}
+                </text>
+                );
+            })}
+            </svg>
+        </div>
+    </div>
+
+
+
+        
     </div>
   );
 }

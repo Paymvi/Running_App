@@ -1294,13 +1294,32 @@ page {
   overflow-x: auto;
   overflow-y: hidden;
   width: 100%;
+  flex: 1 1 auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
 }
 
 .weekly-svg {
-  min-width: 520px;
   display: block;
-  
 }
+
+.weekly-chart-row {
+  display: flex;
+  /* align-items: stretch; */
+  align-items: flex-start;
+  width: 100%;
+}
+
+.weekly-yaxis {
+  flex: 0 0 auto;
+  width: 42px; /* must match pad.l */
+}
+
+.weekly-axis-svg {
+  display: block;
+  min-width: 0;
+}
+
 
 
 
