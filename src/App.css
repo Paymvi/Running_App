@@ -1184,6 +1184,75 @@ page {
 }
 
 
+/* For the weekly mileage */
+.weekly-header {
+  margin-bottom: 10px;
+}
+
+.weekly-header-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.weekly-stats-row {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.weekly-stat {
+  min-width: 120px;
+}
+
+.weekly-stat-label {
+  opacity: 0.75;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.weekly-stat-value {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.weekly-card {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.weekly-title {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.weekly-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.weekly-axis {
+  fill: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+
+.weekly-empty {
+  opacity: 0.75;
+  padding: 8px 2px;
+}
+
+.weekly-dot {
+  cursor: pointer;
+}
+
+
+
+
+
 .trend {
   font-size: 13px;
   margin-top: 4px;

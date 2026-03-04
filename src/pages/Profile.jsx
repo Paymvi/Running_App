@@ -108,6 +108,55 @@ function parseDurationMinutes(val) {
   return isFinite(n) ? n : 0;
 }
 
+// -------------------------
+// WEEK HELPERS (Mon -> Sun)
+// -------------------------
+function startOfWeekMonday(dateObj) {
+  const d = new Date(dateObj);
+  d.setHours(0, 0, 0, 0);
+
+  // JS: Sun=0, Mon=1, ... Sat=6
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day; // move back to Monday
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function addDays(dateObj, days) {
+  const d = new Date(dateObj);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function formatWeekRange(startDateObj) {
+  const end = addDays(startDateObj, 6);
+  const sameMonth = startDateObj.getMonth() === end.getMonth();
+  const sameYear = startDateObj.getFullYear() === end.getFullYear();
+
+  const startStr = startDateObj.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+  });
+
+  const endStr = end.toLocaleDateString("en-US", {
+    month: sameMonth ? undefined : "long",
+    day: "numeric",
+  });
+
+  // Optional: if weeks can span years (rare), add year
+  const yearStr = sameYear ? "" : `, ${end.getFullYear()}`;
+
+  return `${startStr} - ${endStr}${yearStr}`;
+}
+
+function formatHoursMinsFromMinutes(totalMinutes) {
+  if (!isFinite(totalMinutes)) return "-";
+  const mins = Math.round(totalMinutes);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h ${m}m`;
+}
+
 
 
 
@@ -341,6 +390,135 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
 }
 
 
+function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
+  // SVG coord system
+  const W = 520;
+  const H = 220;
+  const pad = { l: 42, r: 18, t: 18, b: 34 };
+
+  const innerW = W - pad.l - pad.r;
+  const innerH = H - pad.t - pad.b;
+
+  const maxMiles = Math.max(4, ...weeks.map((w) => w.miles ?? 0)); // at least 4 so flat weeks still show
+
+  const points = useMemo(() => {
+    if (!weeks.length) return [];
+
+    return weeks.map((w, i) => {
+      const x =
+        pad.l + (weeks.length === 1 ? innerW / 2 : (i / (weeks.length - 1)) * innerW);
+
+      const y =
+        pad.t + (1 - (w.miles || 0) / maxMiles) * innerH;
+
+      return { x, y, miles: w.miles || 0, i };
+    });
+  }, [weeks, maxMiles, innerW, innerH]);
+
+  const linePath = useMemo(() => {
+    if (points.length === 0) return "";
+    return points
+      .map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+      .join(" ");
+  }, [points]);
+
+  const areaPath = useMemo(() => {
+    if (points.length === 0) return "";
+    const bottomY = pad.t + innerH;
+    const start = points[0];
+    const end = points[points.length - 1];
+    return `
+      M ${start.x.toFixed(1)} ${bottomY.toFixed(1)}
+      L ${start.x.toFixed(1)} ${start.y.toFixed(1)}
+      ${points
+        .slice(1)
+        .map((p) => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+        .join(" ")}
+      L ${end.x.toFixed(1)} ${bottomY.toFixed(1)}
+      Z
+    `;
+  }, [points, innerH, pad.t]);
+
+  const selectedPoint = points[selectedIndex] || null;
+
+  return (
+    <div className="weekly-card">
+      <div className="weekly-top">
+        <div className="weekly-title">Weekly mileage</div>
+      </div>
+
+      <div className="weekly-chart-wrap">
+        <svg viewBox={`0 0 ${W} ${H}`} className="weekly-svg" role="img" aria-label="Weekly mileage chart">
+          <defs>
+            <linearGradient id="weeklyFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(252,76,2,0.40)" />
+              <stop offset="100%" stopColor="rgba(252,76,2,0.06)" />
+            </linearGradient>
+          </defs>
+
+          {/* y-axis labels (rough) */}
+          <text x="8" y={pad.t + 10} className="weekly-axis">
+            {Math.round(maxMiles)} mi
+          </text>
+          <text x="12" y={pad.t + innerH} className="weekly-axis">
+            0 mi
+          </text>
+
+          {/* area */}
+          {points.length > 0 && (
+            <path d={areaPath} fill="url(#weeklyFill)" />
+          )}
+
+          {/* line */}
+          {points.length > 0 && (
+            <path d={linePath} fill="none" stroke="rgb(252,76,2)" strokeWidth="3" />
+          )}
+
+          {/* selected vertical marker */}
+          {selectedPoint && (
+            <line
+              x1={selectedPoint.x}
+              x2={selectedPoint.x}
+              y1={pad.t}
+              y2={pad.t + innerH}
+              stroke="rgba(252,76,2,0.85)"
+              strokeWidth="2"
+            />
+          )}
+
+          {/* dots */}
+          {points.map((p) => {
+            const isSel = p.i === selectedIndex;
+            return (
+              <g
+                key={p.i}
+                className="weekly-dot clickable"
+                onClick={() => onSelect?.(p.i)}
+              >
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={isSel ? 8 : 6}
+                  fill={isSel ? "rgb(252,76,2)" : "rgba(252,76,2,0.35)"}
+                  stroke="rgb(252,76,2)"
+                  strokeWidth={isSel ? 2 : 1.5}
+                />
+              </g>
+            );
+          })}
+        </svg>
+
+        {weeks.length === 0 && (
+          <div className="weekly-empty">
+            No weekly data yet — log a run and we’ll flex 📈
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 
 function getEasyZone(pct) {
   if (pct < 50) {
@@ -379,6 +557,7 @@ export default function Profile() {
   const [showJarHistory, setShowJarHistory] = useState(false);
   const [selectedPR, setSelectedPR] = useState(null);
   const [showTrends, setShowTrends] = useState(true);
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
   
 
 
@@ -624,6 +803,89 @@ const removeAvatar = () => {
     });
     }, [activities]);
 
+    
+    // -------------------------
+    // Weekly snapshot (Mon -> Sun)
+    // miles + time + elevation gain (if present)
+    // -------------------------
+    const weeklySnapshot = useMemo(() => {
+    const map = new Map();
+
+    activities.forEach((a) => {
+        // only runs
+        if (a.type && a.type !== "run") return;
+
+        const d = parseDateSafe(a.date);
+        if (!d) return;
+
+        const weekStart = startOfWeekMonday(d);
+        const key = weekStart.toISOString().slice(0, 10); // YYYY-MM-DD (start of week)
+
+        if (!map.has(key)) {
+        map.set(key, {
+            weekStart, // Date
+            miles: 0,
+            minutes: 0,
+            elevationFt: 0,
+        });
+        }
+
+        const w = map.get(key);
+
+        const miles = Number(a.miles) || 0;
+        const minutes = parseDurationMinutes(a.duration);
+
+        // If you don’t store elevation, this will stay 0.
+        // If later you add a.elevationGainFt or a.elevation_ft, this will auto-work.
+        const elevation =
+        Number(a.elevationGainFt ?? a.elevation_ft ?? a.elevationFt ?? a.elevation_gain_ft) || 0;
+
+        w.miles += miles;
+        w.minutes += minutes;
+        w.elevationFt += elevation;
+    });
+
+    // sort ascending by weekStart
+    const arr = Array.from(map.values()).sort((a, b) => a.weekStart - b.weekStart);
+
+    // show last ~12 weeks (tweak if you want more)
+    const sliced = arr.slice(Math.max(0, arr.length - 12));
+
+    return sliced.map((w) => ({
+        label: formatWeekRange(w.weekStart),
+        weekStart: w.weekStart,
+        miles: Number(w.miles.toFixed(1)),
+        minutes: Math.round(w.minutes),
+        elevationFt: Math.round(w.elevationFt),
+    }));
+    }, [activities]);
+
+    const selectedWeek =
+    selectedWeekIndex != null ? weeklySnapshot[selectedWeekIndex] : null;
+
+    const isThisWeek = useMemo(() => {
+        if (!selectedWeek?.weekStart) return false;
+
+        const now = new Date();
+        const thisWeekStart = startOfWeekMonday(now);
+
+        return (
+            selectedWeek.weekStart.toISOString().slice(0, 10) ===
+            thisWeekStart.toISOString().slice(0, 10)
+        );
+    }, [selectedWeek]);
+
+    useEffect(() => {
+    if (!weeklySnapshot.length) {
+        setSelectedWeekIndex(null);
+        return;
+    }
+
+    // always default to newest week
+    setSelectedWeekIndex(weeklySnapshot.length - 1);
+    }, [weeklySnapshot]);
+
+
   return (
     <div className="profile-page">
 
@@ -819,84 +1081,122 @@ const removeAvatar = () => {
 
       </div>
 
-      {/* MONTHLY SNAPSHOT */}
-      <div className="profile-section">
+    {/* MONTHLY SNAPSHOT */}
+        <div className="profile-section">
 
-        <h2
-            className="section-title clickable"
-            onClick={() => setShowTrends((prev) => !prev)}
-        >
-            Monthly snapshot
-        </h2>
+            <h2
+                className="section-title clickable"
+                onClick={() => setShowTrends((prev) => !prev)}
+            >
+                Monthly snapshot
+            </h2>
 
-        <div className="month-snap-row">
-          {monthlySnapshot.map((m, i) => {
-            const zone = getEasyZone(m.pctEasy);
+            <div className="month-snap-row">
+            {monthlySnapshot.map((m, i) => {
+                const zone = getEasyZone(m.pctEasy);
 
-            return (
-                <div key={i} className="month-card">
-                <div className="month-title">{m.month}</div>
+                return (
+                    <div key={i} className="month-card">
+                    <div className="month-title">{m.month}</div>
 
-                {/* HERO METRIC */}
-                <div className="month-hero">
-                {m.mileage} mi
+                    {/* HERO METRIC */}
+                    <div className="month-hero">
+                    {m.mileage} mi
 
-                {showTrends && m.mileageDelta !== null && (
-                <div
-                    className={`trend ${
-                    m.mileageDelta > 0
-                        ? "trend-up"
-                        : m.mileageDelta < 0
-                        ? "trend-down"
-                        : "trend-neutral"
-                    }`}
-                >
-                    {m.mileageDelta > 0 && "▲ "}
-                    {m.mileageDelta < 0 && "▼ "}
-                    {m.mileageDelta !== 0 && `${Math.abs(m.mileageDelta).toFixed(1)} mi`}
-                    {m.mileageDelta === 0 && "No change"}
-                </div>
-                )}
-                </div>
-
-                {/* Easy % with color meaning */}
-                <div className={`easy-pill ${zone.className}`}>
-                    <span className="easy-percent">{m.pctEasy}% Easy</span>
-                    <span className="easy-label">{zone.label}</span>
-                </div>
-
-                    {/* {showTrends && m.easyDelta !== null && (
+                    {showTrends && m.mileageDelta !== null && (
                     <div
-                        className={`trend-small ${
-                        m.easyDelta > 0
+                        className={`trend ${
+                        m.mileageDelta > 0
                             ? "trend-up"
-                            : m.easyDelta < 0
+                            : m.mileageDelta < 0
                             ? "trend-down"
                             : "trend-neutral"
                         }`}
                     >
-                        {m.easyDelta > 0 && "▲ "}
-                        {m.easyDelta < 0 && "▼ "}
-                        {m.easyDelta !== 0 && `${Math.abs(m.easyDelta)}% vs last month`}
+                        {m.mileageDelta > 0 && "▲ "}
+                        {m.mileageDelta < 0 && "▼ "}
+                        {m.mileageDelta !== 0 && `${Math.abs(m.mileageDelta).toFixed(1)} mi`}
+                        {m.mileageDelta === 0 && "No change"}
                     </div>
-                    )} */}
-
-                <div className="month-secondary">
-                    <div className="metric-row">
-                    <span>Avg Easy Pace</span>
-                    <span>{m.avgEasy}</span>
+                    )}
                     </div>
 
-                    <div className="metric-row">
-                    <span>Longest Run</span>
-                    <span>{m.longest} mi</span>
+                    {/* Easy % with color meaning */}
+                    <div className={`easy-pill ${zone.className}`}>
+                        <span className="easy-percent">{m.pctEasy}% Easy</span>
+                        <span className="easy-label">{zone.label}</span>
                     </div>
-                </div>
-                </div>
-            );
-            })}
+
+                        {/* {showTrends && m.easyDelta !== null && (
+                        <div
+                            className={`trend-small ${
+                            m.easyDelta > 0
+                                ? "trend-up"
+                                : m.easyDelta < 0
+                                ? "trend-down"
+                                : "trend-neutral"
+                            }`}
+                        >
+                            {m.easyDelta > 0 && "▲ "}
+                            {m.easyDelta < 0 && "▼ "}
+                            {m.easyDelta !== 0 && `${Math.abs(m.easyDelta)}% vs last month`}
+                        </div>
+                        )} */}
+
+                    <div className="month-secondary">
+                        <div className="metric-row">
+                        <span>Avg Easy Pace</span>
+                        <span>{m.avgEasy}</span>
+                        </div>
+
+                        <div className="metric-row">
+                        <span>Longest Run</span>
+                        <span>{m.longest} mi</span>
+                        </div>
+                    </div>
+                    </div>
+                );
+                })}
+            </div>
         </div>
-      </div>
+
+        <br></br>
+
+        {/* WEEKLY MILEAGE */}
+        <div className="profile-section">
+        <div className="weekly-header">
+            <div className="weekly-header-title">
+            {isThisWeek ? "This week" : selectedWeek?.label || "Weekly"}
+            </div>
+
+            <div className="weekly-stats-row">
+            <div className="weekly-stat">
+                <div className="weekly-stat-label">Distance</div>
+                <div className="weekly-stat-value">{selectedWeek ? `${selectedWeek.miles} mi` : "-"}</div>
+            </div>
+
+            <div className="weekly-stat">
+                <div className="weekly-stat-label">Time</div>
+                <div className="weekly-stat-value">
+                {selectedWeek ? formatHoursMinsFromMinutes(selectedWeek.minutes) : "-"}
+                </div>
+            </div>
+
+            <div className="weekly-stat">
+                <div className="weekly-stat-label">Elevation Gain</div>
+                <div className="weekly-stat-value">
+                {selectedWeek ? `${selectedWeek.elevationFt} ft` : "0 ft"}
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <WeeklyMileage
+            weeks={weeklySnapshot}
+            selectedIndex={selectedWeekIndex}
+            onSelect={(idx) => setSelectedWeekIndex(idx)}
+        />
+        </div>
 
 
 
