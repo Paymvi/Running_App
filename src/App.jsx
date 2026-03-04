@@ -111,6 +111,9 @@ function Home() {
               placeholder="Write anything: goals, thoughts, race plans..."
               value={notes}
               onChange={handleNotesChange}
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
             />
 
             <button className="secondary-btn" onClick={exportNotes}>
