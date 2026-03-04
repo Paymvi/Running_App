@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import FloatingButton from "../components/FloatingButton";
 import AddActivityModal from "../components/AddActivityModal";
 import { generateCoachAlert } from "../utils/coachAlert";
@@ -38,6 +38,11 @@ export default function Activity() {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);
 
+  // Lazy render (infinite scroll style)
+  const PAGE_SIZE = 40; // how many cards to add per batch
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+ const loadMoreRef = useRef(null);
+
     useEffect(() => {
     const saved = localStorage.getItem("activities");
     if (saved) {
@@ -46,6 +51,37 @@ export default function Activity() {
         setActivities(parsed);
     }
     }, []);
+
+    // For lazy load
+    useEffect(() => {
+        // When the dataset changes (import/delete), restart the visible window
+        setVisibleCount(PAGE_SIZE);
+        setExpandedIndex(null);
+    }, [activities.length]);
+
+
+    useEffect(() => {
+        const el = loadMoreRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(
+        (entries) => {
+            const first = entries[0];
+            if (first.isIntersecting) {
+            setVisibleCount((v) => Math.min(v + PAGE_SIZE, activities.length));
+            }
+        },
+        {
+            root: null,       // viewport
+            rootMargin: "600px", // start loading before user hits bottom
+            threshold: 0,
+        }
+        );
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [activities.length]);
+    
 
     const saveActivity = (activity) => {
         // If it has an id, we UPDATE. If not, we CREATE.
@@ -330,7 +366,7 @@ export default function Activity() {
 
 
 
-        {activities.map((a, index) => {
+        {activities.slice(0, visibleCount).map((a, index) => {
             const miles = parseFloat(a.miles);
             const duration = parseFloat(a.duration);
 
@@ -464,6 +500,19 @@ export default function Activity() {
                 </div>
             );
             })}
+
+            {/* Sentinel: when this becomes visible, load more */}
+            <div
+              ref={loadMoreRef}
+              style={{ height: 1 }}
+            />
+
+            {/* Optional: small hint */}
+            {visibleCount < activities.length && (
+              <div style={{ opacity: 0.7, fontSize: 12, marginTop: 10 }}>
+                Loading more…
+              </div>
+            )}
 
             <FloatingButton
                 onClick={() => {
