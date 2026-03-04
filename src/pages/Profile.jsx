@@ -378,6 +378,8 @@ export default function Profile() {
   const fileInputRef = useRef(null);
   const [showJarHistory, setShowJarHistory] = useState(false);
   const [selectedPR, setSelectedPR] = useState(null);
+  const [showTrends, setShowTrends] = useState(true);
+  
 
 
   useEffect(() => {
@@ -819,7 +821,13 @@ const removeAvatar = () => {
 
       {/* MONTHLY SNAPSHOT */}
       <div className="profile-section">
-        <h2 className="section-title">Monthly snapshot</h2>
+
+        <h2
+            className="section-title clickable"
+            onClick={() => setShowTrends((prev) => !prev)}
+        >
+            Monthly snapshot
+        </h2>
 
         <div className="month-snap-row">
           {monthlySnapshot.map((m, i) => {
@@ -833,21 +841,21 @@ const removeAvatar = () => {
                 <div className="month-hero">
                 {m.mileage} mi
 
-                {m.mileageDelta !== null && (
-                    <div
+                {showTrends && m.mileageDelta !== null && (
+                <div
                     className={`trend ${
-                        m.mileageDelta > 0
+                    m.mileageDelta > 0
                         ? "trend-up"
                         : m.mileageDelta < 0
                         ? "trend-down"
                         : "trend-neutral"
                     }`}
-                    >
+                >
                     {m.mileageDelta > 0 && "▲ "}
                     {m.mileageDelta < 0 && "▼ "}
                     {m.mileageDelta !== 0 && `${Math.abs(m.mileageDelta).toFixed(1)} mi`}
                     {m.mileageDelta === 0 && "No change"}
-                    </div>
+                </div>
                 )}
                 </div>
 
@@ -857,7 +865,7 @@ const removeAvatar = () => {
                     <span className="easy-label">{zone.label}</span>
                 </div>
 
-                    {/* {m.easyDelta !== null && (
+                    {/* {showTrends && m.easyDelta !== null && (
                     <div
                         className={`trend-small ${
                         m.easyDelta > 0
