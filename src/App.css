@@ -1260,7 +1260,8 @@ page {
 }
 
 .weekly-marker {
-  transition: transform 0.25s ease;
+  /* transition: transform 0.25s ease; */
+  transition: transform 0.25s ease, y1 0.35s ease, y2 0.35s ease;
   filter: drop-shadow(0 0 4px rgba(252,76,2,0.6)); /* glow */
 }
 
@@ -1320,6 +1321,19 @@ page {
   min-width: 0;
 }
 
+
+/* For transitions */
+.weekly-line {
+  transition: d 0.35s ease;
+}
+
+.weekly-area {
+  transition: d 0.35s ease;
+}
+
+.weekly-dot-anim {
+  transition: cy 0.35s ease;
+}
 
 
 

@@ -541,7 +541,7 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
             >
             0 mi
             </text>
-            
+
             </svg>
         </div>
 
@@ -564,7 +564,13 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
             </defs>
 
             {/* area */}
-            {points.length > 0 && <path d={areaPath} fill="url(#weeklyFill)" />}
+            {points.length > 0 && (
+                <path
+                    d={areaPath}
+                    fill="url(#weeklyFill)"
+                    className="weekly-area"
+                />
+            )}
 
             {/* line */}
             {points.length > 0 && (
@@ -573,6 +579,7 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
                 fill="none"
                 stroke="rgb(252,76,2)"
                 strokeWidth="2.5"
+                className="weekly-line"
                 />
             )}
 
@@ -603,7 +610,7 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
                     cx={p.x}
                     cy={p.y}
                     r={isSel ? 6 : 4}
-                    className="weekly-circle"
+                    className="weekly-circle weekly-dot-anim"
                     fill={isSel ? "rgb(252,76,2)" : "rgba(252,76,2,0.35)"}
                     stroke="rgb(252,76,2)"
                     strokeWidth={isSel ? 2 : 1.5}
