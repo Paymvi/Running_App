@@ -1230,9 +1230,8 @@ page {
 }
 
 .weekly-svg {
-  width: 100%;
-  height: auto;
   display: block;
+  height: auto;
 }
 
 .weekly-axis {
@@ -1249,11 +1248,6 @@ page {
   cursor: pointer;
 }
 
-.weekly-line {
-  stroke-dasharray: 1200;
-  stroke-dashoffset: 1200;
-  animation: drawLine 1.2s ease forwards;
-}
 
 @keyframes drawLine {
   to {
@@ -1274,6 +1268,38 @@ page {
   fill: rgba(255,255,255,0.55);
   font-size: 12px;
   font-weight: 600;
+}
+
+.weekly-chart-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px; /* space for scrollbar */
+}
+
+/* optional: make scrollbar subtle */
+.weekly-chart-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.weekly-chart-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.14);
+  border-radius: 999px;
+}
+.weekly-chart-scroll::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+}
+
+.weekly-chart-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+}
+
+.weekly-svg {
+  min-width: 520px;
+  display: block;
+  
 }
 
 

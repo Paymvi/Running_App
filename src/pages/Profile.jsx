@@ -128,6 +128,11 @@ function addDays(dateObj, days) {
   return d;
 }
 
+function weeksBetween(startWeek, endWeek) {
+  const ms = endWeek.getTime() - startWeek.getTime();
+  return Math.round(ms / (7 * 24 * 60 * 60 * 1000));
+}
+
 function formatWeekRange(startDateObj) {
   const end = addDays(startDateObj, 6);
   const sameMonth = startDateObj.getMonth() === end.getMonth();
@@ -309,7 +314,11 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
       </div>
 
       <div className="jar-wrap" aria-label="Easy Run Jar">
-        <svg viewBox={`0 0 ${W} ${H}`} className="jar-svg" role="img">
+        <svg
+            width={W}
+            height={H}
+            viewBox={`0 0 ${W} ${H}`}
+            className="jar-svg">
           {/* Glow filter */}
           <defs>
             <filter id="ballGlow" x="-50%" y="-50%" width="200%" height="200%">
@@ -391,29 +400,31 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
 
 
 function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
+  const scrollerRef = useRef(null);
+  const [visibleMax, setVisibleMax] = useState(4); // y-axis max for visible window
   // SVG coord system
-  const W = 520;
-  const H = 220;
-  const pad = { l: 42, r: 18, t: 18, b: 34 };
+    const H = 220;
+    const pad = { l: 42, r: 18, t: 18, b: 34 };
 
-  const innerW = W - pad.l - pad.r;
-  const innerH = H - pad.t - pad.b;
+    const innerH = H - pad.t - pad.b;
 
-  const maxMiles = Math.max(4, ...weeks.map((w) => w.miles ?? 0)); // at least 4 so flat weeks still show
+    // spacing per week (controls how wide the chart is)
+    const slot = 54; // px per week (tweak to taste)
+    const visibleWeeks = 13; // about 3 months
+    // const W = Math.max(520, pad.l + pad.r + (weeks.length - 1) * slot);
+    const W = pad.l + pad.r + weeks.length * slot;
 
   const points = useMemo(() => {
     if (!weeks.length) return [];
 
     return weeks.map((w, i) => {
-      const x =
-        pad.l + (weeks.length === 1 ? innerW / 2 : (i / (weeks.length - 1)) * innerW);
-
-      const y =
-        pad.t + (1 - (w.miles || 0) / maxMiles) * innerH;
-
-      return { x, y, miles: w.miles || 0, i };
+        const x = pad.l + i * slot;
+        // y uses visibleMax (dynamic)
+        const safeMax = Math.max(visibleMax, 1);
+        const y = pad.t + (1 - (w.miles || 0) / safeMax) * innerH;
+        return { x, y, miles: w.miles || 0, i };
     });
-  }, [weeks, maxMiles, innerW, innerH]);
+    }, [weeks, slot, pad.l, pad.t, innerH, visibleMax]);
 
   const linePath = useMemo(() => {
     if (points.length === 0) return "";
@@ -441,14 +452,86 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
 
   const selectedPoint = points[selectedIndex] || null;
 
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || !weeks.length) return;
+
+    const computeVisible = () => {
+        const scrollLeft = el.scrollLeft;
+        const viewW = el.clientWidth;
+
+        const startX = scrollLeft;           // visible left (in px of the SVG container)
+        const endX = scrollLeft + viewW;     // visible right
+
+        // Convert visible pixel window to index window
+        const firstIdx = Math.max(0, Math.floor((startX - pad.l) / slot));
+        const lastIdx = Math.min(
+        weeks.length - 1,
+        Math.ceil((endX - pad.l) / slot)
+        );
+
+        let max = 0;
+        for (let i = firstIdx; i <= lastIdx; i++) {
+        max = Math.max(max, weeks[i]?.miles || 0);
+        }
+
+        // nice rounding: at least 4, round up to nearest 1
+        // const next = Math.max(4, Math.ceil(max) || 4);
+        const next = Math.max(4, Math.ceil(max), 1);
+        setVisibleMax(next);
+    };
+
+    computeVisible();
+
+    el.addEventListener("scroll", computeVisible, { passive: true });
+    window.addEventListener("resize", computeVisible);
+
+    return () => {
+        el.removeEventListener("scroll", computeVisible);
+        window.removeEventListener("resize", computeVisible);
+    };
+  }, [weeks, pad.l, slot]);
+
+    useEffect(() => {
+    const el = scrollerRef.current;
+        if (!el) return;
+
+        if (selectedIndex == null) return;
+
+        const newestX = pad.l + selectedIndex * slot;
+
+        // show the last ~3 months by default
+        const scrollTarget = newestX - visibleWeeks * slot + slot * 2;
+
+        el.scrollTo({
+            left: Math.max(0, scrollTarget),
+            behavior: "smooth",
+        });
+    }, [selectedIndex, pad.l, slot, visibleWeeks]);
+
   return (
     <div className="weekly-card">
       <div className="weekly-top">
         {/* <div className="weekly-title">Weekly mileage</div> */}
       </div>
 
-      <div className="weekly-chart-wrap">
-        <svg viewBox={`0 0 ${W} ${H}`} className="weekly-svg" role="img" aria-label="Weekly mileage chart">
+        <div
+            className="weekly-chart-scroll"
+            ref={scrollerRef}
+            style={{
+                width: "100%",
+                overflowX: "auto"
+            }}
+        >
+        <svg
+        width={W}
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        className="weekly-svg"
+        shapeRendering="geometricPrecision"
+        role="img"
+        aria-label="Weekly mileage chart"
+        >
           <defs>
             <linearGradient id="weeklyFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="rgba(252,76,2,0.40)" />
@@ -457,8 +540,8 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
           </defs>
 
           {/* y-axis labels (rough) */}
-          <text x="8" y={pad.t + 10} className="weekly-axis">
-            {Math.round(maxMiles)} mi
+          <text x="8" y={pad.t} className="weekly-axis">
+            {Math.round(visibleMax)} mi
           </text>
           <text x="12" y={pad.t + innerH} className="weekly-axis">
             0 mi
@@ -517,7 +600,7 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
           })}
 
           {/* Month labels */}
-            {weeks.map((w, i) => {
+            {/* {weeks.map((w, i) => {
             const prev = weeks[i - 1];
             const isNewMonth =
                 !prev ||
@@ -539,6 +622,35 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
             return (
                 <text
                 key={"month-" + i}
+                x={x}
+                y={H - 8}
+                textAnchor="middle"
+                className="weekly-month"
+                >
+                {label}
+                </text>
+            );
+            })} */}
+
+            {/* Month labels (first week of each month) */}
+            {weeks.map((w, i) => {
+            const prev = weeks[i - 1];
+            const wDate = w.weekStart;
+            const prevDate = prev?.weekStart;
+
+            const isNewMonth =
+                !prevDate || wDate.getMonth() !== prevDate.getMonth() || wDate.getFullYear() !== prevDate.getFullYear();
+
+            if (!isNewMonth) return null;
+
+            const x = pad.l + i * slot;
+            const label = wDate
+                .toLocaleString("en-US", { month: "short" })
+                .toUpperCase();
+
+            return (
+                <text
+                key={`m-${i}`}
                 x={x}
                 y={H - 8}
                 textAnchor="middle"
@@ -848,60 +960,77 @@ const removeAvatar = () => {
 
     
     // -------------------------
-    // Weekly snapshot (Mon -> Sun)
-    // miles + time + elevation gain (if present)
+    // Weekly snapshot (Mon -> Sun) INCLUDING 0-mile weeks
+    // builds all weeks from first run -> current week
     // -------------------------
     const weeklySnapshot = useMemo(() => {
-    const map = new Map();
+        // 1) aggregate only the weeks that actually have runs
+        const map = new Map();
+        let earliestDate = null;
 
-    activities.forEach((a) => {
-        // only runs
-        if (a.type && a.type !== "run") return;
+        activities.forEach((a) => {
+            if (a.type && a.type !== "run") return;
 
-        const d = parseDateSafe(a.date);
-        if (!d) return;
+            const d = parseDateSafe(a.date);
+            if (!d) return;
 
-        const weekStart = startOfWeekMonday(d);
-        const key = weekStart.toISOString().slice(0, 10); // YYYY-MM-DD (start of week)
+            if (!earliestDate || d < earliestDate) earliestDate = d;
 
-        if (!map.has(key)) {
-        map.set(key, {
-            weekStart, // Date
-            miles: 0,
-            minutes: 0,
-            elevationFt: 0,
-        });
-        }
+            const weekStart = startOfWeekMonday(d);
+            const key = weekStart.toISOString().slice(0, 10);
 
-        const w = map.get(key);
+            if (!map.has(key)) {
+            map.set(key, {
+                weekStart,
+                miles: 0,
+                minutes: 0,
+                elevationFt: 0,
+            });
+            }
 
-        const miles = Number(a.miles) || 0;
-        const minutes = parseDurationMinutes(a.duration);
+            const w = map.get(key);
+            const miles = Number(a.miles) || 0;
+            const minutes = parseDurationMinutes(a.duration);
+            const elevation =
+            Number(a.elevationGainFt ?? a.elevation_ft ?? a.elevationFt ?? a.elevation_gain_ft) || 0;
 
-        // If you don’t store elevation, this will stay 0.
-        // If later you add a.elevationGainFt or a.elevation_ft, this will auto-work.
-        const elevation =
-        Number(a.elevationGainFt ?? a.elevation_ft ?? a.elevationFt ?? a.elevation_gain_ft) || 0;
-
-        w.miles += miles;
-        w.minutes += minutes;
-        w.elevationFt += elevation;
+            w.miles += miles;
+            w.minutes += minutes;
+            w.elevationFt += elevation;
     });
 
-    // sort ascending by weekStart
-    const arr = Array.from(map.values()).sort((a, b) => a.weekStart - b.weekStart);
+    
 
-    // show last ~12 weeks (tweak if you want more)
-    const sliced = arr.slice(Math.max(0, arr.length - 12));
+    // 2) determine range (first week -> current week)
+    const now = new Date();
+    const endWeek = startOfWeekMonday(now);
 
-    return sliced.map((w) => ({
-        label: formatWeekRange(w.weekStart),
-        weekStart: w.weekStart,
-        miles: Number(w.miles.toFixed(1)),
-        minutes: Math.round(w.minutes),
-        elevationFt: Math.round(w.elevationFt),
-    }));
+    // If no runs yet, still return a single current week with 0s
+    const startWeek = earliestDate ? startOfWeekMonday(earliestDate) : endWeek;
+
+    // 3) generate EVERY week in the range (including zeros)
+    const totalWeeks = weeksBetween(startWeek, endWeek);
+
+    const out = [];
+    for (let i = 0; i <= totalWeeks; i++) {
+        const ws = addDays(startWeek, i * 7);
+        const key = ws.toISOString().slice(0, 10);
+
+        const found = map.get(key);
+
+        out.push({
+        label: formatWeekRange(ws),
+        weekStart: ws,
+        miles: found ? Number(found.miles.toFixed(1)) : 0,
+        minutes: found ? Math.round(found.minutes) : 0,
+        elevationFt: found ? Math.round(found.elevationFt) : 0,
+        });
+    }
+
+    return out; // ascending by time
     }, [activities]);
+
+
 
     const selectedWeek =
     selectedWeekIndex != null ? weeklySnapshot[selectedWeekIndex] : null;
@@ -919,13 +1048,12 @@ const removeAvatar = () => {
     }, [selectedWeek]);
 
     useEffect(() => {
-    if (!weeklySnapshot.length) {
-        setSelectedWeekIndex(null);
-        return;
-    }
+        if (!weeklySnapshot.length) {
+            setSelectedWeekIndex(null);
+            return;
+        }
 
-    // always default to newest week
-    setSelectedWeekIndex(weeklySnapshot.length - 1);
+        setSelectedWeekIndex(weeklySnapshot.length - 1);
     }, [weeklySnapshot]);
 
 
