@@ -713,11 +713,13 @@ page {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
+/* Override the react calendar highlight */
 .run-calendar-card .react-calendar__tile--now {
   background: transparent !important;
   border: 1px solid rgba(255,255,255,0.25);
 }
 
+/* ::after is a CSS pseudo element that lets you interst a viruatl element inside another element */
 .run-calendar-card .react-calendar__tile--now::after {
   content: "";
   position: absolute;

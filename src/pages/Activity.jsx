@@ -5,6 +5,8 @@ import { generateCoachAlert } from "../utils/coachAlert";
 import { FiEdit2 } from "react-icons/fi";
 import Papa from "papaparse";
 
+import { generateCoachAlerts } from "../utils/coachAlert";
+
 
 // Fix for YYYY-MM-DD timezone shift bug
 function parseLocalYMD(input) {
@@ -37,6 +39,7 @@ export default function Activity() {
   const [open, setOpen] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);
+  const [coachAlertCount, setCoachAlertCount] = useState(1); // user-controlled
 
   // Lazy render (infinite scroll style)
   const PAGE_SIZE = 40; // how many cards to add per batch
@@ -136,9 +139,9 @@ export default function Activity() {
             default: "Swim-Default.png",
         },
     };
-    const coachAlert = useMemo(() => {
-        return generateCoachAlert(activities);
-    }, [activities]);
+    const coachAlerts = useMemo(() => {
+        return generateCoachAlerts(activities, coachAlertCount);
+    }, [activities, coachAlertCount]);
 
     // -------------------------
     // PR Detection (official-distance only)
@@ -358,11 +361,35 @@ export default function Activity() {
 
             </div>
             
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "10px 0 12px" }}>
+            <span style={{ opacity: 0.8, fontSize: 13 }}>Coach alerts shown:</span>
 
-            <div className={`coach-alert ${coachAlert.toneClass}`}>
-                <div className="coach-alert-title">{coachAlert.title}</div>
-                {coachAlert.detail && <div className="coach-alert-detail">{coachAlert.detail}</div>}
+            <select
+                value={coachAlertCount}
+                onChange={(e) => setCoachAlertCount(Number(e.target.value))}
+                style={{
+                background: "#1f2937",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.12)",
+                padding: "6px 10px",
+                borderRadius: 8,
+                cursor: "pointer",
+                fontSize: 13,
+                }}
+            >
+                <option value={1}>1 (Top priority)</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+            </select>
             </div>
+
+            {coachAlerts.map((alert, i) => (
+            <div key={alert.key || i} className={`coach-alert ${alert.toneClass}`}>
+                <div className="coach-alert-title">{alert.title}</div>
+                {alert.detail && <div className="coach-alert-detail">{alert.detail}</div>}
+            </div>
+            ))}
 
 
 

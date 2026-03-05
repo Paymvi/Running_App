@@ -1340,12 +1340,12 @@ const removeAvatar = () => {
                 </div>
             </div>
 
-            <div className="weekly-stat">
+            {/* <div className="weekly-stat">
                 <div className="weekly-stat-label">Elevation Gain</div>
                 <div className="weekly-stat-value">
                 {selectedWeek ? `${selectedWeek.elevationFt} ft` : "0 ft"}
                 </div>
-            </div>
+            </div> */}
             </div>
         </div>
 

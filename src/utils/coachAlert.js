@@ -162,13 +162,34 @@ function easyDriftWarning(sorted) {
   return null;
 }
 
-export function generateCoachAlert(activities) {
+export function generateCoachAlerts(activities, maxAlerts = 1) {
+  const clampN = Math.max(1, Math.min(Number(maxAlerts) || 1, 6));
+
+  // Priority (bigger = more important)
+  const PRIORITY = {
+    red: 4,
+    yellow: 3,
+    green: 2,
+    blue: 1,
+  };
+
+  const make = (color, title, detail, key) => ({
+    key,
+    toneClass: `easy-zone-${color}`,
+    title,
+    detail,
+    priority: PRIORITY[color] || 1,
+  });
+
   if (!activities || activities.length === 0) {
-    return {
-      toneClass: "easy-zone-blue",
-      title: "Log your first run 👟",
-      detail: "Add a few runs and I’ll start giving coach notes.",
-    };
+    return [
+      make(
+        "blue",
+        "Log your first run 👟",
+        "Add a few runs and I’ll start giving coach notes.",
+        "empty-first-run"
+      ),
+    ];
   }
 
   const sorted = [...activities].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -184,28 +205,41 @@ export function generateCoachAlert(activities) {
   const feel = (latest.feel || "").toLowerCase();
   const latestMph = Number(latest.mph);
 
+  const alerts = [];
+  const pushUnique = (alert) => {
+    if (!alert) return;
+    if (alerts.some((a) => a.key === alert.key)) return;
+    alerts.push(alert);
+  };
+
   // -------------------------
   // 🔴 RED (highest priority)
   // -------------------------
 
   // R1: Easy but felt hard
   if (intensity === "easy" && feel === "hard") {
-    return {
-      toneClass: "easy-zone-red",
-      title: "Marked easy… but it felt hard 🟥",
-      detail: "That’s a classic fatigue signal. Slow down next easy run or take a reset day.",
-    };
+    pushUnique(
+      make(
+        "red",
+        "Marked easy… but it felt hard 🟥",
+        "That’s a classic fatigue signal. Slow down next easy run or take a reset day.",
+        "r1-easy-felt-hard"
+      )
+    );
   }
 
   // R2: Back-to-back hard efforts
   if (sorted.length >= 2) {
     const a0 = sorted[0], a1 = sorted[1];
     if (isHardIntensity(a0.intensity) && isHardIntensity(a1.intensity)) {
-      return {
-        toneClass: "easy-zone-red",
-        title: "Back-to-back hard days 🚨",
-        detail: "Stacking intensity is how tempo creep turns into burnout. Next run: easy or rest.",
-      };
+      pushUnique(
+        make(
+          "red",
+          "Back-to-back hard days 🚨",
+          "Stacking intensity is how tempo creep turns into burnout. Next run: easy or rest.",
+          "r2-b2b-hard"
+        )
+      );
     }
   }
 
@@ -219,11 +253,14 @@ export function generateCoachAlert(activities) {
     (feel === "medium" || feel === "hard");
 
   if (tooFastForEasy) {
-    return {
-      toneClass: "easy-zone-red",
-      title: "That wasn’t easy 😅",
-      detail: `Easy pace creep: baseline ~${baseline.toFixed(1)} mph. Keep easy truly easy.`,
-    };
+    pushUnique(
+      make(
+        "red",
+        "That wasn’t easy 😅",
+        `Easy pace creep: baseline ~${baseline.toFixed(1)} mph. Keep easy truly easy.`,
+        "r3-easy-pace-creep"
+      )
+    );
   }
 
   // -------------------------
@@ -231,74 +268,92 @@ export function generateCoachAlert(activities) {
   // -------------------------
 
   // Y1: 3+ hard efforts in last 7 days
-  const last7 = sorted.slice(0, 12); // not perfect; enough recent items
-  const hardCount7 = last7.filter(a => {
+  const last7 = sorted.slice(0, 12);
+  const hardCount7 = last7.filter((a) => {
     const d = toDate(a);
     if (!d) return false;
     return daysSince(d, now) <= 7 && isHardIntensity(a.intensity);
   }).length;
 
   if (hardCount7 >= 3) {
-    return {
-      toneClass: "easy-zone-yellow",
-      title: "A lot of intensity this week ⚠️",
-      detail: `You’ve hit ${hardCount7} hard efforts in the last 7 days. Consider an easy reset.`,
-    };
+    pushUnique(
+      make(
+        "yellow",
+        "A lot of intensity this week ⚠️",
+        `You’ve hit ${hardCount7} hard efforts in the last 7 days. Consider an easy reset.`,
+        "y1-too-much-intensity"
+      )
+    );
   }
 
   // Y2: Mileage spike vs last week
   if (lastWeekMiles >= 1 && thisWeekMiles >= 1) {
     const change = ((thisWeekMiles - lastWeekMiles) / lastWeekMiles) * 100;
     if (change >= 25) {
-      return {
-        toneClass: "easy-zone-yellow",
-        title: `Mileage jump: +${Math.round(change)}% ⚠️`,
-        detail: `This week: ${thisWeekMiles.toFixed(1)} mi • Last week: ${lastWeekMiles.toFixed(1)} mi.`,
-      };
+      pushUnique(
+        make(
+          "yellow",
+          `Mileage jump: +${Math.round(change)}% ⚠️`,
+          `This week: ${thisWeekMiles.toFixed(1)} mi • Last week: ${lastWeekMiles.toFixed(1)} mi.`,
+          "y2-mileage-spike"
+        )
+      );
     }
   }
 
   // Y3: No-rest-days pattern (ran 5+ of last 6 days)
   const runDays6 = countRunDaysLastNDays(sorted, now, 6);
   if (runDays6 >= 5) {
-    return {
-      toneClass: "easy-zone-yellow",
-      title: "No-rest pattern ⚠️",
-      detail: `You ran ${runDays6} of the last 6 days. A rest day can make you faster.`,
-    };
+    pushUnique(
+      make(
+        "yellow",
+        "No-rest pattern ⚠️",
+        `You ran ${runDays6} of the last 6 days. A rest day can make you faster.`,
+        "y3-no-rest"
+      )
+    );
   }
 
   // Y4: Easy pace drift upward + feel getting tougher
   const drift = easyDriftWarning(sorted);
   if (drift) {
-    return {
-      toneClass: "easy-zone-yellow",
-      title: "Easy pace is drifting (fatigue?) ⚠️",
-      detail: `Recent easy avg ~${drift.recentAvg.toFixed(1)} mph vs baseline ~${drift.baseline.toFixed(1)} mph.`,
-    };
+    pushUnique(
+      make(
+        "yellow",
+        "Easy pace is drifting (fatigue?) ⚠️",
+        `Recent easy avg ~${drift.recentAvg.toFixed(1)} mph vs baseline ~${drift.baseline.toFixed(1)} mph.`,
+        "y4-easy-drift"
+      )
+    );
   }
 
   // Y5: Wall pattern (stuck at same distance)
   const wall = detectWallPattern(sorted, now);
   if (wall) {
-    return {
-      toneClass: "easy-zone-yellow",
-      title: "You keep hitting the same wall 🧱",
-      detail: `Last runs cluster around ~${wall.med.toFixed(1)} mi. Try adding +0.2 mi on your next easy run.`,
-    };
+    pushUnique(
+      make(
+        "yellow",
+        "You keep hitting the same wall 🧱",
+        `Last runs cluster around ~${wall.med.toFixed(1)} mi. Try adding +0.2 mi on your next easy run.`,
+        "y5-wall"
+      )
+    );
   }
 
   // Y6: Too little easy (this week)
   const totalCount = thisWeek.length;
-  const easyCount = thisWeek.filter(a => (a.intensity || "").toLowerCase() === "easy").length;
+  const easyCount = thisWeek.filter((a) => (a.intensity || "").toLowerCase() === "easy").length;
   if (totalCount >= 3) {
     const easyPct = Math.round((easyCount / totalCount) * 100);
     if (easyPct <= 45) {
-      return {
-        toneClass: "easy-zone-yellow",
-        title: "Intensity imbalance ⚠️",
-        detail: `${easyPct}% easy this week. Consider making the next run a true easy day.`,
-      };
+      pushUnique(
+        make(
+          "yellow",
+          "Intensity imbalance ⚠️",
+          `${easyPct}% easy this week. Consider making the next run a true easy day.`,
+          "y6-easy-too-low"
+        )
+      );
     }
   }
 
@@ -309,74 +364,100 @@ export function generateCoachAlert(activities) {
   if (totalCount >= 3) {
     const easyPct = Math.round((easyCount / totalCount) * 100);
     if (easyPct >= 75) {
-      return {
-        toneClass: "easy-zone-green",
-        title: `Discipline week ✅ ${easyPct}% easy`,
-        detail: "This is how base gets built. Keep stacking.",
-      };
+      pushUnique(
+        make(
+          "green",
+          `Discipline week ✅ ${easyPct}% easy`,
+          "This is how base gets built. Keep stacking.",
+          "g1-discipline"
+        )
+      );
     }
   }
 
-  // G2: Consistency win (stable mileage week-over-week)
   if (lastWeekMiles >= 3 && thisWeekMiles >= 3) {
     const changeAbs = Math.abs((thisWeekMiles - lastWeekMiles) / lastWeekMiles) * 100;
     if (changeAbs <= 15 && totalCount >= 3) {
-      return {
-        toneClass: "easy-zone-green",
-        title: "Steady week ✅",
-        detail: `Mileage stayed stable (${thisWeekMiles.toFixed(1)} mi). Consistency is the cheat code.`,
-      };
+      pushUnique(
+        make(
+          "green",
+          "Steady week ✅",
+          `Mileage stayed stable (${thisWeekMiles.toFixed(1)} mi). Consistency is the cheat code.`,
+          "g2-steady-week"
+        )
+      );
     }
   }
 
-  // G3: Comeback win (7+ day gap before latest)
   if (sorted.length >= 2) {
     const d0 = toDate(sorted[0]);
     const d1 = toDate(sorted[1]);
     if (d0 && d1) {
       const gap = daysSince(d1, d0);
       if (gap >= 7) {
-        return {
-          toneClass: "easy-zone-green",
-          title: "Welcome back ✅",
-          detail: `You returned after ${gap} days. Keep it easy for a few runs and rebuild.`,
-        };
+        pushUnique(
+          make(
+            "green",
+            "Welcome back ✅",
+            `You returned after ${gap} days. Keep it easy for a few runs and rebuild.`,
+            "g3-comeback"
+          )
+        );
       }
     }
   }
 
   // -------------------------
-  // 🔵 BLUE (default / informative)
+  // 🔵 BLUE (informative)
   // -------------------------
 
-  // B1: Long run overdue (if user has any "long" runs logged)
-  const longRun = sorted.find(a => (a.intensity || "").toLowerCase() === "long");
+  const longRun = sorted.find((a) => (a.intensity || "").toLowerCase() === "long");
   if (longRun) {
     const d = toDate(longRun);
     if (d) {
       const ds = daysSince(d, now);
       if (ds >= 14) {
-        return {
-          toneClass: "easy-zone-blue",
-          title: "Long run is overdue 👻",
-          detail: `Last long run was ${ds} days ago. Even a chill long run counts.`,
-        };
+        pushUnique(
+          make(
+            "blue",
+            "Long run is overdue 👻",
+            `Last long run was ${ds} days ago. Even a chill long run counts.`,
+            "b1-long-overdue"
+          )
+        );
       }
     }
   }
 
-  // B2: Next best move based on last run
   if (isHardIntensity(intensity)) {
-    return {
-      toneClass: "easy-zone-blue",
-      title: "Next move: easy reset 🧊",
-      detail: "You went hard last time. Keep the next run easy to actually get fitter.",
-    };
+    pushUnique(
+      make(
+        "blue",
+        "Next move: easy reset 🧊",
+        "You went hard last time. Keep the next run easy to actually get fitter.",
+        "b2-next-move"
+      )
+    );
   }
 
-  return {
-    toneClass: "easy-zone-blue",
-    title: "Coach note: keep stacking reps 🧱",
-    detail: "Consistency beats hero workouts.",
-  };
+  // Always have at least one message
+  if (alerts.length === 0) {
+    pushUnique(
+      make(
+        "blue",
+        "Coach note: keep stacking reps 🧱",
+        "Consistency beats hero workouts.",
+        "b-default"
+      )
+    );
+  }
+
+  // Sort by priority (RED first), then keep stable order otherwise
+  alerts.sort((a, b) => b.priority - a.priority);
+
+  return alerts.slice(0, clampN);
+}
+
+export function generateCoachAlert(activities) {
+  return generateCoachAlerts(activities, 1)[0];
 }
