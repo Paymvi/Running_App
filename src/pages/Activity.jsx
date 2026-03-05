@@ -41,6 +41,10 @@ export default function Activity() {
   const [editingActivity, setEditingActivity] = useState(null);
   const [coachAlertCount, setCoachAlertCount] = useState(1); // user-controlled
   const [coachHelpOpen, setCoachHelpOpen] = useState(false);
+  const [stravaToken, setStravaToken] = useState(
+    localStorage.getItem("strava_access_token") || ""
+  );
+  const [stravaStatus, setStravaStatus] = useState("");
 
   // Lazy render (infinite scroll style)
   const PAGE_SIZE = 40; // how many cards to add per batch
@@ -85,6 +89,24 @@ export default function Activity() {
         observer.observe(el);
         return () => observer.disconnect();
     }, [activities.length]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const connected = params.get("strava");
+        const token = params.get("access_token");
+
+        if (connected === "connected" && token) {
+            localStorage.setItem("strava_access_token", token);
+            setStravaToken(token);
+            setStravaStatus("Connected ✅");
+
+            // clean the URL (removes token from address bar)
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (connected === "error") {
+            setStravaStatus("Connection failed ❌");
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
     
 
     const saveActivity = (activity) => {
@@ -229,6 +251,100 @@ export default function Activity() {
         });
     };
 
+
+    const mapStravaTypeToYourType = (stravaType) => {
+        const t = String(stravaType || "").toLowerCase();
+        if (t.includes("run")) return "run";
+        if (t.includes("ride") || t.includes("bike")) return "bike";
+        if (t.includes("swim")) return "swim";
+        return "run";
+    };
+
+    const metersToMiles = (meters) => {
+        const m = Number(meters);
+        if (!Number.isFinite(m)) return "";
+        return (m / 1609.34).toFixed(2);
+    };
+
+    const secondsToMinutes = (seconds) => {
+        const s = Number(seconds);
+        if (!Number.isFinite(s)) return "";
+        return Math.round(s / 60);
+    };
+
+    const isoToDateTimeParts = (iso) => {
+        // Strava often provides start_date_local like "2026-03-05T12:34:56Z" or with offset
+        if (!iso) return { date: "", time: "" };
+        const d = new Date(iso);
+        if (isNaN(d)) return { date: "", time: "" };
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+
+        const hh = String(d.getHours()).padStart(2, "0");
+        const min = String(d.getMinutes()).padStart(2, "0");
+
+        return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${min}` };
+    };
+
+    const stravaActivityToYourActivity = (s) => {
+        const { date, time } = isoToDateTimeParts(s.start_date_local || s.start_date);
+
+        return {
+            id: crypto.randomUUID(),
+            title: s.name || "Strava Activity",
+            description: s.description || "",
+            type: mapStravaTypeToYourType(s.type || s.sport_type),
+            intensity: "easy",   // you can get fancy later (keywords / heart rate / etc.)
+            feel: "medium",
+            date,
+            time,
+            mode: "timeMiles",
+            duration: secondsToMinutes(s.elapsed_time || s.moving_time),
+            miles: metersToMiles(s.distance),
+            splits: [{ mph: "", distance: "" }],
+            notes: "Imported from Strava",
+            photo: null,
+        };
+    };
+
+    const fetchStravaActivities = async () => {
+        if (!stravaToken) {
+            alert("Not connected to Strava yet. Click Connect first.");
+            return;
+        }
+
+        try {
+        // Pull first 200 activities (you can add pagination later)
+        const resp = await fetch(
+            `http://localhost:5050/api/strava/activities?access_token=${encodeURIComponent(
+            stravaToken
+            )}&per_page=200&page=1`
+        );
+
+        const data = await resp.json();
+        if (!resp.ok || data.error) {
+            console.log(data);
+            alert("Failed to fetch Strava activities.");
+            return;
+        }
+
+        const imported = (data.activities || []).map(stravaActivityToYourActivity);
+
+        // Merge with existing, then sort by date
+        const updated = [...imported, ...activities];
+        updated.sort((a, b) => parseLocalYMD(b.date) - parseLocalYMD(a.date));
+
+            setActivities(updated);
+            localStorage.setItem("activities", JSON.stringify(updated));
+            alert(`Imported ${imported.length} activities from Strava ✅`);
+        } catch (e) {
+            console.error(e);
+            alert("Error fetching from Strava server. Is npm run server running?");
+        }
+    };
+
     const getDefaultImage = (type, intensity) => {
         const typeImages = activityImages[type];
 
@@ -330,6 +446,41 @@ export default function Activity() {
                         }}
                     />
                 </label>
+
+                  <button
+                    onClick={() => {
+                    // sends you to server, which redirects you to Strava
+                    window.location.href = "http://localhost:5050/auth/strava";
+                    }}
+                    style={{
+                    backgroundColor: "#111827",
+                    color: "white",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    marginBottom: "10px"
+                    }}
+                >
+                    {stravaToken ? "Strava Connected ✅" : "Connect Strava"}
+                </button>
+
+                <button
+                    onClick={fetchStravaActivities}
+                    style={{
+                    backgroundColor: "#1f2937",
+                    color: "white",
+                    border: "none",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    marginBottom: "10px",
+                    opacity: stravaToken ? 1 : 0.6
+                    }}
+                    disabled={!stravaToken}
+                >
+                    Import from Strava
+                </button>
 
                 <button
                     onClick={handleExportCSV}
