@@ -52,7 +52,7 @@ export default function CoachHelpModal({ isOpen, onClose }) {
             marginBottom: 10,
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 700 }}>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>
             👻 Coach Alerts... how it works
           </div>
 
@@ -75,7 +75,7 @@ export default function CoachHelpModal({ isOpen, onClose }) {
         </div>
 
         {/* Content */}
-        <div style={{ opacity: 0.92, lineHeight: 1.45, fontSize: 10 }}>
+        <div style={{ opacity: 0.92, lineHeight: 1.45, fontSize: 9 }}>
           <p style={{ marginTop: 0 }}>
             Coach alerts are <strong>automatic training notes</strong> based on your recent
             activities. They’re meant to help you avoid “silent” mistakes like pace creep,
@@ -87,7 +87,7 @@ export default function CoachHelpModal({ isOpen, onClose }) {
               🎯 What the coach looks for
             </div>
 
-            <ul style={{ marginTop: 0, paddingLeft: 18, lineHeight: 1.5 }}>
+            <ul style={{ marginTop: 0, paddingLeft: 18, lineHeight: 1.4 }}>
 
                 <li>
                 🔴 <strong>Easy run felt hard</strong>: you marked a run “easy” but it felt “hard”.

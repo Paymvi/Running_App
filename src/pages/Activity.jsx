@@ -314,11 +314,12 @@ export default function Activity() {
 
     return (
         <div className="page">
-            <h1>Activity</h1>
+            
+            <div style={{ height: "12px" }}></div>
 
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <label className="import-btn">
-                    Import CSV
+                    Import
                     <input
                         type="file"
                         accept=".csv"
@@ -342,7 +343,7 @@ export default function Activity() {
                         marginBottom: "10px"
                     }}
                     >
-                    Export CSV
+                    Export
                 </button>
 
                 <button 
@@ -357,7 +358,7 @@ export default function Activity() {
                         marginBottom: "10px"
                     }}
                     >
-                    Delete All Activities
+                    Delete All
                 </button>
 
             </div>
