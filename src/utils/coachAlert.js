@@ -163,7 +163,7 @@ function easyDriftWarning(sorted) {
 }
 
 export function generateCoachAlerts(activities, maxAlerts = 1) {
-  const clampN = Math.max(1, Math.min(Number(maxAlerts) || 1, 6));
+  const clampN = Math.max(0, Math.min(Number(maxAlerts) ?? 1, 6));
 
   // Priority (bigger = more important)
   const PRIORITY = {

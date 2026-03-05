@@ -395,6 +395,7 @@ export default function Activity() {
                         fontSize: 13,
                     }}
                     >
+                    <option value={0}>0 (Off)</option>
                     <option value={1}>1 (Top priority)</option>
                     <option value={2}>2</option>
                     <option value={3}>3</option>
@@ -430,8 +431,9 @@ export default function Activity() {
             onClose={() => setCoachHelpOpen(false)}
             />
 
-            {coachAlerts.map((alert, i) => (
-            <div key={alert.key || i} className={`coach-alert ${alert.toneClass}`}>
+            {coachAlertCount > 0 &&
+            coachAlerts.map((alert, i) => (
+                <div key={alert.key || i} className={`coach-alert ${alert.toneClass}`}>
                 <div className="coach-alert-title">{alert.title}</div>
                 {alert.detail && <div className="coach-alert-detail">{alert.detail}</div>}
             </div>
