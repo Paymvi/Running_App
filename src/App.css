@@ -6,7 +6,10 @@
   --muted: rgba(244, 246, 255, 0.7);
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+
+  --primary: #fc4c02;
 }
+
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -159,7 +162,7 @@ body {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #fc4c02;
+  background: var(--primary);
   color: white;
   font-size: 30px;
   border: none;
@@ -262,7 +265,7 @@ body {
 .mph-badge {
   display: inline-block;
   padding: 6px 12px;
-  background: #fc4c02;
+  background: var(--primary);
   border-radius: 20px;
   font-size: 11px;
   font-weight: bold;
@@ -326,7 +329,7 @@ body {
 .modal textarea:focus,
 .modal select:focus {
   outline: none;
-  border-color: #fc4c02;
+  border-color: var(--primary);
   background: rgba(31, 41, 55, 0.85);
 }
 
@@ -390,9 +393,9 @@ page {
 }
 
 .toggle-group button.active {
-  background: #fc4c02;
+  background: var(--primary);
   color: white;
-  border-color: #fc4c02;
+  border-color: var(--primary);
 }
 
 .modal-section {
@@ -446,18 +449,18 @@ page {
 .upload-icon {
   font-size: 34px;
   margin-bottom: 10px;
-  color: #fc4c02;
+  color: var(--primary);
 }
 
 .upload-text {
   font-size: 12px;
   font-weight: 600;
-  color: #fc4c02;
+  color: var(--primary);
 }
 
 /* Hover effect */
 .upload-box:hover {
-  border-color: #fc4c02;
+  border-color: var(--primary);
   background: rgba(31, 41, 55, 0.85);
   transform: scale(1.01);
 }
@@ -502,8 +505,8 @@ page {
 }
 
 .activity-type.active {
-  background: #fc4c02;
-  border-color: #fc4c02;
+  background: var(--primary);
+  border-color: var(--primary);
   color: white;
 }
 
@@ -518,7 +521,7 @@ page {
   padding: 14px;
   border-radius: 8px;
 
-  background: #fc4c02;
+  background: var(--primary);
   color: white;
   font-weight: 700;
   font-size: 14px;
@@ -727,7 +730,7 @@ page {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #fc4c02;
+  background: var(--primary);
 }
 
 /* legend */
@@ -1040,7 +1043,7 @@ page {
 
 .pace-line {
   fill: none;
-  stroke: #fc4c02;
+  stroke: var(--primary);
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;

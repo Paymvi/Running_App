@@ -295,7 +295,7 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
         cx: p.cx,
         cy: p.cy,
         r: p.r,
-        fill: `rgba(252,76,2,${alpha})`,
+        fill: `rgba(252,76,2,${alpha})`, // orange
         glow: tDur,
         key: p.data.key,
         label: p.data.label,
@@ -592,7 +592,7 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
                 y1={pad.t}
                 y2={pad.t + innerH}
                 transform={`translate(${selectedPoint.x},0)`}
-                stroke="rgba(252,76,2,0.85)"
+                stroke="rgba(252,76,2,0.85)" // orange
                 strokeWidth="2"
                 />
             )}
