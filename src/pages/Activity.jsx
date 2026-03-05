@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import FloatingButton from "../components/FloatingButton";
 import AddActivityModal from "../components/AddActivityModal";
-import { generateCoachAlert } from "../utils/coachAlert";
 import { FiEdit2 } from "react-icons/fi";
 import Papa from "papaparse";
 
 import { generateCoachAlerts } from "../utils/coachAlert";
+import CoachHelpModal from "../components/CoachHelpModal";
 
 
 // Fix for YYYY-MM-DD timezone shift bug
@@ -40,6 +40,7 @@ export default function Activity() {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);
   const [coachAlertCount, setCoachAlertCount] = useState(1); // user-controlled
+  const [coachHelpOpen, setCoachHelpOpen] = useState(false);
 
   // Lazy render (infinite scroll style)
   const PAGE_SIZE = 40; // how many cards to add per batch
@@ -361,28 +362,72 @@ export default function Activity() {
 
             </div>
             
-            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "10px 0 12px" }}>
-            <span style={{ opacity: 0.8, fontSize: 13 }}>Coach alerts shown:</span>
-
-            <select
-                value={coachAlertCount}
-                onChange={(e) => setCoachAlertCount(Number(e.target.value))}
+            <div
                 style={{
-                background: "#1f2937",
-                color: "white",
-                border: "1px solid rgba(255,255,255,0.12)",
-                padding: "6px 10px",
-                borderRadius: 8,
-                cursor: "pointer",
-                fontSize: 13,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    margin: "10px 0 12px",
                 }}
-            >
-                <option value={1}>1 (Top priority)</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-                <option value={4}>4</option>
-            </select>
-            </div>
+                >
+                <span style={{ opacity: 0.8, fontSize: 13 }}>
+                    Coach alerts shown:
+                </span>
+
+                <div
+                    style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    }}
+                >
+                    <select
+                    value={coachAlertCount}
+                    onChange={(e) => setCoachAlertCount(Number(e.target.value))}
+                    style={{
+                        background: "#1f2937",
+                        color: "white",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        padding: "6px 10px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        fontSize: 13,
+                    }}
+                    >
+                    <option value={1}>1 (Top priority)</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    </select>
+
+                    <button
+                    type="button"
+                    onClick={() => setCoachHelpOpen(true)}
+                    aria-label="What are coach alerts?"
+                    title="What are coach alerts?"
+                    style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 999,
+                        border: "1px solid rgba(255,255,255,0.14)",
+                        background: "transparent",
+                        color: "rgba(255,255,255,0.9)",
+                        cursor: "pointer",
+                        fontWeight: 900,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                    >
+                    ?
+                    </button>
+                </div>
+                </div>
+
+            <CoachHelpModal
+            isOpen={coachHelpOpen}
+            onClose={() => setCoachHelpOpen(false)}
+            />
 
             {coachAlerts.map((alert, i) => (
             <div key={alert.key || i} className={`coach-alert ${alert.toneClass}`}>
