@@ -353,6 +353,7 @@ export default function RunCalendar({ activities }) {
           >
             <FiSettings />
           </button>
+
         </div>
 
         <div className="run-calendar-sub">{/* optional subtitle */}</div>

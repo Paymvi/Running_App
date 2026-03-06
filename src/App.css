@@ -1,4 +1,26 @@
-/* Basic mobile-app look */
+/*
+══════════════════════════════════════════════════════════════════
+🏃 TRAINING APP — GLOBAL STYLESHEET
+══════════════════════════════════════════════════════════════════
+This stylesheet defines the visual system for the training tracker Veelo.
+The structure is organized by feature areas rather than page files.
+
+Design Philosophy
+─────────────────
+• Mobile-first layout
+• Dark theme
+• Card-based UI components
+• Minimalist dashboards with clear metrics
+• Subtle motion and tactile feedback
+
+*/
+
+
+/* ═══════════════════════════════════════════════
+   🎨 ROOT THEME VARIABLES
+   Global color system and UI tokens
+   ═══════════════════════════════════════════════ */
+
 :root {
   --bg: #0b0c10;
   --card: #12141b;
@@ -37,7 +59,11 @@ body {
 
 .muted { color: var(--muted); }
 
-/* Bottom tab bar */
+
+/* ═══════════════════════════════════════════════
+   🔻 BOTTOM TAB NAVIGATION
+   Persistent navigation bar
+   ═══════════════════════════════════════════════ */
 .tabbar {
   position: fixed;
   left: 0;
@@ -144,15 +170,10 @@ body {
 }
 
 
-
-
-
-
-
-
-
-
-/* -------------------------------- */
+/* ═══════════════════════════════════════════════
+   ➕ FLOATING ACTION BUTTON
+   Global button used to add activities
+   ═══════════════════════════════════════════════ */
 
 /* Floating button */
 .floating-btn {
@@ -176,6 +197,12 @@ body {
   background: rgba(0,0,0,0.5);
   z-index: 999;
 }
+
+
+/* ═══════════════════════════════════════════════
+   🪟 MODAL SYSTEM
+   Shared modal layout + slide animation
+   ═══════════════════════════════════════════════ */
 
 .modal {
   position: fixed;
@@ -202,7 +229,10 @@ body {
 }
 
 
-/* ------------------------- Cards -------------------------*/
+/* ═══════════════════════════════════════════════
+   🎴 ACTIVITY CARDS
+   Cards that display logged runs and workouts
+   ═══════════════════════════════════════════════ */
 .activity-card {
   display: flex;
   justify-content: space-between;
@@ -300,11 +330,9 @@ body {
 }
 
 
-
-/* ---------------------------------------------------------*/
-
-
-/* -------------------- Activity Controls --------------------*/
+/* ═══════════════════════════════════════════════
+   🎮 ACTIVITY ACTIONS & CONTROLS
+   ═══════════════════════════════════════════════ */
 /* Container */
 .page-spacer {
   height: 12px;
@@ -400,7 +428,10 @@ body {
   justify-content: center;
 }
 
-/* ------------------------ Strava Modal ---------------------------*/
+/* ═══════════════════════════════════════════════
+   🚴 STRAVA INTEGRATION
+   Connect + import activities
+   ═══════════════════════════════════════════════ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -539,7 +570,9 @@ body {
 }
 
 
-/* ------------------------ Modal ---------------------------*/
+/* ═══════════════════════════════════════════════
+   🪟 MODAL
+   ═══════════════════════════════════════════════ */
 
 .modal input,
 .modal textarea,
@@ -643,7 +676,9 @@ page {
   letter-spacing: 0.4px;
 }
 
-/* ---------- Upload Box ---------- */
+/* ═══════════════════════════════════════════════
+   🪟 Upload (for Activity modal)
+   ═══════════════════════════════════════════════ */
 
 .upload-box {
   position: relative;
@@ -747,8 +782,10 @@ page {
   color: white;
 }
 
-/* --------- */
-
+/* ═══════════════════════════════════════════════
+   🚴 BUTTONS
+   Primary, secondary, tertiary, danger, etc
+   ═══════════════════════════════════════════════ */
 .primary-btn {
   width: 100%;
   padding: 14px;
@@ -858,9 +895,6 @@ page {
 
 
 
-
-
-
 .close-btn {
   position: absolute;
   top: 12px;
@@ -876,8 +910,12 @@ page {
   transform: scale(1.1);
 }
 
-/* ---------------------------------------------------------*/
 
+
+/* ═══════════════════════════════════════════════
+   📅 TRAINING CALENDAR
+   Heatmap-style activity visualization
+   ═══════════════════════════════════════════════ */
 
 .run-calendar-card {
   background: var(--card);
@@ -1078,7 +1116,10 @@ page {
 
 
 
-/* ---------------- PROFILE (sketch layout) ---------------- */
+/* ═══════════════════════════════════════════════
+   👤 PROFILE DASHBOARD
+   User stats, PRs, graphs, and training insights
+   ═══════════════════════════════════════════════ */
 
 .profile-page {
   padding: 22px 18px 120px 18px;
@@ -1397,9 +1438,9 @@ page {
 
 
 
-
-
-/* MONTHLY SNAPSHOT like sketch cards */
+/* ═══════════════════════════════════════════════
+   📈 MONTHLY SNAPSHOT
+   ═══════════════════════════════════════════════ */
 .profile-section {
   margin-top: 10px;
 }
@@ -1494,7 +1535,10 @@ page {
 }
 
 
-/* For the weekly mileage */
+/* ═══════════════════════════════════════════════
+   📈 WEEKLY MILEAGE CHART
+   Interactive SVG mileage visualization
+   ═══════════════════════════════════════════════ */
 .weekly-header {
   margin-bottom: 10px;
 }
@@ -1870,7 +1914,10 @@ page {
 
 
 
-/* ---------------- EASY JAR (MINIMAL) ---------------- */
+/* ═══════════════════════════════════════════════
+   🫙 EASY JAR SYSTEM
+   Gamified tracker for easy runs
+   ═══════════════════════════════════════════════ */
 
 .jar-card {
   display: flex;
@@ -2067,7 +2114,10 @@ page {
 
 
 
-
+/* ═══════════════════════════════════════════════
+   🧠 COACH ALERTS
+   Training analysis feedback system
+   ═══════════════════════════════════════════════ */
 .coach-alert {
   border-radius: 16px;
   padding: 12px 14px;
@@ -2111,10 +2161,20 @@ page {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
   cursor: pointer;
+
+}
+
+.icon-btn {
+  transition: all 0.15s ease;
 }
 
 .icon-btn:hover {
   background: rgba(255, 255, 255, 0.10);
+  transform: scale(1.03);
+}
+
+.icon-btn:active {
+  transform: scale(0.97);
 }
 
 /* Heat cell */
@@ -2257,3 +2317,9 @@ page {
 .switch input:checked + .slider:before {
   transform: translateX(18px);
 }
+
+/*
+══════════════════════════════════════════════════════════════════
+END OF FILE
+══════════════════════════════════════════════════════════════════
+*/
