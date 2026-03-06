@@ -201,6 +201,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="run">🏃‍➡️ Run</option>
             <option value="bike">🚲 Bike</option>
             <option value="swim">🥽 Swim</option>
+            <option value="workout">💪 Workout</option>
           </select>
           <select name="intensity" value={form.intensity} onChange={handleChange}>
             <option value="easy">🟢 Easy</option>

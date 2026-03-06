@@ -161,6 +161,13 @@ export default function Activity() {
             intervals: "Swim-Sprints.png",
             default: "Swim-Default.png",
         },
+        workout: {
+            easy: "Workout-2.png",
+            long: "Workout-2.png",
+            tempo: "Workout-2.png",
+            intervals: "Workout-2.png",
+            default: "Workout-2.png",
+        },
     };
     const coachAlerts = useMemo(() => {
         return generateCoachAlerts(activities, coachAlertCount);

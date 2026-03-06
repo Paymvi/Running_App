@@ -18,7 +18,7 @@ function parseLocalYMD(input) {
     if (!y || !m || !d) return null;
     return new Date(y, m - 1, d);
   }
-  
+
   // Case 2: M/D/YYYY or MM/DD/YYYY
   if (clean.includes("/")) {
     const [m, d, y] = clean.split("/").map(Number);
@@ -46,7 +46,7 @@ function getActivityValue(a) {
   const type = (a.type || a.sport || a.activityType || "run").toLowerCase();
   if (type === "workout") {
     // if you later store durationMin or minutes, use that:
-    const mins = Number(a.minutes ?? a.durationMin ?? a.durationMinutes ?? 0);
+    const mins = Number(a.minutes ?? a.duration ?? a.durationMin ?? a.durationMinutes ?? 0);
     if (Number.isFinite(mins) && mins > 0) return { type, value: mins };
     // fallback: count workout as 1 if no minutes exist yet
     return { type, value: 1 };
@@ -59,7 +59,7 @@ function getActivityValue(a) {
 // convert intensity (0..1) into alpha that looks good
 function intensityToAlpha(t) {
   // base visibility + scaling
-  return 0.12 + t * 0.88;
+  return 0.12 + t * 0.3; // Fix to make it not too bright
 }
 
 // Create a split gradient if multiple sports exist that day
