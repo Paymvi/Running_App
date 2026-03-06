@@ -6,7 +6,9 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
 import { generateCoachAlerts } from "../utils/coachAlert";
+
 import CoachHelpModal from "../components/CoachHelpModal";
+import StravaModal from "../components/StravaModal";
 
 
 // Fix for YYYY-MM-DD timezone shift bug
@@ -42,6 +44,7 @@ export default function Activity() {
   const [editingActivity, setEditingActivity] = useState(null);
   const [coachAlertCount, setCoachAlertCount] = useState(1); // user-controlled
   const [coachHelpOpen, setCoachHelpOpen] = useState(false);
+  const [stravaModalOpen, setStravaModalOpen] = useState(false);
   const [stravaToken, setStravaToken] = useState(
     localStorage.getItem("strava_access_token") || ""
   );
@@ -536,27 +539,25 @@ export default function Activity() {
                 </label>
 
                 <button
-                onClick={() => {
-                    window.location.href = "http://localhost:5050/auth/strava";
-                }}
-                className="control-btn btn-dark"
-                >
-                {stravaToken ? "Strava Connected ✅" : "Connect Strava"}
-                </button>
-
-                <button
-                    onClick={fetchStravaActivities}
-                    disabled={!stravaToken}
-                    className={`control-btn btn-secondary ${!stravaToken ? "btn-disabled" : ""}`}
-                >
-                Import from Strava
-                </button>
-
-                <button
                     onClick={handleExportCSV}
                     className="control-btn btn-secondary"
                 >
-                Export
+                Export CSV
+                </button>
+
+                {/* For Strava modal */}
+                <button
+                    type="button"
+                    onClick={() => setStravaModalOpen(true)}
+                    className="strava-icon-btn"
+                    aria-label="Open Strava options"
+                    title="Open Strava options"
+                >
+                <img
+                    src="/strava-logo.png"
+                    alt="Strava"
+                    className="strava-icon-img"
+                />
                 </button>
 
                 <button
@@ -605,6 +606,16 @@ export default function Activity() {
             <CoachHelpModal
                 isOpen={coachHelpOpen}
                 onClose={() => setCoachHelpOpen(false)}
+            />
+
+            <StravaModal
+                isOpen={stravaModalOpen}
+                onClose={() => setStravaModalOpen(false)}
+                stravaToken={stravaToken}
+                onConnect={() => {
+                    window.location.href = "http://localhost:5050/auth/strava";
+                }}
+                onImport={fetchStravaActivities}
             />
 
             {coachAlertCount > 0 &&

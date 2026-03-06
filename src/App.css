@@ -304,6 +304,7 @@ body {
 /* ---------------------------------------------------------*/
 
 
+/* -------------------- Activity Controls --------------------*/
 /* Container */
 .page-spacer {
   height: 12px;
@@ -399,7 +400,143 @@ body {
   justify-content: center;
 }
 
+/* ------------------------ Strava Modal ---------------------------*/
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
 
+.strava-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #111827;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+
+.strava-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.strava-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.strava-modal-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.strava-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.strava-modal-close {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.strava-modal-body {
+  padding: 18px;
+}
+
+.strava-modal-text {
+  margin: 0 0 14px;
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.strava-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.strava-action-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.strava-connect-btn {
+  background: #fc4c02;
+  color: white;
+  border: none;
+}
+
+.strava-import-btn {
+  background: #1f2937;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.strava-action-btn.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.strava-modal-fyi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 13px;
+  color: rgba(255,255,255,0.78);
+}
+
+.strava-icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.strava-icon-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.import-export-fyi {
+  margin: 2px 0 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+}
 
 
 /* ------------------------ Modal ---------------------------*/
