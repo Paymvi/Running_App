@@ -37,6 +37,11 @@ function sumMiles(list) {
   return list.reduce((acc, a) => acc + (Number(a.miles) || 0), 0);
 }
 
+// So it only looks at runs
+function runOnly(list) {
+  return list.filter(a => (a.type || "").toLowerCase() === "run");
+}
+
 function avgMph(list) {
   const vals = list.map(a => Number(a.mph)).filter(v => isFinite(v) && v > 0);
   if (!vals.length) return null;
@@ -63,6 +68,7 @@ function isHardIntensity(intensity) {
 
 function easyRuns(activities) {
   return activities
+    .filter(a => (a.type || "").toLowerCase() === "run")
     .filter(a => (a.intensity || "").toLowerCase() === "easy")
     .filter(a => isFinite(Number(a.mph)) && Number(a.mph) > 0);
 }
@@ -97,7 +103,7 @@ function getWeekSlice(sorted, now) {
 function countRunDaysLastNDays(sorted, now, nDays = 6) {
   // counts unique calendar days with at least one run
   const seen = new Set();
-  for (const a of sorted) {
+  for (const a of runOnly(sorted)) {
     const d = toDate(a);
     if (!d) continue;
     const diff = daysSince(d, now);
@@ -111,7 +117,7 @@ function countRunDaysLastNDays(sorted, now, nDays = 6) {
 
 function findLongestRunInDays(sorted, now, days = 14) {
   let best = null;
-  for (const a of sorted) {
+  for (const a of runOnly(sorted)) {
     const d = toDate(a);
     if (!d) continue;
     const diff = daysSince(d, now);
@@ -123,7 +129,7 @@ function findLongestRunInDays(sorted, now, days = 14) {
 
 function detectWallPattern(sorted, now) {
   // If last 4 runs are all within ~0.6 miles of each other (and under 4 miles), you're “stuck”
-  const last = sorted.slice(0, 5).filter(a => isFinite(Number(a.miles)) && Number(a.miles) > 0);
+  const last = runOnly(sorted).slice(0, 5).filter(a => isFinite(Number(a.miles)) && Number(a.miles) > 0);
   if (last.length < 4) return null;
 
   const miles = last.slice(0, 4).map(a => Number(a.miles));
@@ -192,14 +198,15 @@ export function generateCoachAlerts(activities, maxAlerts = 1) {
     ];
   }
 
-  const sorted = [...activities].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const sorted = runOnly(activities)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
   const latest = sorted[0];
   const now = toDate(latest) || new Date();
 
   const { thisWeek, lastWeek } = getWeekSlice(sorted, now);
 
-  const thisWeekMiles = sumMiles(thisWeek);
-  const lastWeekMiles = sumMiles(lastWeek);
+  const thisWeekMiles = sumMiles(runOnly(thisWeek));
+  const lastWeekMiles = sumMiles(runOnly(lastWeek));
 
   const intensity = (latest.intensity || "").toLowerCase();
   const feel = (latest.feel || "").toLowerCase();
@@ -341,8 +348,9 @@ export function generateCoachAlerts(activities, maxAlerts = 1) {
   }
 
   // Y6: Too little easy (this week)
-  const totalCount = thisWeek.length;
-  const easyCount = thisWeek.filter((a) => (a.intensity || "").toLowerCase() === "easy").length;
+  const totalCount = runOnly(thisWeek).length;
+  const easyCount = runOnly(thisWeek)
+    .filter((a) => (a.intensity || "").toLowerCase() === "easy").length;
   if (totalCount >= 3) {
     const easyPct = Math.round((easyCount / totalCount) * 100);
     if (easyPct <= 45) {
