@@ -95,7 +95,11 @@ export default function RunCalendar({ activities }) {
         </div>
       </div>
 
-      <Calendar tileContent={tileContent} value={null} />
+    <Calendar 
+      tileContent={tileContent}
+      value={new Date()}
+      locale="en-US"
+    />
 
       <div className="run-calendar-legend">
         <span className="legend-item">
