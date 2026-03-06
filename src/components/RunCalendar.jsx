@@ -4,6 +4,28 @@ import "react-calendar/dist/Calendar.css";
 import { FiSettings } from "react-icons/fi";
 import CalendarSettingsModal from "./CalendarSettingsModal"; // adjust path
 
+
+/*
+┌─────────────────┬──────────────────────────────────────────────┐
+│ Calendar Rule   │ Behavior                                     │
+├─────────────────┼──────────────────────────────────────────────┤
+│ Run/Bike/Swim   │ Opacity is based on distance relative to     │
+│ Opacity         │ that activity type's max distance.           │
+├─────────────────┼──────────────────────────────────────────────┤
+│ Workout Opacity │ Opacity is based on feel, not minutes.       │
+│                 │ easy = light, medium = medium, hard = dark   │
+├─────────────────┼──────────────────────────────────────────────┤
+│ Tile Priority   │ If multiple activities happen on one day,    │
+│                 │ the label priority is:                       │
+│                 │ run -> bike -> swim -> workout               │
+├─────────────────┼──────────────────────────────────────────────┤
+│ Workout Label   │ Workout tiles show a short label from the    │
+│                 │ title when possible: Push, Back, Legs,       │
+│                 │ Upper, or Lower.                             │
+└─────────────────┴──────────────────────────────────────────────┘
+*/
+
+
 // This looks for the type of workout to put in the calendar later
 function getWorkoutCalendarLabel(activity) {
   const rawTitle = String(activity?.title || "").toLowerCase().trim();
@@ -78,6 +100,16 @@ function getActivityValue(a) {
   const miles = Number(a.miles ?? 0);
   if (!Number.isFinite(miles) || miles <= 0) return { type, value: 0 };
   return { type, value: miles };
+}
+
+function getWorkoutFeelIntensity(activity) {
+  const feel = String(activity?.feel || "").toLowerCase();
+
+  if (feel === "easy") return 0.35;
+  if (feel === "medium") return 0.65;
+  if (feel === "hard") return 1.0;
+
+  return 0.5; // fallback
 }
 
 // convert intensity (0..1) into alpha that looks good
@@ -167,6 +199,7 @@ export default function RunCalendar({ activities }) {
           swim: 0,
           workout: 0,
           workoutLabel: null,
+          workoutIntensity: 0,
         };
       }
 
@@ -176,6 +209,10 @@ export default function RunCalendar({ activities }) {
       // Save a readable workout label for calendar display
       if (type === "workout" && !map[day].workoutLabel) {
         map[day].workoutLabel = getWorkoutCalendarLabel(a);
+      }
+      if (type === "workout") {
+        const intensity = getWorkoutFeelIntensity(a);
+        map[day].workoutIntensity = Math.max(map[day].workoutIntensity, intensity);
       }
     }
 
@@ -207,7 +244,14 @@ export default function RunCalendar({ activities }) {
     for (const type of ["run", "bike", "swim", "workout"]) {
       const v = Number(t[type] ?? 0);
       if (v > 0 && enabledTypes.has(type)) {
-        const intensity = clamp01(v / (maxByType[type] || 1));
+        let intensity;
+
+        if (type === "workout") {
+          intensity = t.workoutIntensity || 0.5;
+        } else {
+          intensity = clamp01(v / (maxByType[type] || 1));
+        }
+
         present.push({ type, value: v, alpha: intensityToAlpha(intensity) });
       }
     }
