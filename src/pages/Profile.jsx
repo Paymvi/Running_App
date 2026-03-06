@@ -775,46 +775,48 @@ const removeAvatar = () => {
   // PRs (min time at distance)
   // -------------------------
     const prs = useMemo(() => {
-    let bestMile = { time: Infinity, date: null };
-    let best5k = { time: Infinity, date: null };
-    let best10k = { time: Infinity, date: null };
+        let bestMile = { time: Infinity, date: null };
+        let best5k = { time: Infinity, date: null };
+        let best10k = { time: Infinity, date: null };
 
-    activities.forEach((a) => {
-        const miles = parseFloat(a.miles);
-        const duration = parseFloat(a.duration);
-        if (!miles || !duration) return;
+        activities.forEach((a) => {
+            if (a.type && a.type !== "run") return;
 
-        const date = a.date || null;
+            const miles = parseFloat(a.miles);
+            const duration = parseFloat(a.duration);
+            if (!miles || !duration) return;
 
-        if (miles >= 1 && duration < bestMile.time) {
-        bestMile = { time: duration, date };
-        }
+            const date = a.date || null;
 
-        if (miles >= 3.1 && duration < best5k.time) {
-        best5k = { time: duration, date };
-        }
+            if (miles >= 1 && duration < bestMile.time) {
+            bestMile = { time: duration, date };
+            }
 
-        if (miles >= 6.2 && duration < best10k.time) {
-        best10k = { time: duration, date };
-        }
-    });
+            if (miles >= 3.1 && duration < best5k.time) {
+            best5k = { time: duration, date };
+            }
 
-    // Find most recent PR date
-    const dates = [bestMile.date, best5k.date, best10k.date]
-        .filter(Boolean)
-        .map((d) => new Date(d));
+            if (miles >= 6.2 && duration < best10k.time) {
+            best10k = { time: duration, date };
+            }
+        });
 
-    const latestPRDate =
-        dates.length > 0
-        ? new Date(Math.max(...dates.map((d) => d.getTime())))
-        : null;
+        // Find most recent PR date
+        const dates = [bestMile.date, best5k.date, best10k.date]
+            .filter(Boolean)
+            .map((d) => new Date(d));
 
-    return {
-        mile: bestMile,
-        fiveK: best5k,
-        tenK: best10k,
-        latestPRDate,
-    };
+        const latestPRDate =
+            dates.length > 0
+            ? new Date(Math.max(...dates.map((d) => d.getTime())))
+            : null;
+
+        return {
+            mile: bestMile,
+            fiveK: best5k,
+            tenK: best10k,
+            latestPRDate,
+        };
     }, [activities]);
 
     function daysAgo(dateObj) {
@@ -833,22 +835,23 @@ const removeAvatar = () => {
     // EASY RUN JAR (25 easy runs per jar)
     // -------------------------
     const easyRuns = useMemo(() => {
-    return activities
-        .filter((a) => a.intensity === "easy")
-        .filter((a) => parseFloat(a.miles) && parseFloat(a.duration))
-        .map((a, idx) => {
-        const dateStr = a.date || "";
-        // stable key: date+miles+duration+idx (good enough for local demo)
-        const key = `${dateStr}|${a.miles}|${a.duration}|${idx}`;
-        return {
-            key,
-            date: dateStr,
-            miles: parseFloat(a.miles),
-            duration: parseFloat(a.duration), // minutes
-            label: "Easy Run",
-        };
-        })
-        .sort((x, y) => new Date(x.date || 0) - new Date(y.date || 0));
+        return activities
+            .filter((a) => !a.type || a.type === "run")
+            .filter((a) => a.intensity === "easy")
+            .filter((a) => parseFloat(a.miles) && parseFloat(a.duration))
+            .map((a, idx) => {
+            const dateStr = a.date || "";
+            // stable key: date+miles+duration+idx (good enough for local demo)
+            const key = `${dateStr}|${a.miles}|${a.duration}|${idx}`;
+            return {
+                key,
+                date: dateStr,
+                miles: parseFloat(a.miles),
+                duration: parseFloat(a.duration), // minutes
+                label: "Easy Run",
+            };
+            })
+            .sort((x, y) => new Date(x.date || 0) - new Date(y.date || 0));
     }, [activities]);
 
     const jarGroups = useMemo(() => chunkArray(easyRuns, 25), [easyRuns]);
