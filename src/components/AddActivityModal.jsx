@@ -10,6 +10,32 @@ function getLocalTodayYMD() {
   return `${y}-${m}-${d}`;
 }
 
+// Schema
+
+/*
+{
+  "id": "string",
+  "title": "string",
+  "description": "string",
+  "type": "run | bike | swim | workout",
+  "intensity": "easy | tempo | intervals | long",
+  "feel": "easy | medium | hard",
+  "date": "YYYY-MM-DD",
+  "time": "HH:MM",
+  "mode": "timeMiles | splits",
+  "miles": "number",
+  "duration": "number",
+  "splits": [
+    {
+      "mph": "number",
+      "distance": "number"
+    }
+  ],
+  "notes": "string",
+  "photo": "base64-string"
+}
+*/
+
 export default function AddActivityModal({ isOpen, onClose, onSave, initialActivity, onDelete }) {
 
   const today = getLocalTodayYMD();
@@ -292,3 +318,5 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     </>
   );
 }
+
+
