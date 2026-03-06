@@ -4,6 +4,30 @@ import "react-calendar/dist/Calendar.css";
 import { FiSettings } from "react-icons/fi";
 import CalendarSettingsModal from "./CalendarSettingsModal"; // adjust path
 
+// This looks for the type of workout to put in the calendar later
+function getWorkoutCalendarLabel(activity) {
+  const rawTitle = String(activity?.title || "").toLowerCase().trim();
+
+  if (!rawTitle) return "Workout";
+
+  if (rawTitle.includes("push") || rawTitle.includes("chest") || rawTitle.includes("shoulder") || rawTitle.includes("tricep")) {
+    return "Push";
+  }
+
+  if (rawTitle.includes("back") || rawTitle.includes("pull") || rawTitle.includes("lat") || rawTitle.includes("row") || rawTitle.includes("bicep")) {
+    return "Back";
+  }
+
+  if (rawTitle.includes("legs") || rawTitle.includes("leg") || rawTitle.includes("quad") || rawTitle.includes("hamstring") || rawTitle.includes("glute")) {
+    return "Legs";
+  }
+
+  if (rawTitle.includes("upper")) return "Upper";
+  if (rawTitle.includes("lower")) return "Lower";
+
+  return "Workout";
+}
+
 // Fix for YYYY-MM-DD timezone shift bug
 function parseLocalYMD(input) {
   if (!input) return null;
@@ -126,6 +150,7 @@ export default function RunCalendar({ activities }) {
   // day -> { run, bike, swim, workout }
   const totalsByDay = useMemo(() => {
     const map = {};
+
     for (const a of activities || []) {
       const d = parseLocalYMD(a.date);
       if (!d || isNaN(d)) continue;
@@ -135,10 +160,25 @@ export default function RunCalendar({ activities }) {
       if (!enabledTypes.has(type)) continue;
       if (!value || value <= 0) continue;
 
-      if (!map[day]) map[day] = { run: 0, bike: 0, swim: 0, workout: 0 };
+      if (!map[day]) {
+        map[day] = {
+          run: 0,
+          bike: 0,
+          swim: 0,
+          workout: 0,
+          workoutLabel: null,
+        };
+      }
+
       if (map[day][type] == null) map[day][type] = 0;
       map[day][type] += value;
+
+      // Save a readable workout label for calendar display
+      if (type === "workout" && !map[day].workoutLabel) {
+        map[day].workoutLabel = getWorkoutCalendarLabel(a);
+      }
     }
+
     return map;
   }, [activities, enabledTypes]);
 
@@ -175,17 +215,37 @@ export default function RunCalendar({ activities }) {
 
     const bg = buildHeatBackground(present);
 
-    // small label line: show whichever is “dominant” (largest intensity)
-    const top = [...present].sort((a, b) => b.alpha - a.alpha)[0];
+    // Priority order for label display
+    const priority = ["run", "bike", "swim", "workout"];
+
+    // pick the highest priority activity that exists that day
+    let top = null;
+    for (const p of priority) {
+      const found = present.find(x => x.type === p);
+      if (found) {
+        top = found;
+        break;
+      }
+    }
+
+    // fallback (should rarely happen)
+    if (!top) {
+      top = present[0];
+    }
+
+    let tileLabel = "";
+    if (top.type === "workout") {
+      tileLabel = t.workoutLabel || "Workout";
+    } else {
+      tileLabel = `${top.value.toFixed(top.value >= 10 ? 0 : 1)} mi`;
+    }
 
     return (
       <>
         <div className="tile-heat" style={{ background: bg }} />
 
         <div className="tile-miles">
-          {top.type === "workout"
-            ? `${Math.round(top.value)} min`
-            : `${top.value.toFixed(top.value >= 10 ? 0 : 1)} mi`}
+          {tileLabel}
         </div>
       </>
     );
