@@ -304,6 +304,102 @@ body {
 /* ---------------------------------------------------------*/
 
 
+/* Container */
+.page-spacer {
+  height: 12px;
+}
+
+/* Button row */
+.controls-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Base button */
+.control-btn {
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+/* Dark buttons */
+.btn-dark {
+  background-color: #111827;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* Secondary buttons */
+.btn-secondary {
+  background-color: #1f2937;
+  color: white;
+  border: none;
+}
+
+/* Delete button */
+.btn-danger {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+}
+
+/* Disabled state */
+.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Coach alerts container */
+.coach-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 12px;
+}
+
+/* Coach label */
+.coach-label {
+  opacity: 0.8;
+  font-size: 13px;
+}
+
+/* Coach dropdown container */
+.coach-dropdown-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Dropdown */
+.coach-select {
+  background: #1f2937;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* Help button */
+.coach-help-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: transparent;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
 
 
 /* ------------------------ Modal ---------------------------*/

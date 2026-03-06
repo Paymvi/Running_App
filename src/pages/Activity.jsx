@@ -517,168 +517,106 @@ export default function Activity() {
 
     return (
         <div className="page">
-            
-            <div style={{ height: "12px" }}></div>
 
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div className="page-spacer"></div>
+
+            <div className="controls-row">
+
                 <label className="import-btn">
-                    Import
-                    <input
-                        type="file"
-                        accept=".csv,.xlsx,.xls"
-                        hidden
-                        onChange={async (e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                                await handleImportFile(file);
-                            }
-                            e.target.value = "";
-                        }}
-                    />
+                Import
+                <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    hidden
+                    onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) handleImportFile(file);
+                    }}
+                />
                 </label>
 
-                  <button
-                    onClick={() => {
-                    // sends you to server, which redirects you to Strava
+                <button
+                onClick={() => {
                     window.location.href = "http://localhost:5050/auth/strava";
-                    }}
-                    style={{
-                    backgroundColor: "#111827",
-                    color: "white",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    marginBottom: "10px"
-                    }}
+                }}
+                className="control-btn btn-dark"
                 >
-                    {stravaToken ? "Strava Connected ✅" : "Connect Strava"}
+                {stravaToken ? "Strava Connected ✅" : "Connect Strava"}
                 </button>
 
                 <button
                     onClick={fetchStravaActivities}
-                    style={{
-                    backgroundColor: "#1f2937",
-                    color: "white",
-                    border: "none",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    marginBottom: "10px",
-                    opacity: stravaToken ? 1 : 0.6
-                    }}
                     disabled={!stravaToken}
+                    className={`control-btn btn-secondary ${!stravaToken ? "btn-disabled" : ""}`}
                 >
-                    Import from Strava
+                Import from Strava
                 </button>
 
                 <button
                     onClick={handleExportCSV}
-                    style={{
-                        backgroundColor: "#1f2937",
-                        color: "white",
-                        border: "none",
-                        padding: "9px 12px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        marginBottom: "10px"
-                    }}
-                    >
-                    Export
+                    className="control-btn btn-secondary"
+                >
+                Export
                 </button>
 
-                <button 
-                    onClick={clearAllActivities} 
-                    style={{
-                        backgroundColor: "#ff4d4d",
-                        color: "white",
-                        border: "none",
-                        padding: "9px 12px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        marginBottom: "10px"
-                    }}
-                    >
-                    Delete All
+                <button
+                    onClick={clearAllActivities}
+                    className="control-btn btn-danger"
+                >
+                Delete All
                 </button>
 
             </div>
-            
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    margin: "10px 0 12px",
-                }}
-                >
-                <span style={{ opacity: 0.8, fontSize: 13 }}>
+
+            <div className="coach-controls">
+
+                <span className="coach-label">
                     Coach alerts shown:
                 </span>
 
-                <div
-                    style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    }}
-                >
-                    <select
+                <div className="coach-dropdown-row">
+
+                <select
                     value={coachAlertCount}
                     onChange={(e) => setCoachAlertCount(Number(e.target.value))}
-                    style={{
-                        background: "#1f2937",
-                        color: "white",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        padding: "6px 10px",
-                        borderRadius: 8,
-                        cursor: "pointer",
-                        fontSize: 13,
-                    }}
-                    >
+                    className="coach-select"
+                >
                     <option value={0}>0 (Off)</option>
                     <option value={1}>1 (Top priority)</option>
                     <option value={2}>2</option>
                     <option value={3}>3</option>
                     <option value={4}>4</option>
-                    </select>
+                </select>
 
-                    <button
+                <button
                     type="button"
                     onClick={() => setCoachHelpOpen(true)}
                     aria-label="What are coach alerts?"
                     title="What are coach alerts?"
-                    style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 999,
-                        border: "1px solid rgba(255,255,255,0.14)",
-                        background: "transparent",
-                        color: "rgba(255,255,255,0.9)",
-                        cursor: "pointer",
-                        fontWeight: 900,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}
-                    >
+                    className="coach-help-btn"
+                >
                     ?
-                    </button>
-                </div>
+                </button>
+
                 </div>
 
+            </div>
+
             <CoachHelpModal
-            isOpen={coachHelpOpen}
-            onClose={() => setCoachHelpOpen(false)}
+                isOpen={coachHelpOpen}
+                onClose={() => setCoachHelpOpen(false)}
             />
 
             {coachAlertCount > 0 &&
-            coachAlerts.map((alert, i) => (
+                coachAlerts.map((alert, i) => (
                 <div key={alert.key || i} className={`coach-alert ${alert.toneClass}`}>
-                <div className="coach-alert-title">{alert.title}</div>
-                {alert.detail && <div className="coach-alert-detail">{alert.detail}</div>}
-            </div>
-            ))}
+                    <div className="coach-alert-title">{alert.title}</div>
+                    {alert.detail && (
+                    <div className="coach-alert-detail">{alert.detail}</div>
+                    )}
+                </div>
+                ))}
+
 
 
 
