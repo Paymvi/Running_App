@@ -232,20 +232,30 @@ export default function Activity() {
             complete: function (results) {
             const importedActivities = results.data.map((row) => {
                 return {
-                id: crypto.randomUUID(),
-                title: row.title || "",
-                description: row.description || "",
-                type: row.type || "run",
-                intensity: row.intensity || "easy",
-                feel: row.feel || "medium",
-                date: row.date,
-                time: row.time || "",
-                mode: "timeMiles",
-                duration: row.duration || "",
-                miles: row.miles || "",
-                splits: [{ mph: "", distance: "" }],
-                notes: row.notes || "",
-                photo: null,
+                    id: crypto.randomUUID(),
+                    title: row.title || "",
+
+                    description: (row.description || "")
+                        .replace(/\\n|;/g, "\n"),
+
+                    type: row.type || "run",
+
+                    intensity: row.intensity || "easy",
+                    feel: row.feel || "medium",
+
+                    date: row.date,
+                    time: row.time || "",
+
+                    mode: "timeMiles",
+                    duration: row.duration || "",
+                    miles: row.miles || "",
+
+                    splits: [{ mph: "", distance: "" }],
+
+                    notes: (row.notes || "")
+                        .replace(/\\n|;/g, "\n"),
+
+                    photo: null,
                 };
             });
 
@@ -654,7 +664,12 @@ export default function Activity() {
                     </h3>
 
                     {a.description && (
-                        <p className="description-preview">{a.description}</p>
+                        <p
+                            className="description-preview"
+                            style={{ whiteSpace: "pre-line" }} 
+                        >
+                            {a.description}
+                        </p>
                     )}
 
 
@@ -688,12 +703,12 @@ export default function Activity() {
                     <div style={{ marginTop: 16 }}>
                         
 
-                        {a.notes && (
-                        <div className="expanded-section private-notes" >
-                            <strong>Notes</strong>
-                            <p>{a.notes}</p>
-                        </div>
-                        )}
+                    {a.notes && (
+                    <div className="expanded-section private-notes">
+                        <strong>Notes</strong>
+                        <p style={{ whiteSpace: "pre-line" }}>{a.notes}</p>
+                    </div>
+                    )}
 
                         <div className="edit-row" style={{ marginTop: 6 }}>
                             <button
