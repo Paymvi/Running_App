@@ -1,11 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { FiSettings } from "react-icons/fi";
+import CalendarSettingsModal from "./CalendarSettingsModal"; // adjust path
 
 // Fix for YYYY-MM-DD timezone shift bug
 function parseLocalYMD(input) {
   if (!input) return null;
-
   if (input instanceof Date) return input;
 
   // Remove time if present
@@ -17,70 +18,174 @@ function parseLocalYMD(input) {
     if (!y || !m || !d) return null;
     return new Date(y, m - 1, d);
   }
-
+  
   // Case 2: M/D/YYYY or MM/DD/YYYY
   if (clean.includes("/")) {
     const [m, d, y] = clean.split("/").map(Number);
     if (!y || !m || !d) return null;
     return new Date(y, m - 1, d);
   }
-
   return null;
 }
 
 const pad2 = (n) => String(n).padStart(2, "0");
-const toYMD = (d) =>
-  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-
+const toYMD = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 
+const COLORS = {
+  run: [252, 76, 2],       // orange
+  bike: [255, 214, 0],     // yellow
+  swim: [120, 200, 255],   // light blue
+  workout: [255, 90, 200], // pink
+};
+
+// pick a “value” for each type (you can refine later)
+// run/bike/swim: miles
+// workout: minutes or a "load" if you add it later
+function getActivityValue(a) {
+  const type = (a.type || a.sport || a.activityType || "run").toLowerCase();
+  if (type === "workout") {
+    // if you later store durationMin or minutes, use that:
+    const mins = Number(a.minutes ?? a.durationMin ?? a.durationMinutes ?? 0);
+    if (Number.isFinite(mins) && mins > 0) return { type, value: mins };
+    // fallback: count workout as 1 if no minutes exist yet
+    return { type, value: 1 };
+  }
+  const miles = Number(a.miles ?? 0);
+  if (!Number.isFinite(miles) || miles <= 0) return { type, value: 0 };
+  return { type, value: miles };
+}
+
+// convert intensity (0..1) into alpha that looks good
+function intensityToAlpha(t) {
+  // base visibility + scaling
+  return 0.12 + t * 0.88;
+}
+
+// Create a split gradient if multiple sports exist that day
+function buildHeatBackground(parts) {
+  // parts: [{ type, alpha }]
+  if (!parts.length) return null;
+  if (parts.length === 1) {
+    const { type, alpha } = parts[0];
+    const [r, g, b] = COLORS[type];
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // Split vertically into equal segments
+  const seg = 100 / parts.length;
+  const stops = parts.map((p, i) => {
+    const [r, g, b] = COLORS[p.type];
+    const c = `rgba(${r}, ${g}, ${b}, ${p.alpha})`;
+    const start = (i * seg).toFixed(3);
+    const end = ((i + 1) * seg).toFixed(3);
+    return `${c} ${start}% ${end}%`;
+  });
+
+  return `linear-gradient(90deg, ${stops.join(", ")})`;
+}
+
 export default function RunCalendar({ activities }) {
-  const milesByDay = useMemo(() => {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // toggles (persisted)
+  const [triathleteMode, setTriathleteMode] = useState(false);
+  const [hybridMode, setHybridMode] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("calendar_settings_v1");
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      setTriathleteMode(!!s.triathleteMode);
+      setHybridMode(!!s.hybridMode);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "calendar_settings_v1",
+        JSON.stringify({ triathleteMode, hybridMode })
+      );
+    } catch {}
+  }, [triathleteMode, hybridMode]);
+
+  const enabledTypes = useMemo(() => {
+    const types = new Set(["run"]); // always show runs
+    if (triathleteMode) {
+      types.add("bike");
+      types.add("swim");
+    }
+    if (hybridMode) {
+      types.add("workout");
+    }
+    return types;
+  }, [triathleteMode, hybridMode]);
+
+  // day -> { run, bike, swim, workout }
+  const totalsByDay = useMemo(() => {
     const map = {};
     for (const a of activities || []) {
-      // IMPORTANT: this assumes a.date is ISO-like: "YYYY-MM-DD..." or "YYYY-MM-DD"
       const d = parseLocalYMD(a.date);
       if (!d || isNaN(d)) continue;
-
       const day = toYMD(d);
 
-      if (!day) continue;
+      const { type, value } = getActivityValue(a);
+      if (!enabledTypes.has(type)) continue;
+      if (!value || value <= 0) continue;
 
-      const miles = Number(a.miles || 0);
-      if (!Number.isFinite(miles)) continue;
-
-      map[day] = (map[day] || 0) + miles;
+      if (!map[day]) map[day] = { run: 0, bike: 0, swim: 0, workout: 0 };
+      if (map[day][type] == null) map[day][type] = 0;
+      map[day][type] += value;
     }
     return map;
-  }, [activities]);
+  }, [activities, enabledTypes]);
 
-  const maxMiles = useMemo(() => {
-    const vals = Object.values(milesByDay);
-    const max = vals.length ? Math.max(...vals) : 0;
-    return Math.max(5, max);
-  }, [milesByDay]);
+  // separate max per type for fair scaling
+  const maxByType = useMemo(() => {
+    const max = { run: 5, bike: 10, swim: 1, workout: 30 };
+    // defaults above are just reasonable “minimum max” so colors still show early on
+    for (const day of Object.keys(totalsByDay)) {
+      const t = totalsByDay[day];
+      for (const k of Object.keys(max)) {
+        const v = Number(t?.[k] ?? 0);
+        if (Number.isFinite(v)) max[k] = Math.max(max[k], v);
+      }
+    }
+    return max;
+  }, [totalsByDay]);
 
   const tileContent = ({ date, view }) => {
     if (view !== "month") return null;
 
     const key = toYMD(date);
-    const miles = milesByDay[key] || 0;
-    if (miles <= 0) return null;
+    const t = totalsByDay[key];
+    if (!t) return null;
 
-    const t = clamp01(miles / maxMiles);
-    const alpha = 0.15 + t * 0.85;
+    const present = [];
+    for (const type of ["run", "bike", "swim", "workout"]) {
+      const v = Number(t[type] ?? 0);
+      if (v > 0 && enabledTypes.has(type)) {
+        const intensity = clamp01(v / (maxByType[type] || 1));
+        present.push({ type, value: v, alpha: intensityToAlpha(intensity) });
+      }
+    }
+    if (!present.length) return null;
+
+    const bg = buildHeatBackground(present);
+
+    // small label line: show whichever is “dominant” (largest intensity)
+    const top = [...present].sort((a, b) => b.alpha - a.alpha)[0];
 
     return (
       <>
-        {/* heat background */}
-        <div
-          className="tile-heat"
-          style={{ backgroundColor: `rgba(252, 76, 2, ${alpha})` }}
-        />
+        <div className="tile-heat" style={{ background: bg }} />
 
-        {/* miles label */}
-        <div className="tile-miles" style={{ fontSize: 10, marginTop: 2, opacity: 0.9, fontWeight: 700 }}>
-          {miles.toFixed(miles >= 10 ? 0 : 1)} mi
+        <div className="tile-miles">
+          {top.type === "workout"
+            ? `${Math.round(top.value)} min`
+            : `${top.value.toFixed(top.value >= 10 ? 0 : 1)} mi`}
         </div>
       </>
     );
@@ -89,29 +194,60 @@ export default function RunCalendar({ activities }) {
   return (
     <div className="run-calendar-card">
       <div className="run-calendar-header">
-        <h2 className="run-calendar-title">Training Calendar</h2>
-        <div className="run-calendar-sub">
-          {/* Brighter = longer run (scaled to your max day) */}
+        <div className="run-calendar-title-row">
+          <h2 className="run-calendar-title">Training Calendar</h2>
+
+          <button
+            className="icon-btn"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Calendar settings"
+            title="Calendar settings"
+          >
+            <FiSettings />
+          </button>
         </div>
+
+        <div className="run-calendar-sub">{/* optional subtitle */}</div>
       </div>
 
-    <Calendar 
-      tileContent={tileContent}
-      value={new Date()}
-      locale="en-US"
-    />
+      {/* Force Sunday-start in the simplest way */}
+      <Calendar
+        tileContent={tileContent}
+        value={null}
+        locale="en-US"
+      />
 
       <div className="run-calendar-legend">
         <span className="legend-item">
-          <span className="legend-dot low" /> short
+          <span className="legend-dot run" /> run
         </span>
-        <span className="legend-item">
-          <span className="legend-dot mid" /> medium
-        </span>
-        <span className="legend-item">
-          <span className="legend-dot high" /> long
-        </span>
+
+        {triathleteMode && (
+          <>
+            <span className="legend-item">
+              <span className="legend-dot bike" /> bike
+            </span>
+            <span className="legend-item">
+              <span className="legend-dot swim" /> swim
+            </span>
+          </>
+        )}
+
+        {hybridMode && (
+          <span className="legend-item">
+            <span className="legend-dot workout" /> workout
+          </span>
+        )}
       </div>
+
+      <CalendarSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        triathleteMode={triathleteMode}
+        setTriathleteMode={setTriathleteMode}
+        hybridMode={hybridMode}
+        setHybridMode={setHybridMode}
+      />
     </div>
   );
 }
