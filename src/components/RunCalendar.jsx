@@ -25,7 +25,6 @@ import CalendarSettingsModal from "./CalendarSettingsModal"; // adjust path
 └─────────────────┴──────────────────────────────────────────────┘
 */
 
-
 // This looks for the type of workout to put in the calendar later
 function getWorkoutCalendarLabel(activity) {
   const rawTitle = String(activity?.title || "").toLowerCase().trim();
@@ -115,7 +114,7 @@ function getWorkoutFeelIntensity(activity) {
 // convert intensity (0..1) into alpha that looks good
 function intensityToAlpha(t) {
   // base visibility + scaling
-  return 0.12 + t * 0.3; // Fix to make it not too bright
+  return 0.12 + t * 0.5; // Fix to make it not too bright
 }
 
 // Create a split gradient if multiple sports exist that day
@@ -141,8 +140,15 @@ function buildHeatBackground(parts) {
   return `linear-gradient(90deg, ${stops.join(", ")})`;
 }
 
+
 export default function RunCalendar({ activities }) {
+
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [runScaleMode, setRunScaleMode] = useState("auto"); 
+  // "auto" = scale to your highest run
+  // "custom" = scale to user input
+
+  const [runCustomMax, setRunCustomMax] = useState(6.2);
 
   // toggles (persisted)
   const [triathleteMode, setTriathleteMode] = useState(false);
@@ -152,20 +158,36 @@ export default function RunCalendar({ activities }) {
     try {
       const raw = localStorage.getItem("calendar_settings_v1");
       if (!raw) return;
+
       const s = JSON.parse(raw);
+
       setTriathleteMode(!!s.triathleteMode);
       setHybridMode(!!s.hybridMode);
+
+      setRunScaleMode(s.runScaleMode || "auto");
+      setRunCustomMax(Number(s.runCustomMax || 6.2));
+
     } catch {}
   }, []);
+
+
+
 
   useEffect(() => {
     try {
       localStorage.setItem(
         "calendar_settings_v1",
-        JSON.stringify({ triathleteMode, hybridMode })
+        JSON.stringify({
+          triathleteMode,
+          hybridMode,
+          runScaleMode,
+          runCustomMax
+        })
       );
     } catch {}
-  }, [triathleteMode, hybridMode]);
+  }, [triathleteMode, hybridMode, runScaleMode, runCustomMax]);
+
+
 
   const enabledTypes = useMemo(() => {
     const types = new Set(["run"]); // always show runs
@@ -221,17 +243,38 @@ export default function RunCalendar({ activities }) {
 
   // separate max per type for fair scaling
   const maxByType = useMemo(() => {
-    const max = { run: 5, bike: 10, swim: 1, workout: 30 };
-    // defaults above are just reasonable “minimum max” so colors still show early on
+
+    const max = { run: 0, bike: 10, swim: 1, workout: 30 };
+
     for (const day of Object.keys(totalsByDay)) {
       const t = totalsByDay[day];
+
       for (const k of Object.keys(max)) {
+
         const v = Number(t?.[k] ?? 0);
-        if (Number.isFinite(v)) max[k] = Math.max(max[k], v);
+        if (!Number.isFinite(v)) continue;
+
+        if (k === "run") {
+
+          // AUTO MODE
+          if (runScaleMode === "auto") {
+            max.run = Math.max(max.run, v);
+          }
+
+        } else {
+          max[k] = Math.max(max[k], v);
+        }
       }
     }
+
+    // CUSTOM MODE
+    if (runScaleMode === "custom") {
+      max.run = Math.max(0.1, Number(runCustomMax) || 0.1);
+    }
+
     return max;
-  }, [totalsByDay]);
+
+  }, [totalsByDay, runScaleMode, runCustomMax]);
 
   const tileContent = ({ date, view }) => {
     if (view !== "month") return null;
@@ -249,7 +292,8 @@ export default function RunCalendar({ activities }) {
         if (type === "workout") {
           intensity = t.workoutIntensity || 0.5;
         } else {
-          intensity = clamp01(v / (maxByType[type] || 1));
+          const maxVal = Math.max(0.1, maxByType[type] || 0.1);
+          intensity = clamp01(v / maxVal);
         }
 
         present.push({ type, value: v, alpha: intensityToAlpha(intensity) });
@@ -351,7 +395,12 @@ export default function RunCalendar({ activities }) {
         setTriathleteMode={setTriathleteMode}
         hybridMode={hybridMode}
         setHybridMode={setHybridMode}
+        runScaleMode={runScaleMode}
+        setRunScaleMode={setRunScaleMode}
+        runCustomMax={runCustomMax}
+        setRunCustomMax={setRunCustomMax}
       />
     </div>
+    
   );
 }

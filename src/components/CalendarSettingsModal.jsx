@@ -7,6 +7,10 @@ export default function CalendarSettingsModal({
   setTriathleteMode,
   hybridMode,
   setHybridMode,
+  runScaleMode,
+  setRunScaleMode,
+  runCustomMax,
+  setRunCustomMax
 }) {
   useEffect(() => {
     if (!open) return;
@@ -68,6 +72,43 @@ export default function CalendarSettingsModal({
             <span className="legend-item">
             <span className="legend-dot high" /> long
             </span>
+        </div>
+
+        <div className="settings-section">
+
+        <div className="settings-label">
+            Run Heatmap Scaling
+        </div>
+
+        <label className="settings-toggle">
+            <input
+            type="radio"
+            checked={runScaleMode === "auto"}
+            onChange={() => setRunScaleMode("auto")}
+            />
+            Auto (scale to longest run)
+        </label>
+
+        <label className="settings-toggle">
+            <input
+            type="radio"
+            checked={runScaleMode === "custom"}
+            onChange={() => setRunScaleMode("custom")}
+            />
+            Custom distance
+        </label>
+
+        {runScaleMode === "custom" && (
+            <input
+            type="number"
+            step="0.1"
+            value={runCustomMax}
+            onChange={(e) => setRunCustomMax(e.target.value)}
+            placeholder="Miles"
+            className="settings-input"
+            />
+        )}
+
         </div>
 
         <div className="modal-foot">
