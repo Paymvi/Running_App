@@ -695,17 +695,26 @@ export default function Profile() {
   const [tag, setTag] = useState(
     () => localStorage.getItem("profileTag") || "Built Different (Unfortunately)"
   );
+  const [profileName, setProfileName] = useState(
+    () => localStorage.getItem("profileName") || "Your Name"
+  );
   const fileInputRef = useRef(null);
   const [showJarHistory, setShowJarHistory] = useState(false);
   const [selectedPR, setSelectedPR] = useState(null);
   const [showTrends, setShowTrends] = useState(true);
   const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   
 
 
   useEffect(() => {
     localStorage.setItem("profileTag", tag);
     }, [tag]);
+
+    useEffect(() => {
+        localStorage.setItem("profileName", profileName);
+    }, [profileName]);
+
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -1046,355 +1055,411 @@ const removeAvatar = () => {
         setSelectedWeekIndex(weeklySnapshot.length - 1);
     }, [weeklySnapshot]);
 
+    const displayName = profileName.trim() || "Your Name";
+    return (
+        <div className="profile-page">
 
-  return (
-    <div className="profile-page">
+        {/* TOP AREA (matches sketch) */}
+        <div className="profile-top">
 
-      {/* TOP AREA (matches sketch) */}
-      <div className="profile-top">
+            {/* LEFT COLUMN */}
+            <div className="profile-left">
 
-        {/* LEFT COLUMN */}
-        <div className="profile-left">
-
-        <div
-        className="profile-avatar-lg clickable"
-        onClick={() => fileInputRef.current?.click()}
-        >
-        {avatar ? (
-            <img
-            className="profile-avatar-img"
-            src={avatar}
-            alt="Profile avatar"
-            />
-        ) : (
-            <span className="profile-avatar-emoji">🏃</span>
-        )}
-
-        <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            className="avatar-file"
-        />
-        </div>
-
-        <div className="avatar-actions">
-
-            <button className="avatar-btn" onClick={() => setShowJarHistory(true)}>
-                Past Jars 🫙
-            </button>
-
-            <div className="avatar-metric">
-                <div className="avatar-metric-value">{jarCount}</div>
-                <div className="avatar-metric-label">Jars Completed</div>
-            </div>
-
-        </div>
-
-
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div className="profile-top-right">
-
-          {/* flag + name */}
-          <div className="profile-name-row">
-            <span className="profile-flag">
-                <ReactCountryFlag
-                    countryCode="US"
-                    svg
-                    style={{
-                        width: "28px",
-                        height: "20px",
-                        borderRadius: "4px"
-                    }}
-                />
-            </span>
-            <h1 className="profile-name">Your Name</h1>
-          </div>
-
-          {/* 3 stat boxes */}
-          <div className="profile-stat-row">
-            <div className="profile-stat">
-              <div className="profile-stat-title">Total Distance</div>
-              <div className="profile-stat-value">{stats.totalMiles.toFixed(1)} mi</div>
-            </div>
-
-            <div className="profile-stat">
-              <div className="profile-stat-title">This month</div>
-              <div className="profile-stat-value">{stats.thisMonthMiles.toFixed(1)} mi</div>
-            </div>
-
-          </div>
-
-          {/* second row: funny tag */}
-        <div className="profile-pill">
-        <div className="pill-title">Today’s Energy</div>
-
-        <select
-            className="tag-select"
-            value={tag}
-            onChange={(e) => setTag(e.target.value)}
-        >
-            {TAG_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-                {option}
-            </option>
-            ))}
-        </select>
-        </div>
-
-                </div> {/* profile-top-right */}
-            </div>   {/* profile-top */}
-
-      {/* MIDDLE AREA: graph left + PR panel right */}
-      <div className="profile-mid">
-
-        {/* EASY JAR */}
-        <div className="profile-panel">
-        <EasyJar
-            title="Easy Run Jar"
-            subtitle={`${currentJar.length}/25 balls`}
-            runs={currentJar}
-        />
-
-        {currentJar.length === 25 && (
-            <div className="jar-complete">
-            Jar complete! You’re officially annoying (in a good way). 🏆
-            </div>
-        )}
-        </div>
-
-        {/* PRs panel (matches sketch box) */}
-        <div className="profile-panel pr-panel">
-          <div className="panel-title">🎖️ PRs</div>
-          {selectedPR && selectedPR.date && (
-            <div className="pr-selected-date">
-                {selectedPR.label} PR: {formatDate(selectedPR.date)}
-            </div>
-            )}
-
-          <div className="pr-table">
-            <div className="pr-row">
-              <div className="pr-cell label">Mile</div>
-                <div
-                className="pr-cell value clickable"
-                onClick={() => {
-                    if (selectedPR?.label === "Mile") {
-                        setSelectedPR(null);
-                    } else {
-                        setSelectedPR({
-                        label: "Mile",
-                        date: prs.mile.date,
-                        });
-                    }
-                }}
-                >
-                {formatTime(prs.mile.time)}
-                </div>
-            </div>
-            <div className="pr-row">
-              <div className="pr-cell label">5K</div>
-                <div
-                className="pr-cell value clickable"
-                onClick={() => {
-                    if (selectedPR?.label === "5K") {
-                        setSelectedPR(null);
-                    } else {
-                        setSelectedPR({
-                        label: "5K",
-                        date: prs.fiveK.date,
-                        });
-                    }
-                }}
-                >
-                {formatTime(prs.fiveK.time)}
-                </div>
-            </div>
-            <div className="pr-row">
-              <div className="pr-cell label">10K</div>
-                <div
-                className="pr-cell value clickable"
-                    onClick={() => {
-                        if (selectedPR?.label === "10K") {
-                        setSelectedPR(null);
-                    } else {
-                        setSelectedPR({
-                        label: "10K",
-                        date: prs.tenK.date,
-                        });
-                    }
-                }}
-                >
-                {formatTime(prs.tenK.time)}
-                </div>
-            </div>
-          </div>
-
-          {prs.latestPRDate && (
-            <div className="pr-latest">
-                Last PR: {daysAgo(prs.latestPRDate)} days ago
-            </div>
-            )}
-
-        </div>
-
-      </div>
-
-    {/* MONTHLY SNAPSHOT */}
-        <div className="profile-section">
-
-            <h2
-                className="section-title clickable"
-                onClick={() => setShowTrends((prev) => !prev)}
+            <div
+            className="profile-avatar-lg clickable"
+            onClick={() => fileInputRef.current?.click()}
             >
-                Monthly snapshot
-            </h2>
+            {avatar ? (
+                <img
+                className="profile-avatar-img"
+                src={avatar}
+                alt="Profile avatar"
+                />
+            ) : (
+                <span className="profile-avatar-emoji">🏃</span>
+            )}
 
-            <div className="month-snap-row">
-            {monthlySnapshot.map((m, i) => {
-                const zone = getEasyZone(m.pctEasy);
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="avatar-file"
+            />
+            </div>
 
-                return (
-                    <div key={i} className="month-card">
-                    <div className="month-title">{m.month}</div>
+            <div className="avatar-actions">
 
-                    {/* HERO METRIC */}
-                    <div className="month-hero">
-                    {m.mileage} mi
+                <button className="avatar-btn" onClick={() => setShowJarHistory(true)}>
+                    Past Jars 🫙
+                </button>
 
-                    {showTrends && m.mileageDelta !== null && (
+                <div className="avatar-metric">
+                    <div className="avatar-metric-value">{jarCount}</div>
+                    <div className="avatar-metric-label">Jars Completed</div>
+                </div>
+
+            </div>
+
+
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div className="profile-top-right">
+
+            {/* flag + name */}
+            <div className="profile-name-row">
+                <span className="profile-flag">
+                    <ReactCountryFlag
+                        countryCode="US"
+                        svg
+                        style={{
+                            width: "28px",
+                            height: "20px",
+                            borderRadius: "4px"
+                        }}
+                    />
+                </span>
+
+                <div className="profile-identity-block">
+                    <h2 className="profile-name">{displayName}</h2>
+                    {/* <div className="profile-country-label">{selectedCountryLabel}</div> */}
+                </div>
+
+                <button
+                    className="profile-edit-btn"
+                    onClick={() => setShowEditProfile(true)}
+                >
+                    Edit Profile
+                </button>
+
+            </div>
+
+            {/* 3 stat boxes */}
+            <div className="profile-stat-row">
+                <div className="profile-stat">
+                <div className="profile-stat-title">Total Distance</div>
+                <div className="profile-stat-value">{stats.totalMiles.toFixed(1)} mi</div>
+                </div>
+
+                <div className="profile-stat">
+                <div className="profile-stat-title">This month</div>
+                <div className="profile-stat-value">{stats.thisMonthMiles.toFixed(1)} mi</div>
+                </div>
+
+            </div>
+
+            {/* second row: funny tag */}
+            <div className="profile-pill">
+            <div className="pill-title">Today’s Energy</div>
+
+            <select
+                className="tag-select"
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+            >
+                {TAG_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                    {option}
+                </option>
+                ))}
+            </select>
+            </div>
+
+                    </div> {/* profile-top-right */}
+                </div>   {/* profile-top */}
+
+        {/* MIDDLE AREA: graph left + PR panel right */}
+        <div className="profile-mid">
+
+            {/* EASY JAR */}
+            <div className="profile-panel">
+            <EasyJar
+                title="Easy Run Jar"
+                subtitle={`${currentJar.length}/25 balls`}
+                runs={currentJar}
+            />
+
+            {currentJar.length === 25 && (
+                <div className="jar-complete">
+                Jar complete! You’re officially annoying (in a good way). 🏆
+                </div>
+            )}
+            </div>
+
+            {/* PRs panel (matches sketch box) */}
+            <div className="profile-panel pr-panel">
+            <div className="panel-title">🎖️ PRs</div>
+            {selectedPR && selectedPR.date && (
+                <div className="pr-selected-date">
+                    {selectedPR.label} PR: {formatDate(selectedPR.date)}
+                </div>
+                )}
+
+            <div className="pr-table">
+                <div className="pr-row">
+                <div className="pr-cell label">Mile</div>
                     <div
-                        className={`trend ${
-                        m.mileageDelta > 0
-                            ? "trend-up"
-                            : m.mileageDelta < 0
-                            ? "trend-down"
-                            : "trend-neutral"
-                        }`}
+                    className="pr-cell value clickable"
+                    onClick={() => {
+                        if (selectedPR?.label === "Mile") {
+                            setSelectedPR(null);
+                        } else {
+                            setSelectedPR({
+                            label: "Mile",
+                            date: prs.mile.date,
+                            });
+                        }
+                    }}
                     >
-                        {m.mileageDelta > 0 && "▲ "}
-                        {m.mileageDelta < 0 && "▼ "}
-                        {m.mileageDelta !== 0 && `${Math.abs(m.mileageDelta).toFixed(1)} mi`}
-                        {m.mileageDelta === 0 && "No change"}
+                    {formatTime(prs.mile.time)}
                     </div>
-                    )}
+                </div>
+                <div className="pr-row">
+                <div className="pr-cell label">5K</div>
+                    <div
+                    className="pr-cell value clickable"
+                    onClick={() => {
+                        if (selectedPR?.label === "5K") {
+                            setSelectedPR(null);
+                        } else {
+                            setSelectedPR({
+                            label: "5K",
+                            date: prs.fiveK.date,
+                            });
+                        }
+                    }}
+                    >
+                    {formatTime(prs.fiveK.time)}
                     </div>
+                </div>
+                <div className="pr-row">
+                <div className="pr-cell label">10K</div>
+                    <div
+                    className="pr-cell value clickable"
+                        onClick={() => {
+                            if (selectedPR?.label === "10K") {
+                            setSelectedPR(null);
+                        } else {
+                            setSelectedPR({
+                            label: "10K",
+                            date: prs.tenK.date,
+                            });
+                        }
+                    }}
+                    >
+                    {formatTime(prs.tenK.time)}
+                    </div>
+                </div>
+            </div>
 
-                    {/* Easy % with color meaning */}
-                    <div className={`easy-pill ${zone.className}`}>
-                        <span className="easy-percent">{m.pctEasy}% Easy</span>
-                        <span className="easy-label">{zone.label}</span>
-                    </div>
+            {prs.latestPRDate && (
+                <div className="pr-latest">
+                    Last PR: {daysAgo(prs.latestPRDate)} days ago
+                </div>
+                )}
 
-                        {/* {showTrends && m.easyDelta !== null && (
+            </div>
+
+        </div>
+
+        {/* MONTHLY SNAPSHOT */}
+            <div className="profile-section">
+
+                <h2
+                    className="section-title clickable"
+                    onClick={() => setShowTrends((prev) => !prev)}
+                >
+                    Monthly snapshot
+                </h2>
+
+                <div className="month-snap-row">
+                {monthlySnapshot.map((m, i) => {
+                    const zone = getEasyZone(m.pctEasy);
+
+                    return (
+                        <div key={i} className="month-card">
+                        <div className="month-title">{m.month}</div>
+
+                        {/* HERO METRIC */}
+                        <div className="month-hero">
+                        {m.mileage} mi
+
+                        {showTrends && m.mileageDelta !== null && (
                         <div
-                            className={`trend-small ${
-                            m.easyDelta > 0
+                            className={`trend ${
+                            m.mileageDelta > 0
                                 ? "trend-up"
-                                : m.easyDelta < 0
+                                : m.mileageDelta < 0
                                 ? "trend-down"
                                 : "trend-neutral"
                             }`}
                         >
-                            {m.easyDelta > 0 && "▲ "}
-                            {m.easyDelta < 0 && "▼ "}
-                            {m.easyDelta !== 0 && `${Math.abs(m.easyDelta)}% vs last month`}
+                            {m.mileageDelta > 0 && "▲ "}
+                            {m.mileageDelta < 0 && "▼ "}
+                            {m.mileageDelta !== 0 && `${Math.abs(m.mileageDelta).toFixed(1)} mi`}
+                            {m.mileageDelta === 0 && "No change"}
                         </div>
-                        )} */}
-
-                    <div className="month-secondary">
-                        <div className="metric-row">
-                        <span>Avg Easy Pace</span>
-                        <span>{m.avgEasy}</span>
+                        )}
                         </div>
 
-                        <div className="metric-row">
-                        <span>Longest Run</span>
-                        <span>{m.longest} mi</span>
+                        {/* Easy % with color meaning */}
+                        <div className={`easy-pill ${zone.className}`}>
+                            <span className="easy-percent">{m.pctEasy}% Easy</span>
+                            <span className="easy-label">{zone.label}</span>
                         </div>
+
+                            {/* {showTrends && m.easyDelta !== null && (
+                            <div
+                                className={`trend-small ${
+                                m.easyDelta > 0
+                                    ? "trend-up"
+                                    : m.easyDelta < 0
+                                    ? "trend-down"
+                                    : "trend-neutral"
+                                }`}
+                            >
+                                {m.easyDelta > 0 && "▲ "}
+                                {m.easyDelta < 0 && "▼ "}
+                                {m.easyDelta !== 0 && `${Math.abs(m.easyDelta)}% vs last month`}
+                            </div>
+                            )} */}
+
+                        <div className="month-secondary">
+                            <div className="metric-row">
+                            <span>Avg Easy Pace</span>
+                            <span>{m.avgEasy}</span>
+                            </div>
+
+                            <div className="metric-row">
+                            <span>Longest Run</span>
+                            <span>{m.longest} mi</span>
+                            </div>
+                        </div>
+                        </div>
+                    );
+                    })}
+                </div>
+            </div>
+
+            <br></br>
+
+            {/* WEEKLY MILEAGE */}
+            <div className="profile-section">
+            <div className="weekly-header">
+                <div className="weekly-header-title">
+                {isThisWeek ? "This week" : selectedWeek?.label || "Weekly"}
+                </div>
+
+                <div className="weekly-stats-row">
+                <div className="weekly-stat">
+                    <div className="weekly-stat-label">Distance</div>
+                    <div className="weekly-stat-value">{selectedWeek ? `${selectedWeek.miles} mi` : "-"}</div>
+                </div>
+
+                <div className="weekly-stat">
+                    <div className="weekly-stat-label">Time</div>
+                    <div className="weekly-stat-value">
+                    {selectedWeek ? formatHoursMinsFromMinutes(selectedWeek.minutes) : "-"}
                     </div>
+                </div>
+
+                {/* <div className="weekly-stat">
+                    <div className="weekly-stat-label">Elevation Gain</div>
+                    <div className="weekly-stat-value">
+                    {selectedWeek ? `${selectedWeek.elevationFt} ft` : "0 ft"}
                     </div>
-                );
-                })}
-            </div>
-        </div>
-
-        <br></br>
-
-        {/* WEEKLY MILEAGE */}
-        <div className="profile-section">
-        <div className="weekly-header">
-            <div className="weekly-header-title">
-            {isThisWeek ? "This week" : selectedWeek?.label || "Weekly"}
-            </div>
-
-            <div className="weekly-stats-row">
-            <div className="weekly-stat">
-                <div className="weekly-stat-label">Distance</div>
-                <div className="weekly-stat-value">{selectedWeek ? `${selectedWeek.miles} mi` : "-"}</div>
-            </div>
-
-            <div className="weekly-stat">
-                <div className="weekly-stat-label">Time</div>
-                <div className="weekly-stat-value">
-                {selectedWeek ? formatHoursMinsFromMinutes(selectedWeek.minutes) : "-"}
+                </div> */}
                 </div>
             </div>
 
-            {/* <div className="weekly-stat">
-                <div className="weekly-stat-label">Elevation Gain</div>
-                <div className="weekly-stat-value">
-                {selectedWeek ? `${selectedWeek.elevationFt} ft` : "0 ft"}
+            <WeeklyMileage
+                weeks={weeklySnapshot}
+                selectedIndex={selectedWeekIndex}
+                onSelect={(idx) => setSelectedWeekIndex(idx)}
+            />
+            </div>
+
+
+
+        {showJarHistory && (
+        <div className="jar-modal-backdrop" onClick={() => setShowJarHistory(false)}>
+            <div className="jar-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="jar-modal-head">
+                <div className="jar-modal-title">Past Jars</div>
+                <button className="jar-close" onClick={() => setShowJarHistory(false)}>
+                ✕
+                </button>
+            </div>
+
+            {completedJars.length === 0 ? (
+                <div className="jar-modal-empty">
+                No completed jars yet. Fill your first one 😈
                 </div>
-            </div> */}
-            </div>
-        </div>
-
-        <WeeklyMileage
-            weeks={weeklySnapshot}
-            selectedIndex={selectedWeekIndex}
-            onSelect={(idx) => setSelectedWeekIndex(idx)}
-        />
-        </div>
-
-
-
-    {showJarHistory && (
-    <div className="jar-modal-backdrop" onClick={() => setShowJarHistory(false)}>
-        <div className="jar-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="jar-modal-head">
-            <div className="jar-modal-title">Past Jars</div>
-            <button className="jar-close" onClick={() => setShowJarHistory(false)}>
-            ✕
-            </button>
-        </div>
-
-        {completedJars.length === 0 ? (
-            <div className="jar-modal-empty">
-            No completed jars yet. Fill your first one 😈
-            </div>
-        ) : (
-            <div className="jar-grid">
-            {completedJars
-                .slice()
-                .reverse()
-                .map((jar, idx) => (
-                <div key={idx} className="jar-thumb">
-                    <EasyJar
-                    title={`Jar #${completedJars.length - idx}`}
-                    subtitle="25/25"
-                    runs={jar}
-                    />
+            ) : (
+                <div className="jar-grid">
+                {completedJars
+                    .slice()
+                    .reverse()
+                    .map((jar, idx) => (
+                    <div key={idx} className="jar-thumb">
+                        <EasyJar
+                        title={`Jar #${completedJars.length - idx}`}
+                        subtitle="25/25"
+                        runs={jar}
+                        />
+                    </div>
+                    ))}
                 </div>
-                ))}
+            )}
             </div>
+        </div>
         )}
-        </div>
-    </div>
-    )}
 
-    </div>
-  );
+        {showEditProfile && (
+        <div
+            className="jar-modal-backdrop"
+            onClick={() => setShowEditProfile(false)}
+        >
+            <div
+            className="edit-profile-modal"
+            onClick={(e) => e.stopPropagation()}
+            >
+            <div className="jar-modal-head">
+                <div className="jar-modal-title">Edit Profile</div>
+                <button
+                className="jar-close"
+                onClick={() => setShowEditProfile(false)}
+                >
+                ✕
+                </button>
+            </div>
+
+            <div className="edit-profile-body">
+                <label className="edit-profile-label">Name</label>
+                <input
+                type="text"
+                className="edit-profile-input"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="Enter your name"
+                maxLength={30}
+                />
+
+            </div>
+
+            <div className="edit-profile-actions">
+                <button
+                className="avatar-btn secondary"
+                onClick={() => setShowEditProfile(false)}
+                >
+                Done
+                </button>
+            </div>
+            </div>
+        </div>
+        )}
+
+        </div>
+    );
 }

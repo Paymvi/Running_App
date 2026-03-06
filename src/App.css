@@ -1335,6 +1335,101 @@ page {
   font-weight: 700;
 }
 
+
+/* ------------ For Profile Name ------------ */
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profile-identity-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-country-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.profile-edit-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.profile-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
+}
+
+.edit-profile-modal {
+  width: min(92vw, 420px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.edit-profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.edit-profile-label {
+  font-size: 0.92rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.edit-profile-input,
+.edit-profile-select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  outline: none;
+  font: inherit;
+}
+
+.edit-profile-input:focus,
+.edit-profile-select:focus {
+  border-color: rgba(252, 76, 2, 0.7);
+  box-shadow: 0 0 0 3px rgba(252, 76, 2, 0.12);
+}
+
+.edit-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.avatar-btn.secondary {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
+
+
+
+
 /* MID: graph left, PR box right */
 .profile-mid {
   display: grid;
