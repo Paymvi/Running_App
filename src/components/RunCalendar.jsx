@@ -85,17 +85,30 @@ const COLORS = {
 };
 
 // pick a “value” for each type (you can refine later)
-// run/bike/swim: miles
+// run/swim: miles
+// bike: miles or minutes
 // workout: minutes or a "load" if you add it later
-function getActivityValue(a) {
+function getActivityValue(a, bikeScaleMode = "time") {
   const type = (a.type || a.sport || a.activityType || "run").toLowerCase();
+
   if (type === "workout") {
-    // if you later store durationMin or minutes, use that:
     const mins = Number(a.minutes ?? a.duration ?? a.durationMin ?? a.durationMinutes ?? 0);
     if (Number.isFinite(mins) && mins > 0) return { type, value: mins };
-    // fallback: count workout as 1 if no minutes exist yet
     return { type, value: 1 };
   }
+
+  if (type === "bike") {
+    if (bikeScaleMode === "time") {
+      const mins = Number(a.minutes ?? a.duration ?? a.durationMin ?? a.durationMinutes ?? 0);
+      if (Number.isFinite(mins) && mins > 0) return { type, value: mins };
+      return { type, value: 0 };
+    }
+
+    const miles = Number(a.miles ?? 0);
+    if (!Number.isFinite(miles) || miles <= 0) return { type, value: 0 };
+    return { type, value: miles };
+  }
+
   const miles = Number(a.miles ?? 0);
   if (!Number.isFinite(miles) || miles <= 0) return { type, value: 0 };
   return { type, value: miles };
@@ -154,6 +167,11 @@ export default function RunCalendar({ activities }) {
   const [triathleteMode, setTriathleteMode] = useState(false);
   const [hybridMode, setHybridMode] = useState(false);
 
+  // bike heatmap mode
+  // "distance" = use miles
+  // "time" = use minutes
+  const [bikeScaleMode, setBikeScaleMode] = useState("time");
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem("calendar_settings_v1");
@@ -166,6 +184,8 @@ export default function RunCalendar({ activities }) {
 
       setRunScaleMode(s.runScaleMode || "auto");
       setRunCustomMax(Number(s.runCustomMax || 6.2));
+
+      setBikeScaleMode(s.bikeScaleMode || "time");
 
     } catch {}
   }, []);
@@ -181,11 +201,12 @@ export default function RunCalendar({ activities }) {
           triathleteMode,
           hybridMode,
           runScaleMode,
-          runCustomMax
+          runCustomMax,
+          bikeScaleMode
         })
       );
     } catch {}
-  }, [triathleteMode, hybridMode, runScaleMode, runCustomMax]);
+  }, [triathleteMode, hybridMode, runScaleMode, runCustomMax, bikeScaleMode]);
 
 
 
@@ -210,7 +231,7 @@ export default function RunCalendar({ activities }) {
       if (!d || isNaN(d)) continue;
       const day = toYMD(d);
 
-      const { type, value } = getActivityValue(a);
+      const { type, value } = getActivityValue(a, bikeScaleMode);
       if (!enabledTypes.has(type)) continue;
       if (!value || value <= 0) continue;
 
@@ -239,12 +260,17 @@ export default function RunCalendar({ activities }) {
     }
 
     return map;
-  }, [activities, enabledTypes]);
+  }, [activities, enabledTypes, bikeScaleMode]);
 
   // separate max per type for fair scaling
   const maxByType = useMemo(() => {
 
-    const max = { run: 0, bike: 10, swim: 1, workout: 30 };
+    const max = {
+      run: 0,
+      bike: bikeScaleMode === "time" ? 60 : 10,
+      swim: 1,
+      workout: 30
+    };
 
     for (const day of Object.keys(totalsByDay)) {
       const t = totalsByDay[day];
@@ -274,7 +300,7 @@ export default function RunCalendar({ activities }) {
 
     return max;
 
-  }, [totalsByDay, runScaleMode, runCustomMax]);
+  }, [totalsByDay, runScaleMode, runCustomMax, bikeScaleMode]);
 
   const tileContent = ({ date, view }) => {
     if (view !== "month") return null;
@@ -322,8 +348,11 @@ export default function RunCalendar({ activities }) {
     }
 
     let tileLabel = "";
+
     if (top.type === "workout") {
       tileLabel = t.workoutLabel || "Workout";
+    } else if (top.type === "bike" && bikeScaleMode === "time") {
+      tileLabel = `${Math.round(top.value)} min`;
     } else {
       tileLabel = `${top.value.toFixed(top.value >= 10 ? 0 : 1)} mi`;
     }
@@ -400,6 +429,8 @@ export default function RunCalendar({ activities }) {
         setRunScaleMode={setRunScaleMode}
         runCustomMax={runCustomMax}
         setRunCustomMax={setRunCustomMax}
+        bikeScaleMode={bikeScaleMode}
+        setBikeScaleMode={setBikeScaleMode}
       />
     </div>
     

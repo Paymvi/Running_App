@@ -10,7 +10,9 @@ export default function CalendarSettingsModal({
   runScaleMode,
   setRunScaleMode,
   runCustomMax,
-  setRunCustomMax
+  setRunCustomMax,
+  bikeScaleMode,
+  setBikeScaleMode
 }) {
   useEffect(() => {
     if (!open) return;
@@ -110,6 +112,32 @@ export default function CalendarSettingsModal({
         )}
 
         </div>
+
+        <div className="settings-section">
+
+        <div className="settings-label">
+          Bike Heatmap Scaling
+        </div>
+
+        <label className="settings-toggle">
+          <input
+            type="radio"
+            checked={bikeScaleMode === "distance"}
+            onChange={() => setBikeScaleMode("distance")}
+          />
+          Distance (scale by miles)
+        </label>
+
+        <label className="settings-toggle">
+          <input
+            type="radio"
+            checked={bikeScaleMode === "time"}
+            onChange={() => setBikeScaleMode("time")}
+          />
+          Time (scale by minutes)
+        </label>
+
+      </div>
 
         <div className="modal-foot">
           <button className="secondary-btn" onClick={onClose}>Done</button>

@@ -1122,7 +1122,7 @@ page {
   display: flex;
   gap: 14px;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 16px;
   color: var(--muted);
   font-size: 12px;
 }
