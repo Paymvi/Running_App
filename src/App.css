@@ -450,7 +450,7 @@ body {
   border-radius: 8px;
   cursor: pointer;
   margin-bottom: 10px;
-  font-size: 14px;
+  font-size: 12.5px;
 }
 
 /* Dark buttons */
@@ -522,10 +522,168 @@ body {
   background: transparent;
   color: rgba(255,255,255,0.9);
   cursor: pointer;
-  font-weight: 900;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+
+/* --------------- Search/Filter Model ----------- */
+
+.filter-icon-btn {
+  height: 36px;
+  min-width: 36px;
+
+  margin-bottom: 9px;       /* match other buttons */
+
+  border: 1px solid rgba(255,255,255,0.14);
+  /* border: 1px solid var(--border); */
+  border-radius: 10px;
+
+  background: transparent;
+  /* background: var(--card); */
+
+  color: var(--text);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  cursor: pointer;
+
+  transition: 0.15s ease;
+}
+
+.filter-icon-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.activity-filter-modal {
+  width: min(92vw, 560px);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.activity-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.activity-filter-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.activity-filter-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.filter-input,
+.filter-select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #1f2937;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.filter-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.filter-chip.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.filter-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.activity-filter-footer {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.activity-results-count {
+  margin: 10px 0 14px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+
+/* EASY */
+.chip-easy.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: white;
+}
+
+/* TEMPO */
+.chip-tempo.active {
+  background: #facc15;
+  border-color: #facc15;
+  color: black;
+}
+
+/* SPRINT / INTERVALS */
+.chip-intervals.active {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+}
+
+/* LONG */
+.chip-long.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1167,6 +1325,10 @@ page {
 .run-calendar-card .tile-miles {
   position: relative;
   z-index: 1;
+}
+
+.run-calendar-card .tile-miles {
+  font-size: 9.8px; 
 }
 
 

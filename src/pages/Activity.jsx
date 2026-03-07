@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import FloatingButton from "../components/FloatingButton";
 import AddActivityModal from "../components/AddActivityModal";
-import { FiEdit2 } from "react-icons/fi";
+import { FiEdit2, FiFilter } from "react-icons/fi";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
@@ -9,6 +9,7 @@ import { generateCoachAlerts } from "../utils/coachAlert";
 
 import CoachHelpModal from "../components/CoachHelpModal";
 import StravaModal from "../components/StravaModal";
+import ActivityFilterModal from "../components/ActivityFilterModal";
 
 
 // Fix for YYYY-MM-DD timezone shift bug
@@ -49,11 +50,21 @@ export default function Activity() {
     localStorage.getItem("strava_access_token") || ""
   );
   const [stravaStatus, setStravaStatus] = useState("");
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+
+  const [filters, setFilters] = useState({
+    searchName: "",
+    searchDate: "",
+    types: [],
+    intensities: [],
+    prOnly: false,
+    sortBy: "newest",
+  });
 
   // Lazy render (infinite scroll style)
   const PAGE_SIZE = 40; // how many cards to add per batch
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
- const loadMoreRef = useRef(null);
+  const loadMoreRef = useRef(null);
 
     useEffect(() => {
     const saved = localStorage.getItem("activities");
@@ -64,35 +75,6 @@ export default function Activity() {
     }
     }, []);
 
-    // For lazy load
-    useEffect(() => {
-        // When the dataset changes (import/delete), restart the visible window
-        setVisibleCount(PAGE_SIZE);
-        setExpandedIndex(null);
-    }, [activities.length]);
-
-
-    useEffect(() => {
-        const el = loadMoreRef.current;
-        if (!el) return;
-
-        const observer = new IntersectionObserver(
-        (entries) => {
-            const first = entries[0];
-            if (first.isIntersecting) {
-            setVisibleCount((v) => Math.min(v + PAGE_SIZE, activities.length));
-            }
-        },
-        {
-            root: null,       // viewport
-            rootMargin: "600px", // start loading before user hits bottom
-            threshold: 0,
-        }
-        );
-
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, [activities.length]);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -199,23 +181,24 @@ export default function Activity() {
 
         // Allow small GPS drift tolerance
         if (Math.abs(miles - 1.0) <= 0.1) {
-        if (duration < bestMile.time) {
-            bestMile = { time: duration, id: a.id };
-        }
+          if (duration < bestMile.time) {
+              bestMile = { time: duration, id: a.id };
+          }
         }
 
         if (Math.abs(miles - 3.1) <= 0.25) {
-        if (duration < best5k.time) {
-            best5k = { time: duration, id: a.id };
-        }
+          if (duration < best5k.time) {
+              best5k = { time: duration, id: a.id };
+          }
         }
 
         if (Math.abs(miles - 6.2) <= 0.45) {
-        if (duration < best10k.time) {
-            best10k = { time: duration, id: a.id };
-        }
+          if (duration < best10k.time) {
+              best10k = { time: duration, id: a.id };
+          }
         }
     }
+
 
     return { mile: bestMile, fiveK: best5k, tenK: best10k };
 
@@ -229,53 +212,131 @@ export default function Activity() {
         return new Set([prs.mile.id, prs.fiveK.id, prs.tenK.id].filter(Boolean));
     }, [prs]);
 
-    
+    const resetFilters = () => {
+      setFilters({
+        searchName: "",
+        searchDate: "",
+        types: [],
+        intensities: [],
+        prOnly: false,
+        sortBy: "newest",
+      });
+    };
 
-        const rowsToActivities = (rows) => {
-        const normalizeExcelDate = (value) => {
-            if (!value) return "";
+    const filteredActivities = useMemo(() => {
+      let result = [...activities];
 
-            // If already looks like YYYY-MM-DD, keep it
-            if (typeof value === "string" && value.includes("-")) {
-                return value.split("T")[0];
-            }
+      // Search by title/name
+      if (filters.searchName.trim()) {
+        const query = filters.searchName.toLowerCase().trim();
+        result = result.filter((a) =>
+          String(a.title || "").toLowerCase().includes(query)
+        );
+      }
 
-            // If looks like M/D/YYYY, keep it
-            if (typeof value === "string" && value.includes("/")) {
-                return value;
-            }
+      // Search by exact date
+      if (filters.searchDate) {
+        result = result.filter((a) => a.date === filters.searchDate);
+      }
 
-            // If Excel stored it as a serial number
-            if (typeof value === "number") {
-                const jsDate = XLSX.SSF.parse_date_code(value);
-                if (!jsDate) return "";
-                const yyyy = jsDate.y;
-                const mm = String(jsDate.m).padStart(2, "0");
-                const dd = String(jsDate.d).padStart(2, "0");
-                return `${yyyy}-${mm}-${dd}`;
-            }
+      // Filter by activity type
+      if (filters.types.length > 0) {
+        result = result.filter((a) => filters.types.includes(a.type));
+      }
 
-            return String(value);
-        };
+      // Filter by intensity
+      if (filters.intensities.length > 0) {
+        result = result.filter((a) => filters.intensities.includes(a.intensity));
+      }
 
-        return rows.map((row) => {
-            return {
-                id: crypto.randomUUID(),
-                title: row.title || "",
-                description: (row.description || "").replace(/\\n|;/g, "\n"),
-                type: row.type || "run",
-                intensity: row.intensity || "easy",
-                feel: row.feel || "medium",
-                date: normalizeExcelDate(row.date),
-                time: row.time || "",
-                mode: "timeMiles",
-                duration: row.duration || "",
-                miles: row.miles || "",
-                splits: [{ mph: "", distance: "" }],
-                notes: (row.notes || "").replace(/\\n|;/g, "\n"),
-                photo: null,
-            };
+      // PR only
+      if (filters.prOnly) {
+        result = result.filter((a) => prIds.has(a.id));
+      }
+
+      // Sorting
+      if (filters.sortBy === "fastestPace") {
+        result.sort((a, b) => {
+          const aMiles = Number(a.miles);
+          const aDuration = Number(a.duration);
+          const bMiles = Number(b.miles);
+          const bDuration = Number(b.duration);
+
+          const aValid = aMiles > 0 && aDuration > 0;
+          const bValid = bMiles > 0 && bDuration > 0;
+
+          if (!aValid && !bValid) return 0;
+          if (!aValid) return 1;
+          if (!bValid) return -1;
+
+          const aPace = aDuration / aMiles;
+          const bPace = bDuration / bMiles;
+
+          return aPace - bPace; // lower pace = faster
         });
+      } else if (filters.sortBy === "longestDistance") {
+        result.sort((a, b) => Number(b.miles || 0) - Number(a.miles || 0));
+      } else if (filters.sortBy === "longestTime") {
+        result.sort((a, b) => Number(b.duration || 0) - Number(a.duration || 0));
+      } else {
+        result.sort((a, b) => parseLocalYMD(b.date) - parseLocalYMD(a.date));
+      }
+
+      return result;
+    }, [activities, filters, prIds]);
+
+    // For lazy load
+    useEffect(() => {
+        // When filters or dataset change, restart the visible window
+        setVisibleCount(PAGE_SIZE);
+        setExpandedIndex(null);
+    }, [filteredActivities.length]);
+
+    const rowsToActivities = (rows) => {
+      const normalizeExcelDate = (value) => {
+          if (!value) return "";
+
+          // If already looks like YYYY-MM-DD, keep it
+          if (typeof value === "string" && value.includes("-")) {
+              return value.split("T")[0];
+          }
+
+          // If looks like M/D/YYYY, keep it
+          if (typeof value === "string" && value.includes("/")) {
+              return value;
+          }
+
+          // If Excel stored it as a serial number
+          if (typeof value === "number") {
+              const jsDate = XLSX.SSF.parse_date_code(value);
+              if (!jsDate) return "";
+              const yyyy = jsDate.y;
+              const mm = String(jsDate.m).padStart(2, "0");
+              const dd = String(jsDate.d).padStart(2, "0");
+              return `${yyyy}-${mm}-${dd}`;
+          }
+
+          return String(value);
+      };
+
+      return rows.map((row) => {
+          return {
+              id: crypto.randomUUID(),
+              title: row.title || "",
+              description: (row.description || "").replace(/\\n|;/g, "\n"),
+              type: row.type || "run",
+              intensity: row.intensity || "easy",
+              feel: row.feel || "medium",
+              date: normalizeExcelDate(row.date),
+              time: row.time || "",
+              mode: "timeMiles",
+              duration: row.duration || "",
+              miles: row.miles || "",
+              splits: [{ mph: "", distance: "" }],
+              notes: (row.notes || "").replace(/\\n|;/g, "\n"),
+              photo: null,
+          };
+      });
     };
 
 
@@ -294,6 +355,31 @@ export default function Activity() {
             },
         });
     };
+
+
+    useEffect(() => {
+        const el = loadMoreRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const first = entries[0];
+            if (first.isIntersecting) {
+              setVisibleCount((v) =>
+                Math.min(v + PAGE_SIZE, filteredActivities.length)
+              );
+            }
+          },
+          {
+            root: null,
+            rootMargin: "600px",
+            threshold: 0,
+          }
+        );
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [filteredActivities.length]);
 
     
     const handleExcelImport = async (file) => {
@@ -567,6 +653,16 @@ export default function Activity() {
                 Delete All
                 </button>
 
+                <button
+                    type="button"
+                    onClick={() => setFilterModalOpen(true)}
+                    className="filter-icon-btn"
+                    aria-label="Open activity filters"
+                    title="Open activity filters"
+                >
+                    <FiFilter />
+                </button>
+
             </div>
 
             <div className="coach-controls">
@@ -618,6 +714,14 @@ export default function Activity() {
                 onImport={fetchStravaActivities}
             />
 
+            <ActivityFilterModal
+                isOpen={filterModalOpen}
+                onClose={() => setFilterModalOpen(false)}
+                filters={filters}
+                setFilters={setFilters}
+                onReset={resetFilters}
+            />
+
             {coachAlertCount > 0 &&
                 coachAlerts.map((alert, i) => (
                 <div key={alert.key || i} className={`coach-alert ${alert.toneClass}`}>
@@ -630,8 +734,12 @@ export default function Activity() {
 
 
 
+            <div className="activity-results-count">
+                Showing {filteredActivities.length}{" "}
+                {filteredActivities.length === 1 ? "activity" : "activities"}
+            </div>
 
-        {activities.slice(0, visibleCount).map((a, index) => {
+        {filteredActivities.slice(0, visibleCount).map((a, index) => {
             const miles = parseFloat(a.miles);
             const duration = parseFloat(a.duration);
 
@@ -778,7 +886,7 @@ export default function Activity() {
             />
 
             {/* Optional: small hint */}
-            {visibleCount < activities.length && (
+            {visibleCount < filteredActivities.length && (
               <div style={{ opacity: 0.7, fontSize: 12, marginTop: 10 }}>
                 Loading more…
               </div>
