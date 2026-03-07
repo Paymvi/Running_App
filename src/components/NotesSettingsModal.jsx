@@ -47,30 +47,35 @@ export default function NotesSettingsModal({ card, onClose, onSave }) {
           />
         </div>
 
-        <div className="notes-settings-row">
-          <label>Box Height (px)</label>
-          <input
-            type="number"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
-            min="120"
-          />
-        </div>
+        <div className="row">
 
-        <div className="notes-settings-row">
-          <label>Font Size (px)</label>
-          <input
-            type="number"
-            value={fontSize}
-            onChange={(e) => setFontSize(e.target.value)}
-            min="8"
-          />
-        </div>
+            <div className="notes-settings-row">
+            <label>Box Height (px)</label>
+            <input
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                min="120"
+            />
+            </div>
 
+            <div className="notes-settings-row">
+            <label>Font Size (px)</label>
+            <input
+                type="number"
+                value={fontSize}
+                onChange={(e) => setFontSize(e.target.value)}
+                min="8"
+            />
+            </div>
+
+        </div>
+        
+        {/*
         <div className="notes-settings-preview">
           <p><strong>Preview</strong></p>
           <p>[{title.trim() || `Notes ${card.id}`}] [{height || 380}px] [{fontSize || 12}px]</p>
-        </div>
+        </div> */}
 
         <div className="notes-settings-actions">
           <button className="secondary-btn" onClick={onClose}>
