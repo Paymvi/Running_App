@@ -136,7 +136,7 @@ body {
 
 .notes-input {
   width: 100%;
-  min-height: 320px;
+  min-height: 380px; /* TEXT BOX SIZE */
   resize: none;
 
   border-radius: 8px;
@@ -146,7 +146,7 @@ body {
   color: var(--text);
 
   padding: 12px;
-  font-size: 10px;
+  font-size: 12px; /* FONT SIZE */
 
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 
@@ -167,6 +167,26 @@ body {
 
 .notes-header:hover {
   opacity: 0.8;
+}
+
+.notes-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notes-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.notes-small-btn {
+  min-width: 28px;
+  padding: 0 14px;
+  font-size: 1.6rem;
+  font-weight: 700;
 }
 
 
