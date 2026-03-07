@@ -876,9 +876,11 @@ const removeAvatar = () => {
     // mileage, avg easy, % easy, longest
     // -------------------------
     const monthlySnapshot = useMemo(() => {
-    const map = new Map();
+      const map = new Map();
 
-    activities.forEach((a) => {
+      activities.forEach((a) => {
+        if (a.type && a.type !== "run") return;
+
         const d = parseDateSafe(a.date);
         if (!d) return;
 
@@ -914,7 +916,7 @@ const removeAvatar = () => {
         m.easyMiles += miles;
         m.easyPaceSum += duration / miles;
         m.easyPaceCount += 1;
-        }
+      }
     });
 
     const arr = Array.from(map.values())
@@ -1130,7 +1132,7 @@ const removeAvatar = () => {
                     className="profile-edit-btn"
                     onClick={() => setShowEditProfile(true)}
                 >
-                    Edit Profile
+                    Edit
                 </button>
 
             </div>

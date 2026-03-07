@@ -361,7 +361,13 @@ export default function RunCalendar({ activities }) {
       <>
         <div className="tile-heat" style={{ background: bg }} />
 
-        <div className="tile-miles">
+        <div
+          className={
+            top.type === "bike" && bikeScaleMode === "time"
+              ? "tile-miles tile-miles-bike"
+              : "tile-miles"
+          }
+        >
           {tileLabel}
         </div>
       </>

@@ -1328,7 +1328,12 @@ page {
 }
 
 .run-calendar-card .tile-miles {
-  font-size: 9.8px; 
+  font-size: 10px; 
+}
+
+/* smaller font only for bike time labels */
+.run-calendar-card .tile-miles-bike {
+  font-size: 8.5px;
 }
 
 
@@ -1540,7 +1545,7 @@ page {
 
 .profile-name {
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
   letter-spacing: 0.2px;
 }
 
