@@ -2441,6 +2441,95 @@ page {
   transform: translateX(18px);
 }
 
+
+
+
+
+
+
+
+.notes-settings-btn {
+  white-space: nowrap;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.notes-settings-modal {
+  width: min(100%, 420px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.notes-settings-modal h2 {
+  margin: 0 0 16px 0;
+}
+
+.notes-settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.notes-settings-row label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.notes-settings-row input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+
+.notes-settings-preview {
+  margin-top: 8px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+
+.notes-settings-preview p {
+  margin: 0;
+}
+
+.notes-settings-preview p + p {
+  margin-top: 6px;
+}
+
+.notes-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+
+
+
+
+
+
+
+
 /*
 ══════════════════════════════════════════════════════════════════
 END OF FILE
