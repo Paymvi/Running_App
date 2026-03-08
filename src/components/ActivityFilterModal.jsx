@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 export default function ActivityFilterModal({
   isOpen,
@@ -7,7 +7,8 @@ export default function ActivityFilterModal({
   setFilters,
   onReset,
 }) {
-  if (!isOpen) return null;
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const toggleArrayValue = (key, value) => {
     setFilters((prev) => {
@@ -22,6 +23,47 @@ export default function ActivityFilterModal({
       };
     });
   };
+
+  const updateFilterValue = (key, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value === "" ? "" : value,
+    }));
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  
+  
+  useEffect(() => {
+    const hasAdvancedFilters =
+      filters.distanceMin ||
+      filters.distanceMax ||
+      filters.durationMin ||
+      filters.durationMax ||
+      filters.paceMin ||
+      filters.paceMax ||
+      filters.feels.length > 0 ||
+      filters.dateStart ||
+      filters.dateEnd ||
+      filters.notesSearch;
+
+    if (hasAdvancedFilters) {
+      setShowAdvanced(true);
+    }
+  }, [filters]);
+
+
+
+  if (!isOpen) return null;
+
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -132,16 +174,148 @@ export default function ActivityFilterModal({
             <select
               className="filter-select"
               value={filters.sortBy}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, sortBy: e.target.value }))
-              }
+              onChange={(e) => updateFilterValue("sortBy", e.target.value)}
             >
               <option value="newest">Newest First</option>
               <option value="fastestPace">Fastest Pace</option>
               <option value="longestDistance">Longest Distance</option>
               <option value="longestTime">Longest Time</option>
             </select>
+
+            <button
+              type="button"
+              className="advanced-settings-toggle"
+              onClick={() => setShowAdvanced((prev) => !prev)}
+            >
+              {showAdvanced ? "Hide Advanced Settings" : "Advanced Settings"}
+            </button>
           </div>
+
+          {showAdvanced && (
+            <div className="advanced-settings-section">
+
+              <div className="row">
+                <div className="filter-group">
+                  <label className="filter-label">Distance range (miles)</label>
+                  <div className="range-row">
+                    <input
+                      type="number"
+                      className="filter-input"
+                      placeholder="Min"
+                      value={filters.distanceMin}
+                      onChange={(e) => updateFilterValue("distanceMin", e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      className="filter-input"
+                      placeholder="Max"
+                      value={filters.distanceMax}
+                      onChange={(e) => updateFilterValue("distanceMax", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="filter-group">
+                  <label className="filter-label">Duration range (minutes)</label>
+                  <div className="range-row">
+                    <input
+                      type="number"
+                      className="filter-input"
+                      placeholder="Min"
+                      value={filters.durationMin}
+                      onChange={(e) => updateFilterValue("durationMin", e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      className="filter-input"
+                      placeholder="Max"
+                      value={filters.durationMax}
+                      onChange={(e) => updateFilterValue("durationMax", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="filter-group">
+                  <label className="filter-label">Pace filter (min/mi)</label>
+                  <div className="range-row">
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="filter-input"
+                      placeholder="Min pace"
+                      value={filters.paceMin}
+                      onChange={(e) => updateFilterValue("paceMin", e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="filter-input"
+                      placeholder="Max pace"
+                      value={filters.paceMax}
+                      onChange={(e) => updateFilterValue("paceMax", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="filter-group">
+                  <label className="filter-label">Date range</label>
+                  <div className="range-row">
+                    <input
+                      type="date"
+                      className="filter-input"
+                      value={filters.dateStart}
+                      onChange={(e) => updateFilterValue("dateStart", e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className="filter-input"
+                      value={filters.dateEnd}
+                      onChange={(e) => updateFilterValue("dateEnd", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="filter-group">
+                <label className="filter-label">Feel</label>
+                <div className="filter-chip-row">
+                  {[
+                    { label: "Easy", value: "easy" },
+                    { label: "Medium", value: "medium" },
+                    { label: "Hard", value: "hard" },
+                  ].map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className={`filter-chip ${
+                        filters.feels.includes(item.value) ? "active" : ""
+                      }`}
+                      onClick={() => toggleArrayValue("feels", item.value)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ height: "14px" }}></div>
+
+              <div className="filter-group">
+                <label className="filter-label">Notes search</label>
+                <input
+                  type="text"
+                  className="filter-input"
+                  placeholder="Search notes and descriptions..."
+                  value={filters.notesSearch}
+                  onChange={(e) => updateFilterValue("notesSearch", e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          
+
         </div>
 
         <div className="activity-filter-footer">
@@ -150,7 +324,7 @@ export default function ActivityFilterModal({
           </button>
 
           <button type="button" className="control-btn" onClick={onClose}>
-            Apply
+            Done
           </button>
         </div>
       </div>

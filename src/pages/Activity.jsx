@@ -59,6 +59,24 @@ export default function Activity() {
     intensities: [],
     prOnly: false,
     sortBy: "newest",
+
+
+    // Advanced Settings
+    distanceMin: "",
+    distanceMax: "",
+
+    durationMin: "",
+    durationMax: "",
+
+    paceMin: "",
+    paceMax: "",
+
+    feels: [],
+
+    dateStart: "",
+    dateEnd: "",
+
+    notesSearch: "",
   });
 
   // Lazy render (infinite scroll style)
@@ -220,6 +238,23 @@ export default function Activity() {
         intensities: [],
         prOnly: false,
         sortBy: "newest",
+
+        // Advanced Settings
+        distanceMin: "",
+        distanceMax: "",
+
+        durationMin: "",
+        durationMax: "",
+
+        paceMin: "",
+        paceMax: "",
+
+        feels: [],
+
+        dateStart: "",
+        dateEnd: "",
+
+        notesSearch: "",
       });
     };
 
@@ -234,9 +269,31 @@ export default function Activity() {
         );
       }
 
+      // Search inside notes / description
+      if ((filters.notesSearch || "").trim()) {
+        const query = filters.notesSearch.toLowerCase().trim();
+        result = result.filter((a) => {
+          const text = `${a.notes || ""} ${a.description || ""}`.toLowerCase();
+          return text.includes(query);
+        });
+      }
+
       // Search by exact date
       if (filters.searchDate) {
         result = result.filter((a) => a.date === filters.searchDate);
+      }
+
+      // Filter by date range
+      if (filters.dateStart) {
+        result = result.filter(
+          (a) => parseLocalYMD(a.date) >= parseLocalYMD(filters.dateStart)
+        );
+      }
+
+      if (filters.dateEnd) {
+        result = result.filter(
+          (a) => parseLocalYMD(a.date) <= parseLocalYMD(filters.dateEnd)
+        );
       }
 
       // Filter by activity type
@@ -247,6 +304,63 @@ export default function Activity() {
       // Filter by intensity
       if (filters.intensities.length > 0) {
         result = result.filter((a) => filters.intensities.includes(a.intensity));
+      }
+
+      // Filter by feel
+      if (filters.feels.length > 0) {
+        result = result.filter((a) =>
+          filters.feels.includes(String(a.feel || "").toLowerCase())
+        );
+      }
+
+      // Filter by distance range
+      if (filters.distanceMin || filters.distanceMax) {
+        const min = Number(filters.distanceMin);
+        const max = Number(filters.distanceMax);
+
+        result = result.filter((a) => {
+          const miles = Number(a.miles || 0);
+
+          if (filters.distanceMin && miles < min) return false;
+          if (filters.distanceMax && miles > max) return false;
+
+          return true;
+        });
+      }
+
+      // Filter by duration range
+      if (filters.durationMin || filters.durationMax) {
+        const min = Number(filters.durationMin);
+        const max = Number(filters.durationMax);
+
+        result = result.filter((a) => {
+          const duration = Number(a.duration || 0);
+
+          if (filters.durationMin && duration < min) return false;
+          if (filters.durationMax && duration > max) return false;
+
+          return true;
+        });
+      }
+
+      // Filter by pace range
+      if (filters.paceMin || filters.paceMax) {
+        const min = Number(filters.paceMin);
+        const max = Number(filters.paceMax);
+
+        result = result.filter((a) => {
+          const miles = Number(a.miles);
+          const duration = Number(a.duration);
+
+          if (!(miles > 0 && duration > 0)) return false;
+
+          const pace = duration / miles;
+
+          if (filters.paceMin && pace < min) return false;
+          if (filters.paceMax && pace > max) return false;
+
+          return true;
+        });
       }
 
       // PR only

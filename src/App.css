@@ -686,6 +686,37 @@ body {
   color: white;
 }
 
+
+/* Advanced settings */
+.advanced-settings-toggle {
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  opacity: 0.8;
+}
+
+.advanced-settings-toggle:hover {
+  text-decoration: underline;
+}
+
+.advanced-settings-section {
+  margin-top: 0px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.range-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+
 /* ═══════════════════════════════════════════════
    🚴 STRAVA INTEGRATION
    Connect + import activities
