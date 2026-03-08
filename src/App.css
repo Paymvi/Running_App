@@ -1359,7 +1359,7 @@ page {
 }
 
 .run-calendar-card .tile-miles {
-  font-size: 10px; 
+  font-size: 9.8px; 
 }
 
 /* smaller font only for bike time labels */
@@ -1730,6 +1730,26 @@ page {
 
 
 
+/* --- part of profile modal --- */
+
+.edit-profile-input {
+  width: 100%;
+  background: #1f2937;   /* dark background */
+  color: #ffffff;        /* white text */
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 10px;
+}
+.edit-profile-input option {
+  background: #1f2937;
+  color: #ffffff;
+}
+.edit-profile-input option:hover {
+  background: #374151;
+}
+.edit-profile-input {
+  appearance: none;
+}
 
 
 

@@ -399,9 +399,27 @@ function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
 }
 
 
-function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
+function WeeklyMileage({
+  weeks = [],
+  selectedIndex = 0,
+  onSelect,
+  scaleMode = "dynamic",
+}) {
   const scrollerRef = useRef(null);
   const [visibleMax, setVisibleMax] = useState(4); // y-axis max for visible window
+
+  const chartMax = useMemo(() => {
+    if (!weeks.length) return 4;
+
+    let max = 0;
+    for (const w of weeks) {
+      max = Math.max(max, w?.miles || 0);
+    }
+
+    return Math.max(4, Math.ceil(max), 1);
+  }, [weeks]);
+
+
   // SVG coord system
     const H = 220;
     const pad = { l: 42, r: 18, t: 18, b: 34 };
@@ -415,18 +433,19 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
     // const W = Math.max(520, pad.l + pad.r + (weeks.length - 1) * slot);
     const W = pad.l + pad.r + weeks.length * slot;
 
+  const activeMax = scaleMode === "max" ? chartMax : visibleMax;
+
   const points = useMemo(() => {
     if (!weeks.length) return [];
 
     return weeks.map((w, i) => {
-        const x = pad.l + i * slot;
-        // y uses visibleMax (dynamic)
-        const safeMax = Math.max(visibleMax, 1);
-        const y = pad.t + (1 - (w.miles || 0) / safeMax) * innerH;
-        return { x, y, miles: w.miles || 0, i };
+      const x = pad.l + i * slot;
+      const safeMax = Math.max(activeMax, 1);
+      const y = pad.t + (1 - (w.miles || 0) / safeMax) * innerH;
+      return { x, y, miles: w.miles || 0, i };
     });
-    }, [weeks, slot, pad.l, pad.t, innerH, visibleMax]);
-
+  }, [weeks, slot, pad.l, pad.t, innerH, activeMax]);
+  
   const linePath = useMemo(() => {
     if (points.length === 0) return "";
     return points
@@ -457,29 +476,35 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
     const el = scrollerRef.current;
     if (!el || !weeks.length) return;
 
+    // fixed mode = always use highest week across the full chart
+    if (scaleMode === "max") {
+      setVisibleMax(chartMax);
+      return;
+    }
+
     const computeVisible = () => {
-        const scrollLeft = el.scrollLeft;
-        const viewW = el.clientWidth;
+      const scrollLeft = el.scrollLeft;
+      const viewW = el.clientWidth;
 
-        const startX = scrollLeft;           // visible left (in px of the SVG container)
-        const endX = scrollLeft + viewW;     // visible right
+      const startX = scrollLeft;          // visible left (in px of the SVG container)
+      const endX = scrollLeft + viewW;    // visible right
 
-        // Convert visible pixel window to index window
-        const firstIdx = Math.max(0, Math.floor((startX - pad.l) / slot));
-        const lastIdx = Math.min(
+      // Convert visible pixel window to index window
+      const firstIdx = Math.max(0, Math.floor((startX - pad.l) / slot));
+      const lastIdx = Math.min(
         weeks.length - 1,
         Math.ceil((endX - pad.l) / slot)
-        );
+      );
 
-        let max = 0;
-        for (let i = firstIdx; i <= lastIdx; i++) {
+      let max = 0;
+      for (let i = firstIdx; i <= lastIdx; i++) {
         max = Math.max(max, weeks[i]?.miles || 0);
-        }
+      }
 
-        // nice rounding: at least 4, round up to nearest 1
-        // const next = Math.max(4, Math.ceil(max) || 4);
-        const next = Math.max(4, Math.ceil(max), 1);
-        setVisibleMax(next);
+      // nice rounding: at least 4, round up to nearest 1
+      // const next = Math.max(4, Math.ceil(max) || 4);
+      const next = Math.max(4, Math.ceil(max), 1);
+      setVisibleMax(next);
     };
 
     computeVisible();
@@ -488,10 +513,10 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
     window.addEventListener("resize", computeVisible);
 
     return () => {
-        el.removeEventListener("scroll", computeVisible);
-        window.removeEventListener("resize", computeVisible);
+      el.removeEventListener("scroll", computeVisible);
+      window.removeEventListener("resize", computeVisible);
     };
-  }, [weeks, pad.l, slot]);
+  }, [weeks, pad.l, slot, scaleMode, chartMax]);
 
     useEffect(() => {
     const el = scrollerRef.current;
@@ -529,7 +554,7 @@ function WeeklyMileage({ weeks = [], selectedIndex = 0, onSelect }) {
             >
             {/* top label */}
             <text x="8" y={pad.t} className="weekly-axis">
-                {Math.round(visibleMax)} mi
+              {Math.round(activeMax)} mi
             </text>
 
             {/* bottom label */}
@@ -704,17 +729,22 @@ export default function Profile() {
   const [showTrends, setShowTrends] = useState(true);
   const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
-  
+  const [weeklyScaleMode, setWeeklyScaleMode] = useState(
+  () => localStorage.getItem("weeklyScaleMode") || "dynamic"
+);
 
 
   useEffect(() => {
     localStorage.setItem("profileTag", tag);
-    }, [tag]);
+  }, [tag]);
 
-    useEffect(() => {
-        localStorage.setItem("profileName", profileName);
-    }, [profileName]);
+  useEffect(() => {
+      localStorage.setItem("profileName", profileName);
+  }, [profileName]);
 
+  useEffect(() => {
+    localStorage.setItem("weeklyScaleMode", weeklyScaleMode);
+  }, [weeklyScaleMode]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -1376,9 +1406,10 @@ const removeAvatar = () => {
             </div>
 
             <WeeklyMileage
-                weeks={weeklySnapshot}
-                selectedIndex={selectedWeekIndex}
-                onSelect={(idx) => setSelectedWeekIndex(idx)}
+              weeks={weeklySnapshot}
+              selectedIndex={selectedWeekIndex}
+              onSelect={(idx) => setSelectedWeekIndex(idx)}
+              scaleMode={weeklyScaleMode}
             />
             </div>
 
@@ -1438,16 +1469,25 @@ const removeAvatar = () => {
             </div>
 
             <div className="edit-profile-body">
-                <label className="edit-profile-label">Name</label>
-                <input
+              <label className="edit-profile-label">Name</label>
+              <input
                 type="text"
                 className="edit-profile-input"
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
                 placeholder="Enter your name"
                 maxLength={30}
-                />
+              />
 
+              <label className="edit-profile-label">Weekly Mileage Scale</label>
+              <select
+                className="edit-profile-input"
+                value={weeklyScaleMode}
+                onChange={(e) => setWeeklyScaleMode(e.target.value)}
+              >
+                <option value="dynamic">Dynamic (changes while scrolling)</option>
+                <option value="max">Fixed scale (highest week)</option>
+              </select>
             </div>
 
             <div className="edit-profile-actions">
