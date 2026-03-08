@@ -2114,7 +2114,30 @@ page {
 .weekly-dot-anim {
   transition: cy 0.35s ease;
 }
+/* 
+@keyframes weeklyDotPulse {
+  0% {
+    r: 6;
+  }
+  40% {
+    r: 9;
+  }
+  100% {
+    r: 6;
+  }
+}
 
+.weekly-dot-pulse circle {
+  animation: weeklyDotPulse 220ms ease-out;
+}
+
+.weekly-dot circle {
+  transition: r 120ms ease;
+}
+
+.weekly-dot:hover circle {
+  r: 6;
+} */
 
 
 .trend {

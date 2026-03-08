@@ -406,6 +406,7 @@ function WeeklyMileage({
   scaleMode = "dynamic",
 }) {
   const scrollerRef = useRef(null);
+  const [pulseIndex, setPulseIndex] = useState(null);
   const [visibleMax, setVisibleMax] = useState(4); // y-axis max for visible window
 
   const chartMax = useMemo(() => {
@@ -628,13 +629,28 @@ function WeeklyMileage({
                 return (
                 <g
                     key={p.i}
-                    className="weekly-dot clickable"
-                    onClick={() => onSelect?.(p.i)}
+                    className={`weekly-dot clickable ${
+                      pulseIndex === p.i ? "weekly-dot-pulse" : ""
+                    }`}
+                    onClick={() => {
+                      onSelect?.(p.i);
+
+                      // mobile haptic feedback
+                      if (navigator.vibrate) {
+                        navigator.vibrate(12); // short subtle tap
+                      }
+
+                      setPulseIndex(p.i);
+
+                      setTimeout(() => {
+                        setPulseIndex(null);
+                      }, 220);
+                    }}
                 >
                     <circle
                     cx={p.x}
                     cy={p.y}
-                    r={isSel ? 6 : 4}
+                    r={4} // size of orange circle
                     className="weekly-circle weekly-dot-anim"
                     fill={isSel ? "rgb(252,76,2)" : "rgba(252,76,2,0.35)"}
                     stroke="rgb(252,76,2)"
