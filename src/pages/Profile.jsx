@@ -2,6 +2,21 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import ReactCountryFlag from "react-country-flag";
 import LargeHeatmap from "../components/LargeHeatmap";
 
+import {
+  formatTime,
+  formatDate,
+  parseDateSafe,
+  parseDurationMinutes,
+  startOfWeekMonday,
+  addDays,
+  weeksBetween,
+  formatWeekRange,
+  formatHoursMinsFromMinutes,
+  chunkArray,
+  getEasyZone,
+  daysAgo,
+} from "../utils/profileHelpers";
+
 const TAG_OPTIONS = [
   "Slow is smooth... smooth is fast",
   "Zone 5 enthusiast",
@@ -33,144 +48,6 @@ const TAG_OPTIONS = [
   "Hill Trauma Survivor",
 ];
 
-
-
-function formatTime(min) {
-  if (!isFinite(min)) return "-";
-  const m = Math.floor(min);
-  const s = Math.round((min - m) * 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d)) return "";
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-// -------------------------
-// SAFE DATE PARSER (handles M/D/YYYY and ISO)
-// -------------------------
-function parseDateSafe(dateStr) {
-  if (!dateStr) return null;
-
-  // Try normal parsing first (ISO format)
-  const iso = new Date(dateStr);
-  if (!isNaN(iso)) return iso;
-
-  // Try M/D/YYYY format
-  const match = String(dateStr)
-    .trim()
-    .match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-
-  if (match) {
-    const month = Number(match[1]) - 1;
-    const day = Number(match[2]);
-    const year = Number(match[3]);
-    const d = new Date(year, month, day);
-    return isNaN(d) ? null : d;
-  }
-
-  return null;
-}
-
-// -------------------------
-// SAFE DURATION PARSER (handles mm:ss or decimal minutes)
-// -------------------------
-function parseDurationMinutes(val) {
-  if (val == null) return 0;
-
-  if (typeof val === "number") return val;
-
-  const s = String(val).trim();
-
-  // mm:ss or hh:mm:ss
-  if (s.includes(":")) {
-    const parts = s.split(":").map((p) => p.trim());
-
-    if (parts.length === 2) {
-      const [m, sec] = parts.map(Number);
-      return m + sec / 60;
-    }
-
-    if (parts.length === 3) {
-      const [h, m, sec] = parts.map(Number);
-      return h * 60 + m + sec / 60;
-    }
-
-    return 0;
-  }
-
-  const n = Number(s);
-  return isFinite(n) ? n : 0;
-}
-
-// -------------------------
-// WEEK HELPERS (Mon -> Sun)
-// -------------------------
-function startOfWeekMonday(dateObj) {
-  const d = new Date(dateObj);
-  d.setHours(0, 0, 0, 0);
-
-  // JS: Sun=0, Mon=1, ... Sat=6
-  const day = d.getDay();
-  const diff = (day === 0 ? -6 : 1) - day; // move back to Monday
-  d.setDate(d.getDate() + diff);
-  return d;
-}
-
-function addDays(dateObj, days) {
-  const d = new Date(dateObj);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function weeksBetween(startWeek, endWeek) {
-  const ms = endWeek.getTime() - startWeek.getTime();
-  return Math.round(ms / (7 * 24 * 60 * 60 * 1000));
-}
-
-function formatWeekRange(startDateObj) {
-  const end = addDays(startDateObj, 6);
-  const sameMonth = startDateObj.getMonth() === end.getMonth();
-  const sameYear = startDateObj.getFullYear() === end.getFullYear();
-
-  const startStr = startDateObj.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-  });
-
-  const endStr = end.toLocaleDateString("en-US", {
-    month: sameMonth ? undefined : "long",
-    day: "numeric",
-  });
-
-  // Optional: if weeks can span years (rare), add year
-  const yearStr = sameYear ? "" : `, ${end.getFullYear()}`;
-
-  return `${startStr} - ${endStr}${yearStr}`;
-}
-
-function formatHoursMinsFromMinutes(totalMinutes) {
-  if (!isFinite(totalMinutes)) return "-";
-  const mins = Math.round(totalMinutes);
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${h}h ${m}m`;
-}
-
-
-
-
-function chunkArray(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
 
 function hashString(str) {
   // deterministic hash for colors/positions
@@ -704,32 +581,6 @@ function WeeklyMileage({
 
 
 
-function getEasyZone(pct) {
-  if (pct < 50) {
-    return {
-      label: "Workout Heavy",
-      className: "easy-zone-red",
-    };
-  }
-  if (pct < 70) {
-    return {
-      label: "Workout Leaning",
-      className: "easy-zone-yellow",
-    };
-  }
-  if (pct <= 85) {
-    return {
-      label: "Balanced Aerobic",
-      className: "easy-zone-green",
-    };
-  }
-  return {
-    label: "Recovery / Base",
-    className: "easy-zone-blue",
-  };
-}
-
-
 
 export default function Profile() {
   const [activities, setActivities] = useState([]);
@@ -873,13 +724,9 @@ const removeAvatar = () => {
             tenK: best10k,
             latestPRDate,
         };
-    }, [activities]);
+  }, [activities]);
 
-    function daysAgo(dateObj) {
-        if (!dateObj) return null;
-        const diff = new Date() - dateObj;
-        return Math.floor(diff / (1000 * 60 * 60 * 24));
-    }
+
 
 
   // -------------------------
