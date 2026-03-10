@@ -2770,9 +2770,167 @@ page {
 
 
 
+/* Large Heatmap */
+.activity-heatmap-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
 
+/* optional, but helps prevent odd clipping in some layouts */
+.activity-heatmap-card * {
+  box-sizing: border-box;
+}
 
+.activity-heatmap-header {
+  margin-bottom: 14px;
+}
 
+.activity-heatmap-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.activity-heatmap-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* THIS is the horizontal scroll area */
+.activity-heatmap-shell {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 10px; /* gives scrollbar breathing room */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* This wrapper makes the months + grid share one natural width */
+.activity-heatmap-content {
+  width: max-content;
+  min-width: 100%;
+}
+
+.activity-heatmap-months {
+  display: grid;
+  column-gap: 4px;
+  margin-left: 34px; /* lines up with left day labels */
+  margin-bottom: 8px;
+  width: max-content;
+}
+
+.activity-heatmap-month-cell {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.activity-heatmap-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: max-content;
+}
+
+.activity-heatmap-days {
+  display: grid;
+  grid-template-rows: repeat(7, 12px);
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+  width: 26px;
+  flex: 0 0 26px;
+}
+
+.activity-heatmap-days div {
+  height: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.activity-heatmap-grid {
+  display: grid;
+  gap: 4px;
+  width: max-content;
+}
+
+.activity-heatmap-week {
+  display: grid;
+  grid-template-rows: repeat(7, 12px);
+  gap: 4px;
+}
+
+.activity-heatmap-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #161b22;
+  flex-shrink: 0;
+  transition: transform 120ms ease, filter 120ms ease, background 120ms ease;
+}
+
+.activity-heatmap-cell:hover {
+  transform: scale(1.08);
+  filter: brightness(1.08);
+}
+
+.activity-heatmap-cell-empty {
+  opacity: 0;
+}
+
+/* GitHub-ish green scale */
+.activity-heatmap-cell.level-0 {
+  background: #161b22;
+}
+
+.activity-heatmap-cell.level-1 {
+  background: #0e4429;
+}
+
+.activity-heatmap-cell.level-2 {
+  background: #006d32;
+}
+
+.activity-heatmap-cell.level-3 {
+  background: #26a641;
+}
+
+.activity-heatmap-cell.level-4 {
+  background: #39d353;
+}
+
+.activity-heatmap-footer {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.activity-heatmap-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.activity-heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 700px) {
+  .activity-heatmap-card {
+    padding: 14px;
+  }
+}
 
 
 

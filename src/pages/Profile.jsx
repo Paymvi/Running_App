@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import ReactCountryFlag from "react-country-flag";
+import LargeHeatmap from "../components/LargeHeatmap";
 
 const TAG_OPTIONS = [
   "Slow is smooth... smooth is fast",
@@ -1517,6 +1518,8 @@ const removeAvatar = () => {
             </div>
         </div>
         )}
+
+        <LargeHeatmap activities={activities}/>
 
         </div>
     );
