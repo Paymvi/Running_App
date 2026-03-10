@@ -6,3 +6,7 @@ npm install react-country-flag
 
 For csv parser:
 npm install papaparse
+
+npm i express cors dotenv
+
+npm install xlsx

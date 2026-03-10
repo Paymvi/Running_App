@@ -5,5 +5,6 @@ export default function FloatingButton({ onClick }) {
     <button className="floating-btn" onClick={onClick}>
       +
     </button>
+    
   );
 }

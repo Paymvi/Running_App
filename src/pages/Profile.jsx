@@ -1,6 +1,12 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import ReactCountryFlag from "react-country-flag";
 import LargeHeatmap from "../components/LargeHeatmap";
+import EasyJar from "../components/profile/EasyJar";
+import WeeklyMileage from "../components/profile/WeeklyMileage";
+import ProfileTopSection from "../components/profile/ProfileTopSection";
+import PRPanel from "../components/profile/PRPanel";
+import MonthlySnapshot from "../components/profile/MonthlySnapshot";
+import PastJarsModal from "../components/profile/PastJarsModal";
+import EditProfileModal from "../components/profile/EditProfileModal";
 
 import {
   formatTime,
@@ -68,517 +74,6 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-
-
-function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
-  // SVG coordinate system
-  const W = 240;
-  const H = 220;
-
-  // jar interior bounds (where balls can be placed)
-    const inner = {
-        x: 40,
-        y: 45,
-        w: 160,
-        h: 150,
-    };
-
-  // compute max duration for brightness scaling
-  const durations = runs.map((r) => r.duration || 0).filter(Boolean);
-  const maxDur = Math.max(30, ...durations); // at least 30 so it doesn't blow out
-
-  // place circles with a simple deterministic packing attempt
-  const circles = useMemo(() => {
-    const placed = [];
-
-    if (!runs.length) return placed;
-
-    const rowGap = 4;
-
-    // scale radius based on duration
-    const radii = runs.map((r) => {
-        const dur = r.duration || 0;
-        const t = Math.min(1, dur / 75);
-        return 7 + t * 4;
-    });
-
-    const bottomY = inner.y + inner.h - 4;
-    let currentY = bottomY;
-
-    let row = [];
-    let rowWidth = 0;
-
-    for (let i = 0; i < runs.length; i++) {
-        const r = runs[i];
-        const rad = radii[i];
-
-        if (row.length === 0) {
-        row.push({ r, rad });
-        rowWidth = rad * 2;
-        continue;
-        }
-
-        const nextWidth = rowWidth + rowGap + rad * 2;
-
-        // prevent overflow near jar shoulders
-        if (nextWidth > inner.w - 24) {
-        const startX = inner.x + (inner.w - rowWidth) / 2;
-        let xCursor = startX;
-
-        for (const item of row) {
-            placed.push({
-            cx: xCursor + item.rad,
-            cy: currentY - item.rad,
-            r: item.rad,
-            data: item.r,
-            });
-
-            xCursor += item.rad * 2 + rowGap;
-        }
-
-        currentY -= Math.max(...row.map((x) => x.rad)) * 2 + rowGap;
-
-        row = [{ r, rad }];
-        rowWidth = rad * 2;
-        } else {
-        row.push({ r, rad });
-        rowWidth = nextWidth;
-        }
-    }
-
-    // render last row
-    if (row.length > 0) {
-        const startX = inner.x + (inner.w - rowWidth) / 2;
-        let xCursor = startX;
-
-        for (const item of row) {
-        placed.push({
-            cx: xCursor + item.rad,
-            cy: currentY - item.rad,
-            r: item.rad,
-            data: item.r,
-        });
-
-        xCursor += item.rad * 2 + rowGap;
-        }
-    }
-
-    return placed.map((p) => {
-        const dur = p.data.duration || 0;
-        const tDur = Math.max(0, Math.min(1, dur / maxDur));
-        const alpha = 0.25 + tDur * 0.75;
-
-        return {
-        cx: p.cx,
-        cy: p.cy,
-        r: p.r,
-        fill: `rgba(252,76,2,${alpha})`, // orange
-        glow: tDur,
-        key: p.data.key,
-        label: p.data.label,
-        dur,
-        miles: p.data.miles,
-        date: p.data.date,
-        };
-    });
-    }, [runs, maxDur]);
-
-  return (
-    <div className="jar-card">
-      <div className="jar-head">
-        <div className="jar-title">{title}</div>
-        <div className="jar-sub">{subtitle}</div>
-      </div>
-
-      <div className="jar-wrap" aria-label="Easy Run Jar">
-        <svg
-            width={W}
-            height={H}
-            viewBox={`0 0 ${W} ${H}`}
-            className="jar-svg">
-          {/* Glow filter */}
-          <defs>
-            <filter id="ballGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2.8" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-
-            {/* Glass gradient */}
-            <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.20)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0.06)" />
-            </linearGradient>
-          </defs>
-
-          {/* Jar outline */}
-          <path
-            className="jar-glass"
-            d="
-            M70 35
-            Q70 25 80 25
-            L160 25
-            Q170 25 170 35
-            L170 45
-            Q170 55 180 60
-            Q200 70 200 95
-            L200 185
-            Q200 205 180 205
-            L60 205
-            Q40 205 40 185
-            L40 95
-            Q40 70 60 60
-            Q70 55 70 45
-            Z
-            "
-          />
-
-          {/* Glass highlight */}
-          <path
-            className="jar-highlight"
-            d="M110 78 Q105 120 110 175"
-          />
-
-          {/* Balls */}
-          {circles.map((c) => (
-            <g key={c.key} filter={c.glow > 0.75 ? "url(#ballGlow)" : undefined}>
-              <circle
-                cx={c.cx}
-                cy={c.cy}
-                r={c.r}
-                fill={c.fill}
-                className="jar-ball"
-              />
-              {/* tiny specular highlight */}
-              <circle
-                cx={c.cx - c.r * 0.25}
-                cy={c.cy - c.r * 0.25}
-                r={Math.max(1.6, c.r * 0.25)}
-                fill="rgba(255,255,255,0.35)"
-              />
-            </g>
-          ))}
-
-          {/* Base shadow */}
-          <ellipse cx="170" cy="208" rx="95" ry="10" className="jar-shadow" />
-        </svg>
-
-        {runs.length === 0 && (
-          <div className="jar-empty">
-            Add an <b>EASY</b> run to drop a ball 🫙
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-function WeeklyMileage({
-  weeks = [],
-  selectedIndex = 0,
-  onSelect,
-  scaleMode = "dynamic",
-}) {
-  const scrollerRef = useRef(null);
-  const [pulseIndex, setPulseIndex] = useState(null);
-  const [visibleMax, setVisibleMax] = useState(4); // y-axis max for visible window
-
-  const chartMax = useMemo(() => {
-    if (!weeks.length) return 4;
-
-    let max = 0;
-    for (const w of weeks) {
-      max = Math.max(max, w?.miles || 0);
-    }
-
-    return Math.max(4, Math.ceil(max), 1);
-  }, [weeks]);
-
-
-  // SVG coord system
-    const H = 220;
-    const pad = { l: 42, r: 18, t: 18, b: 34 };
-    const axisW = pad.l; // fixed y-axis column width
-
-    const innerH = H - pad.t - pad.b;
-
-    // spacing per week (controls how wide the chart is)
-    const slot = 20; // px per week (tweak to taste)
-    const visibleWeeks = 4; // about 3 months
-    // const W = Math.max(520, pad.l + pad.r + (weeks.length - 1) * slot);
-    const W = pad.l + pad.r + weeks.length * slot;
-
-  const activeMax = scaleMode === "max" ? chartMax : visibleMax;
-
-  const points = useMemo(() => {
-    if (!weeks.length) return [];
-
-    return weeks.map((w, i) => {
-      const x = pad.l + i * slot;
-      const safeMax = Math.max(activeMax, 1);
-      const y = pad.t + (1 - (w.miles || 0) / safeMax) * innerH;
-      return { x, y, miles: w.miles || 0, i };
-    });
-  }, [weeks, slot, pad.l, pad.t, innerH, activeMax]);
-  
-  const linePath = useMemo(() => {
-    if (points.length === 0) return "";
-    return points
-      .map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-      .join(" ");
-  }, [points]);
-
-  const areaPath = useMemo(() => {
-    if (points.length === 0) return "";
-    const bottomY = pad.t + innerH;
-    const start = points[0];
-    const end = points[points.length - 1];
-    return `
-      M ${start.x.toFixed(1)} ${bottomY.toFixed(1)}
-      L ${start.x.toFixed(1)} ${start.y.toFixed(1)}
-      ${points
-        .slice(1)
-        .map((p) => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-        .join(" ")}
-      L ${end.x.toFixed(1)} ${bottomY.toFixed(1)}
-      Z
-    `;
-  }, [points, innerH, pad.t]);
-
-  const selectedPoint = points[selectedIndex] || null;
-
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el || !weeks.length) return;
-
-    // fixed mode = always use highest week across the full chart
-    if (scaleMode === "max") {
-      setVisibleMax(chartMax);
-      return;
-    }
-
-    const computeVisible = () => {
-      const scrollLeft = el.scrollLeft;
-      const viewW = el.clientWidth;
-
-      const startX = scrollLeft;          // visible left (in px of the SVG container)
-      const endX = scrollLeft + viewW;    // visible right
-
-      // Convert visible pixel window to index window
-      const firstIdx = Math.max(0, Math.floor((startX - pad.l) / slot));
-      const lastIdx = Math.min(
-        weeks.length - 1,
-        Math.ceil((endX - pad.l) / slot)
-      );
-
-      let max = 0;
-      for (let i = firstIdx; i <= lastIdx; i++) {
-        max = Math.max(max, weeks[i]?.miles || 0);
-      }
-
-      // nice rounding: at least 4, round up to nearest 1
-      // const next = Math.max(4, Math.ceil(max) || 4);
-      const next = Math.max(4, Math.ceil(max), 1);
-      setVisibleMax(next);
-    };
-
-    computeVisible();
-
-    el.addEventListener("scroll", computeVisible, { passive: true });
-    window.addEventListener("resize", computeVisible);
-
-    return () => {
-      el.removeEventListener("scroll", computeVisible);
-      window.removeEventListener("resize", computeVisible);
-    };
-  }, [weeks, pad.l, slot, scaleMode, chartMax]);
-
-    useEffect(() => {
-    const el = scrollerRef.current;
-        if (!el) return;
-
-        if (selectedIndex == null) return;
-
-        const newestX = pad.l + selectedIndex * slot;
-
-        // show the last ~3 months by default
-        const scrollTarget = newestX - visibleWeeks * slot + slot * 2;
-
-        el.scrollTo({
-            left: Math.max(0, scrollTarget),
-            behavior: "smooth",
-        });
-    }, [selectedIndex, pad.l, slot, visibleWeeks]);
-
-  return (
-    <div className="weekly-card">
-      <div className="weekly-top">
-        {/* <div className="weekly-title">Weekly mileage</div> */}
-      </div>
-
-        
-    <div className="weekly-chart-row">
-        {/* LEFT: sticky Y axis */}
-        <div className="weekly-yaxis">
-            <svg
-            width={axisW}
-            height={H}
-            viewBox={`0 0 ${axisW} ${H}`}
-            className="weekly-axis-svg"
-            aria-hidden="true"
-            >
-            {/* top label */}
-            <text x="8" y={pad.t} className="weekly-axis">
-              {Math.round(activeMax)} mi
-            </text>
-
-            {/* bottom label */}
-            <text
-                x="12"
-                y={pad.t + innerH - 2}
-                className="weekly-axis"
-                dominantBaseline="middle"
-            >
-            0 mi
-            </text>
-
-            </svg>
-        </div>
-
-        {/* RIGHT: scrolling chart */}
-        <div className="weekly-chart-scroll" ref={scrollerRef}>
-            <svg
-            width={W}
-            height={H}
-            viewBox={`0 0 ${W} ${H}`}
-            className="weekly-svg"
-            shapeRendering="geometricPrecision"
-            role="img"
-            aria-label="Weekly mileage chart"
-            >
-            <defs>
-                <linearGradient id="weeklyFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgba(252,76,2,0.40)" />
-                <stop offset="100%" stopColor="rgba(252,76,2,0.06)" />
-                </linearGradient>
-            </defs>
-
-            {/* area */}
-            {points.length > 0 && (
-                <path
-                    d={areaPath}
-                    fill="url(#weeklyFill)"
-                    className="weekly-area"
-                />
-            )}
-
-            {/* line */}
-            {points.length > 0 && (
-                <path
-                d={linePath}
-                fill="none"
-                stroke="rgb(252,76,2)"
-                strokeWidth="2.5"
-                className="weekly-line"
-                />
-            )}
-
-            {/* selected marker */}
-            {selectedPoint && (
-                <line
-                className="weekly-marker"
-                x1="0"
-                x2="0"
-                y1={pad.t}
-                y2={pad.t + innerH}
-                transform={`translate(${selectedPoint.x},0)`}
-                stroke="rgba(252,76,2,0.85)" // orange
-                strokeWidth="2"
-                />
-            )}
-
-            {/* dots */}
-            {points.map((p) => {
-                const isSel = p.i === selectedIndex;
-                return (
-                <g
-                    key={p.i}
-                    className={`weekly-dot clickable ${
-                      pulseIndex === p.i ? "weekly-dot-pulse" : ""
-                    }`}
-                    onClick={() => {
-                      onSelect?.(p.i);
-
-                      // mobile haptic feedback
-                      if (navigator.vibrate) {
-                        navigator.vibrate(12); // short subtle tap
-                      }
-
-                      setPulseIndex(p.i);
-
-                      setTimeout(() => {
-                        setPulseIndex(null);
-                      }, 220);
-                    }}
-                >
-                    <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={4} // size of orange circle
-                    className="weekly-circle weekly-dot-anim"
-                    fill={isSel ? "rgb(252,76,2)" : "rgba(252,76,2,0.35)"}
-                    stroke="rgb(252,76,2)"
-                    strokeWidth={isSel ? 2 : 1.5}
-                    />
-                </g>
-                );
-            })}
-
-            {/* Month labels */}
-            {weeks.map((w, i) => {
-                const prev = weeks[i - 1];
-                const wDate = w.weekStart;
-                const prevDate = prev?.weekStart;
-
-                const isNewMonth =
-                !prevDate ||
-                wDate.getMonth() !== prevDate.getMonth() ||
-                wDate.getFullYear() !== prevDate.getFullYear();
-
-                if (!isNewMonth) return null;
-
-                const x = pad.l + i * slot;
-                const label = wDate
-                .toLocaleString("en-US", { month: "short" })
-                .toUpperCase();
-
-                return (
-                <text
-                    key={`m-${i}`}
-                    x={x}
-                    y={H - 8}
-                    textAnchor="middle"
-                    className="weekly-month"
-                >
-                    {label}
-                </text>
-                );
-            })}
-            </svg>
-        </div>
-    </div>
-
-
-
-        
-    </div>
-  );
-}
-
 
 
 
@@ -952,118 +447,27 @@ const removeAvatar = () => {
     }, [weeklySnapshot]);
 
     const displayName = profileName.trim() || "Your Name";
+
+
+
+
     return (
-        <div className="profile-page">
+      <div className="profile-page">
 
-        {/* TOP AREA (matches sketch) */}
-        <div className="profile-top">
-
-            {/* LEFT COLUMN */}
-            <div className="profile-left">
-
-            <div
-            className="profile-avatar-lg clickable"
-            onClick={() => fileInputRef.current?.click()}
-            >
-            {avatar ? (
-                <img
-                className="profile-avatar-img"
-                src={avatar}
-                alt="Profile avatar"
-                />
-            ) : (
-                <span className="profile-avatar-emoji">🏃</span>
-            )}
-
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                className="avatar-file"
-            />
-            </div>
-
-            <div className="avatar-actions">
-
-                <button className="avatar-btn" onClick={() => setShowJarHistory(true)}>
-                    Past Jars 🫙
-                </button>
-
-                <div className="avatar-metric">
-                    <div className="avatar-metric-value">{jarCount}</div>
-                    <div className="avatar-metric-label">Jars Completed</div>
-                </div>
-
-            </div>
-
-
-            </div>
-
-            {/* RIGHT COLUMN */}
-            <div className="profile-top-right">
-
-            {/* flag + name */}
-            <div className="profile-name-row">
-                <span className="profile-flag">
-                    <ReactCountryFlag
-                        countryCode="US"
-                        svg
-                        style={{
-                            width: "28px",
-                            height: "20px",
-                            borderRadius: "4px"
-                        }}
-                    />
-                </span>
-
-                <div className="profile-identity-block">
-                    <h2 className="profile-name">{displayName}</h2>
-                    {/* <div className="profile-country-label">{selectedCountryLabel}</div> */}
-                </div>
-
-                <button
-                    className="profile-edit-btn"
-                    onClick={() => setShowEditProfile(true)}
-                >
-                    Edit
-                </button>
-
-            </div>
-
-            {/* 3 stat boxes */}
-            <div className="profile-stat-row">
-                <div className="profile-stat">
-                <div className="profile-stat-title">Total Distance</div>
-                <div className="profile-stat-value">{stats.totalMiles.toFixed(1)} mi</div>
-                </div>
-
-                <div className="profile-stat">
-                <div className="profile-stat-title">This month</div>
-                <div className="profile-stat-value">{stats.thisMonthMiles.toFixed(1)} mi</div>
-                </div>
-
-            </div>
-
-            {/* second row: funny tag */}
-            <div className="profile-pill">
-            <div className="pill-title">Today’s Energy</div>
-
-            <select
-                className="tag-select"
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-            >
-                {TAG_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                    {option}
-                </option>
-                ))}
-            </select>
-            </div>
-
-                    </div> {/* profile-top-right */}
-                </div>   {/* profile-top */}
+        <ProfileTopSection
+          avatar={avatar}
+          fileInputRef={fileInputRef}
+          handleAvatarChange={handleAvatarChange}
+          jarCount={jarCount}
+          setShowJarHistory={setShowJarHistory}
+          displayName={displayName}
+          setShowEditProfile={setShowEditProfile}
+          stats={stats}
+          tag={tag}
+          setTag={setTag}
+          TAG_OPTIONS={TAG_OPTIONS}
+        />
+        
 
         {/* MIDDLE AREA: graph left + PR panel right */}
         <div className="profile-mid">
@@ -1083,160 +487,19 @@ const removeAvatar = () => {
             )}
             </div>
 
-            {/* PRs panel (matches sketch box) */}
-            <div className="profile-panel pr-panel">
-            <div className="panel-title">🎖️ PRs</div>
-            {selectedPR && selectedPR.date && (
-                <div className="pr-selected-date">
-                    {selectedPR.label} PR: {formatDate(selectedPR.date)}
-                </div>
-                )}
-
-            <div className="pr-table">
-                <div className="pr-row">
-                <div className="pr-cell label">Mile</div>
-                    <div
-                    className="pr-cell value clickable"
-                    onClick={() => {
-                        if (selectedPR?.label === "Mile") {
-                            setSelectedPR(null);
-                        } else {
-                            setSelectedPR({
-                            label: "Mile",
-                            date: prs.mile.date,
-                            });
-                        }
-                    }}
-                    >
-                    {formatTime(prs.mile.time)}
-                    </div>
-                </div>
-                <div className="pr-row">
-                <div className="pr-cell label">5K</div>
-                    <div
-                    className="pr-cell value clickable"
-                    onClick={() => {
-                        if (selectedPR?.label === "5K") {
-                            setSelectedPR(null);
-                        } else {
-                            setSelectedPR({
-                            label: "5K",
-                            date: prs.fiveK.date,
-                            });
-                        }
-                    }}
-                    >
-                    {formatTime(prs.fiveK.time)}
-                    </div>
-                </div>
-                <div className="pr-row">
-                <div className="pr-cell label">10K</div>
-                    <div
-                    className="pr-cell value clickable"
-                        onClick={() => {
-                            if (selectedPR?.label === "10K") {
-                            setSelectedPR(null);
-                        } else {
-                            setSelectedPR({
-                            label: "10K",
-                            date: prs.tenK.date,
-                            });
-                        }
-                    }}
-                    >
-                    {formatTime(prs.tenK.time)}
-                    </div>
-                </div>
-            </div>
-
-            {prs.latestPRDate && (
-                <div className="pr-latest">
-                    Last PR: {daysAgo(prs.latestPRDate)} days ago
-                </div>
-                )}
-
-            </div>
+            <PRPanel
+              prs={prs}
+              selectedPR={selectedPR}
+              setSelectedPR={setSelectedPR}
+            />
 
         </div>
 
-        {/* MONTHLY SNAPSHOT */}
-            <div className="profile-section">
-
-                <h2
-                    className="section-title clickable"
-                    onClick={() => setShowTrends((prev) => !prev)}
-                >
-                    Monthly snapshot
-                </h2>
-
-                <div className="month-snap-row">
-                {monthlySnapshot.map((m, i) => {
-                    const zone = getEasyZone(m.pctEasy);
-
-                    return (
-                        <div key={i} className="month-card">
-                        <div className="month-title">{m.month}</div>
-
-                        {/* HERO METRIC */}
-                        <div className="month-hero">
-                        {m.mileage} mi
-
-                        {showTrends && m.mileageDelta !== null && (
-                        <div
-                            className={`trend ${
-                            m.mileageDelta > 0
-                                ? "trend-up"
-                                : m.mileageDelta < 0
-                                ? "trend-down"
-                                : "trend-neutral"
-                            }`}
-                        >
-                            {m.mileageDelta > 0 && "▲ "}
-                            {m.mileageDelta < 0 && "▼ "}
-                            {m.mileageDelta !== 0 && `${Math.abs(m.mileageDelta).toFixed(1)} mi`}
-                            {m.mileageDelta === 0 && "No change"}
-                        </div>
-                        )}
-                        </div>
-
-                        {/* Easy % with color meaning */}
-                        <div className={`easy-pill ${zone.className}`}>
-                            <span className="easy-percent">{m.pctEasy}% Easy</span>
-                            <span className="easy-label">{zone.label}</span>
-                        </div>
-
-                            {/* {showTrends && m.easyDelta !== null && (
-                            <div
-                                className={`trend-small ${
-                                m.easyDelta > 0
-                                    ? "trend-up"
-                                    : m.easyDelta < 0
-                                    ? "trend-down"
-                                    : "trend-neutral"
-                                }`}
-                            >
-                                {m.easyDelta > 0 && "▲ "}
-                                {m.easyDelta < 0 && "▼ "}
-                                {m.easyDelta !== 0 && `${Math.abs(m.easyDelta)}% vs last month`}
-                            </div>
-                            )} */}
-
-                        <div className="month-secondary">
-                            <div className="metric-row">
-                            <span>Avg Easy Pace</span>
-                            <span>{m.avgEasy}</span>
-                            </div>
-
-                            <div className="metric-row">
-                            <span>Longest Run</span>
-                            <span>{m.longest} mi</span>
-                            </div>
-                        </div>
-                        </div>
-                    );
-                    })}
-                </div>
-            </div>
+            <MonthlySnapshot
+              monthlySnapshot={monthlySnapshot}
+              showTrends={showTrends}
+              setShowTrends={setShowTrends}
+            />
 
             <br></br>
 
@@ -1259,13 +522,6 @@ const removeAvatar = () => {
                     {selectedWeek ? formatHoursMinsFromMinutes(selectedWeek.minutes) : "-"}
                     </div>
                 </div>
-
-                {/* <div className="weekly-stat">
-                    <div className="weekly-stat-label">Elevation Gain</div>
-                    <div className="weekly-stat-value">
-                    {selectedWeek ? `${selectedWeek.elevationFt} ft` : "0 ft"}
-                    </div>
-                </div> */}
                 </div>
             </div>
 
@@ -1277,93 +533,24 @@ const removeAvatar = () => {
             />
             </div>
 
-
-
         {showJarHistory && (
-        <div className="jar-modal-backdrop" onClick={() => setShowJarHistory(false)}>
-            <div className="jar-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="jar-modal-head">
-                <div className="jar-modal-title">Past Jars</div>
-                <button className="jar-close" onClick={() => setShowJarHistory(false)}>
-                ✕
-                </button>
-            </div>
-
-            {completedJars.length === 0 ? (
-                <div className="jar-modal-empty">
-                No completed jars yet. Fill your first one 😈
-                </div>
-            ) : (
-                <div className="jar-grid">
-                {completedJars
-                    .slice()
-                    .reverse()
-                    .map((jar, idx) => (
-                    <div key={idx} className="jar-thumb">
-                        <EasyJar
-                        title={`Jar #${completedJars.length - idx}`}
-                        subtitle="25/25"
-                        runs={jar}
-                        />
-                    </div>
-                    ))}
-                </div>
-            )}
-            </div>
-        </div>
+          <PastJarsModal
+            showJarHistory={showJarHistory}
+            setShowJarHistory={setShowJarHistory}
+            completedJars={completedJars}
+          />
         )}
-
+        
+        if (!showEditProfile) return null;
         {showEditProfile && (
-        <div
-            className="jar-modal-backdrop"
-            onClick={() => setShowEditProfile(false)}
-        >
-            <div
-            className="edit-profile-modal"
-            onClick={(e) => e.stopPropagation()}
-            >
-            <div className="jar-modal-head">
-                <div className="jar-modal-title">Edit Profile</div>
-                <button
-                className="jar-close"
-                onClick={() => setShowEditProfile(false)}
-                >
-                ✕
-                </button>
-            </div>
-
-            <div className="edit-profile-body">
-              <label className="edit-profile-label">Name</label>
-              <input
-                type="text"
-                className="edit-profile-input"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="Enter your name"
-                maxLength={30}
-              />
-
-              <label className="edit-profile-label">Weekly Mileage Scale</label>
-              <select
-                className="edit-profile-input"
-                value={weeklyScaleMode}
-                onChange={(e) => setWeeklyScaleMode(e.target.value)}
-              >
-                <option value="dynamic">Dynamic (changes while scrolling)</option>
-                <option value="max">Fixed scale (highest week)</option>
-              </select>
-            </div>
-
-            <div className="edit-profile-actions">
-                <button
-                className="avatar-btn secondary"
-                onClick={() => setShowEditProfile(false)}
-                >
-                Done
-                </button>
-            </div>
-            </div>
-        </div>
+          <EditProfileModal
+              showEditProfile={showEditProfile}
+              setShowEditProfile={setShowEditProfile}
+              profileName={profileName}
+              setProfileName={setProfileName}
+              weeklyScaleMode={weeklyScaleMode}
+              setWeeklyScaleMode={setWeeklyScaleMode}
+            />
         )}
 
         <LargeHeatmap activities={activities}/>
