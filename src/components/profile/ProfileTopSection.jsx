@@ -21,29 +21,28 @@ export default function ProfileTopSection({
 
       {/* LEFT COLUMN */}
       <div className="profile-left">
+        <div
+          className="profile-avatar-lg clickable"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {avatar ? (
+            <img
+              className="profile-avatar-img"
+              src={avatar}
+              alt="Profile avatar"
+            />
+          ) : (
+            <span className="profile-avatar-emoji">🏃</span>
+          )}
 
-      <div
-      className="profile-avatar-lg clickable"
-      onClick={() => fileInputRef.current?.click()}
-      >
-      {avatar ? (
-          <img
-          className="profile-avatar-img"
-          src={avatar}
-          alt="Profile avatar"
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="avatar-file"
           />
-      ) : (
-          <span className="profile-avatar-emoji">🏃</span>
-      )}
-
-      <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleAvatarChange}
-          className="avatar-file"
-      />
-      </div>
+        </div>
 
       <div className="avatar-actions">
 
@@ -92,7 +91,7 @@ export default function ProfileTopSection({
 
       </div>
 
-      {/* 3 stat boxes */}
+      {/* Stat boxes */}
       <div className="profile-stat-row">
           <div className="profile-stat">
           <div className="profile-stat-title">Total Distance</div>
@@ -108,20 +107,19 @@ export default function ProfileTopSection({
 
       {/* second row: funny tag */}
       <div className="profile-pill">
-      <div className="pill-title">Today’s Energy</div>
-
-      <select
-          className="tag-select"
-          value={tag}
-          onChange={(e) => setTag(e.target.value)}
-      >
-          {TAG_OPTIONS.map((option) => (
-          <option key={option} value={option}>
-              {option}
-          </option>
-          ))}
-      </select>
-      </div>
+        <div className="pill-title">Today’s Energy</div>
+          <select
+              className="tag-select"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+          >
+              {TAG_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                  {option}
+              </option>
+              ))}
+          </select>
+        </div>
 
       </div> {/* profile-top-right */}
   </div>  

@@ -7,6 +7,7 @@ import PRPanel from "../components/profile/PRPanel";
 import MonthlySnapshot from "../components/profile/MonthlySnapshot";
 import PastJarsModal from "../components/profile/PastJarsModal";
 import EditProfileModal from "../components/profile/EditProfileModal";
+import TAG_OPTIONS from "../utils/tags";
 
 import {
   formatTime,
@@ -23,36 +24,6 @@ import {
   daysAgo,
 } from "../utils/profileHelpers";
 
-const TAG_OPTIONS = [
-  "Slow is smooth... smooth is fast",
-  "Zone 5 enthusiast",
-  "Suffering Efficiently",
-  "Powered by Delusion",
-  "New Pace Who Dis",
-  "Pace Questionable",
-  "Sub-35 loading...",
-  "Sub-30 loading...",
-  "Sub-25 loading...",
-  "Sub-20 loading...",
-  "Sub-whatever",
-  "Elite (Locally)",
-  "Consistently Mid",
-  "Optimizing… Probably",
-  "DOMS Specialist",
-  "Breathing Optional",
-  "Fueling: Vibes",
-  "Built Different (Unfortunately)",
-  "Mentally at Mile 20",
-  "Succumbed to the zone 2 propaganda",
-  "Carb Loading Daily",
-  "Why Am I Like This",
-  "No Plan Just Miles",
-  "Fasted & Confused",
-  "Perpetually Tired",
-  "Soft Launching a PR",
-  "Negative Split Era",
-  "Hill Trauma Survivor",
-];
 
 
 function hashString(str) {
