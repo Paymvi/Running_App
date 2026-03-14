@@ -55,6 +55,24 @@ export default function Activity() {
     localStorage.setItem("activities", JSON.stringify(parsed));
   };
 
+  useEffect(() => {
+    const shouldPlay = localStorage.getItem("playActivitySound");
+
+    if (shouldPlay === "true") {
+
+      // Sound Effect by LIECIO from Pixabay
+      const audio = new Audio("/activity-save.mp3");
+      audio.volume = 0.6;
+      audio.play().catch(console.error);
+
+      if (navigator.vibrate) {
+        navigator.vibrate(120);
+      }
+
+      localStorage.removeItem("playActivitySound");
+    }
+  }, []);
+
   const [open, setOpen] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);

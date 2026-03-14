@@ -10,6 +10,8 @@ function getLocalTodayYMD() {
   return `${y}-${m}-${d}`;
 }
 
+import completeSound from "/activity-save.mp3";
+
 // Schema
 
 /*
@@ -156,7 +158,27 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
 
     onSave(activityToSave);
     onClose();
-};
+
+
+    console.log("hiiiiiiiiii");
+
+    // Tell next page load to play sound
+    // (You can't refresh and play the sound here at the same time 
+    // you need to use activity.jsx to play while this refreshes)
+
+    localStorage.setItem("playActivitySound", "true");
+
+    // 📳 Vibrate (mobile only)
+    if (navigator.vibrate) {
+      navigator.vibrate(120);
+    }
+
+    // Slight delay to have the reload match up with the sound
+    setTimeout(() => {
+      window.location.reload();
+    }, 675);
+    
+  };
 
   return (
     <>
