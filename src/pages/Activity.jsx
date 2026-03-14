@@ -33,6 +33,28 @@ import { formatDateMDY } from "../utils/dateUtils";
 
 export default function Activity() {
   const [activities, setActivities] = useState([]);
+
+  const loadActivitiesFromStorage = () => {
+    const saved = localStorage.getItem("activities");
+    if (!saved) return;
+
+    const parsed = JSON.parse(saved).map((a) => ({
+      ...a,
+      id: a.id || crypto.randomUUID(),
+    }));
+
+    parsed.sort((a, b) => {
+      const dateDiff = parseLocalYMD(b.date) - parseLocalYMD(a.date);
+      if (dateDiff !== 0) return dateDiff;
+      return String(b.time || "").localeCompare(String(a.time || ""));
+    });
+
+    setActivities(parsed);
+
+    // also rewrite storage to ensure ids persist
+    localStorage.setItem("activities", JSON.stringify(parsed));
+  };
+
   const [open, setOpen] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);
@@ -78,12 +100,7 @@ export default function Activity() {
   const loadMoreRef = useRef(null);
 
     useEffect(() => {
-    const saved = localStorage.getItem("activities");
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        parsed.sort((a, b) => parseLocalYMD(b.date) - parseLocalYMD(a.date));
-        setActivities(parsed);
-    }
+      loadActivitiesFromStorage();
     }, []);
 
 
@@ -108,17 +125,25 @@ export default function Activity() {
 
     const saveActivity = (activity) => {
       setActivities((prevActivities) => {
-        const isEditing = activity.id !== null && activity.id !== undefined;
+
+        // ensure the activity always has a real id
+        const activityId = activity.id || crypto.randomUUID();
+
+        // check if this id already exists
+        const exists = prevActivities.some((a) => a.id === activityId);
 
         let updated;
-        if (isEditing) {
+
+        if (exists) {
+          // editing
           updated = prevActivities.map((a) =>
-            a.id === activity.id ? { ...activity } : a
+            a.id === activityId ? { ...a, ...activity, id: activityId } : a
           );
         } else {
+          // new activity
           const newActivity = {
             ...activity,
-            id: crypto.randomUUID(),
+            id: activityId,
           };
           updated = [newActivity, ...prevActivities];
         }
@@ -126,13 +151,17 @@ export default function Activity() {
         updated.sort((a, b) => {
           const dateDiff = parseLocalYMD(b.date) - parseLocalYMD(a.date);
           if (dateDiff !== 0) return dateDiff;
-
           return String(b.time || "").localeCompare(String(a.time || ""));
         });
 
         localStorage.setItem("activities", JSON.stringify(updated));
+
         return updated;
       });
+
+      // close modal after save
+      setOpen(false);
+      setEditingActivity(null);
     };
 
     const clearAllActivities = () => {
@@ -690,8 +719,9 @@ export default function Activity() {
               isOpen={open}
               initialActivity={editingActivity}
               onClose={() => {
-                  setOpen(false);
-                  setEditingActivity(null);
+                setOpen(false);
+                setEditingActivity(null);
+                loadActivitiesFromStorage();
               }}
               onSave={saveActivity}
               onDelete={deleteActivity}
