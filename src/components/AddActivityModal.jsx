@@ -20,6 +20,7 @@ function getLocalTodayYMD() {
   "type": "run | bike | swim | workout",
   "intensity": "easy | tempo | intervals | long",
   "feel": "easy | medium | hard",
+  "tags": ["string"],
   "date": "YYYY-MM-DD",
   "time": "HH:MM",
   "mode": "timeMiles | splits",
@@ -36,6 +37,22 @@ function getLocalTodayYMD() {
 }
 */
 
+const TAG_OPTIONS = [
+  
+  { value: "strides", label: "⚡ Strides" },
+  { value: "drills", label: "🎯 Drills" },
+  { value: "hills", label: "⛰️ Hills" },
+  { value: "recovery", label: "🛟 Recovery" },
+
+  { value: "trail", label: "🌲 Trail" },
+  
+  { value: "brick", label: "🧱 Brick" },
+  { value: "race", label: "🏁 Race" },
+  
+  
+  
+];
+
 export default function AddActivityModal({ isOpen, onClose, onSave, initialActivity, onDelete }) {
 
   const today = getLocalTodayYMD();
@@ -47,6 +64,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     type: "run",
     intensity: "easy",
     feel: "medium",
+    tags: [],
     date: today,
     time: "",
     mode: "timeMiles", // or "splits"
@@ -68,8 +86,9 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
       setForm({
         ...emptyForm,
         ...initialActivity,
-        id: initialActivity.id, // keep id
+        id: initialActivity.id,
         date: initialActivity.date || today,
+        tags: Array.isArray(initialActivity.tags) ? initialActivity.tags : [],
         splits: initialActivity.splits?.length
           ? initialActivity.splits
           : [{ mph: "", distance: "" }],
@@ -77,8 +96,8 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     } else {
       setForm(emptyForm);
     }
-  }, [isOpen, initialActivity]);
 
+  }, [isOpen, initialActivity]);
 
   if (!isOpen) return null;
 
@@ -90,6 +109,22 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     const updated = [...form.splits];
     updated[index][field] = value;
     setForm({ ...form, splits: updated });
+  };
+
+  const toggleTag = (tagValue) => {
+    const hasTag = form.tags.includes(tagValue);
+
+    if (hasTag) {
+      setForm({
+        ...form,
+        tags: form.tags.filter((tag) => tag !== tagValue),
+      });
+    } else {
+      setForm({
+        ...form,
+        tags: [...form.tags, tagValue],
+      });
+    }
   };
 
   const addSplit = () => {
@@ -242,6 +277,29 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="hard">😤 Tough</option>
           </select>
         </div>
+
+        <div className="tag-section">
+          <h3>Tags</h3>
+
+          <div className="tag-group">
+            {TAG_OPTIONS.map((tag) => {
+              const isActive = form.tags.includes(tag.value);
+
+              return (
+                <button
+                  key={tag.value}
+                  type="button"
+                  className={`tag-pill ${isActive ? "active" : ""}`}
+                  onClick={() => toggleTag(tag.value)}
+                >
+                  {tag.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ height: "20px" }}></div>
 
         {/* Upload image */}
         <label className="upload-box">
