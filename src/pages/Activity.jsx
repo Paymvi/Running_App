@@ -105,21 +105,32 @@ export default function Activity() {
     
 
     const saveActivity = (activity) => {
-        // If it has an id, we UPDATE. If not, we CREATE.
-        const isEditing = !!activity.id;
+      setActivities((prevActivities) => {
+        const isEditing = activity.id !== null && activity.id !== undefined;
 
         let updated;
         if (isEditing) {
-            updated = activities.map((a) => (a.id === activity.id ? activity : a));
+          updated = prevActivities.map((a) =>
+            a.id === activity.id ? { ...activity } : a
+          );
         } else {
-            const newActivity = { ...activity, id: Date.now() };
-            updated = [newActivity, ...activities];
+          const newActivity = {
+            ...activity,
+            id: crypto.randomUUID(),
+          };
+          updated = [newActivity, ...prevActivities];
         }
 
-        updated.sort((a, b) => parseLocalYMD(b.date) - parseLocalYMD(a.date));
+        updated.sort((a, b) => {
+          const dateDiff = parseLocalYMD(b.date) - parseLocalYMD(a.date);
+          if (dateDiff !== 0) return dateDiff;
 
-        setActivities(updated);
+          return String(b.time || "").localeCompare(String(a.time || ""));
+        });
+
         localStorage.setItem("activities", JSON.stringify(updated));
+        return updated;
+      });
     };
 
     const clearAllActivities = () => {
@@ -432,6 +443,7 @@ export default function Activity() {
 
         // Define headers
         const headers = [
+            "id",
             "title",
             "description",
             "type",
@@ -448,6 +460,7 @@ export default function Activity() {
 
         // Convert activities to CSV rows
         const rows = activities.map((activity) => [
+            activity.id || "",
             activity.title || "",
             activity.description || "",
             activity.type || "",
@@ -487,19 +500,20 @@ export default function Activity() {
     };
 
     const deleteActivity = (id) => {
-        const confirmDelete = window.confirm(
-            "Delete this activity? This cannot be undone."
-        );
+      const confirmDelete = window.confirm(
+        "Delete this activity? This cannot be undone."
+      );
 
-        if (!confirmDelete) return;
+      if (!confirmDelete) return;
 
-        const updated = activities.filter((a) => a.id !== id);
-
-        setActivities(updated);
+      setActivities((prevActivities) => {
+        const updated = prevActivities.filter((a) => a.id !== id);
         localStorage.setItem("activities", JSON.stringify(updated));
+        return updated;
+      });
 
-        setOpen(false);
-        setEditingActivity(null);
+      setOpen(false);
+      setEditingActivity(null);
     };
 
     console.log("Activities:", activities.length);
@@ -636,21 +650,18 @@ export default function Activity() {
             </div>
 
             {filteredActivities.slice(0, visibleCount).map((a, index) => (
-                <div key={a.id}>
-                  {/* {a.title} — {a.date} */}
-                    <ActivityCard
-                      key={a.id}
-                      a={a}
-                      index={index}
-                      expandedIndex={expandedIndex}
-                      setExpandedIndex={setExpandedIndex}
-                      prIds={prIds}
-                      onEdit={(activity) => {
-                        setEditingActivity(activity);
-                        setOpen(true);
-                      }}
-                    />
-                </div>
+              <ActivityCard
+                key={a.id}
+                a={a}
+                index={index}
+                expandedIndex={expandedIndex}
+                setExpandedIndex={setExpandedIndex}
+                prIds={prIds}
+                onEdit={(activity) => {
+                  setEditingActivity({ ...activity });
+                  setOpen(true);
+                }}
+              />
             ))}
 
             {/* Sentinel: when this becomes visible, load more */}

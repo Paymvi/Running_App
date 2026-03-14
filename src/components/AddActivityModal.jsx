@@ -86,18 +86,25 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
 
     if (initialActivity) {
       setForm({
-        ...emptyForm,
-        ...initialActivity,
-        id: initialActivity.id,
-        limiter: initialActivity.limiter || "",
-        date: initialActivity.date || today,
-        tags: Array.isArray(initialActivity.tags) ? initialActivity.tags : [],
+        ...initialActivity, // copy activity FIRST
+
+        limiter: initialActivity.limiter ?? "",
+        tags: Array.isArray(initialActivity.tags) ? [...initialActivity.tags] : [],
         splits: initialActivity.splits?.length
-          ? initialActivity.splits
+          ? initialActivity.splits.map((s) => ({
+              mph: s.mph ?? "",
+              distance: s.distance ?? "",
+            }))
           : [{ mph: "", distance: "" }],
+
+        date: initialActivity.date ?? today,
       });
     } else {
-      setForm(emptyForm);
+      setForm({
+        ...emptyForm,
+        tags: [],
+        splits: [{ mph: "", distance: "" }],
+      });
     }
 
   }, [isOpen, initialActivity]);
@@ -105,42 +112,51 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
   if (!isOpen) return null;
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSplitChange = (index, field, value) => {
-    const updated = [...form.splits];
-    updated[index][field] = value;
-    setForm({ ...form, splits: updated });
+    setForm((prev) => ({
+      ...prev,
+      splits: prev.splits.map((split, i) =>
+        i === index ? { ...split, [field]: value } : split
+      ),
+    }));
   };
 
   const toggleTag = (tagValue) => {
-    const hasTag = form.tags.includes(tagValue);
+    setForm((prev) => {
+      const hasTag = prev.tags.includes(tagValue);
 
-    if (hasTag) {
-      setForm({
-        ...form,
-        tags: form.tags.filter((tag) => tag !== tagValue),
-      });
-    } else {
-      setForm({
-        ...form,
-        tags: [...form.tags, tagValue],
-      });
-    }
-  };
-
-  const addSplit = () => {
-    setForm({
-      ...form,
-      splits: [...form.splits, { mph: "", distance: "" }],
+      return {
+        ...prev,
+        tags: hasTag
+          ? prev.tags.filter((tag) => tag !== tagValue)
+          : [...prev.tags, tagValue],
+      };
     });
   };
 
-  const handleSubmit = () => {
-    onSave(form);
-    onClose();
+  const addSplit = () => {
+    setForm((prev) => ({
+      ...prev,
+      splits: [...prev.splits, { mph: "", distance: "" }],
+    }));
   };
+
+  const handleSubmit = () => {
+    const activityToSave = {
+      ...form,
+      id: initialActivity?.id ?? form.id ?? null,
+    };
+
+    onSave(activityToSave);
+    onClose();
+};
 
   return (
     <>
@@ -171,14 +187,24 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
       <div className="toggle-group">
         <button
           className={form.mode === "timeMiles" ? "active" : ""}
-          onClick={() => setForm({ ...form, mode: "timeMiles" })}
+          onClick={() =>
+            setForm((prev) => ({
+              ...prev,
+              mode: "timeMiles",
+            }))
+          }
         >
           Miles + Time
         </button>
 
         <button
           className={form.mode === "splits" ? "active" : ""}
-          onClick={() => setForm({ ...form, mode: "splits" })}
+          onClick={() =>
+            setForm((prev) => ({
+              ...prev,
+              mode: "splits",
+            }))
+          }
         >
           MPH + Splits
         </button>
@@ -329,7 +355,10 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
 
               const reader = new FileReader();
               reader.onloadend = () => {
-                setForm({ ...form, photo: reader.result }); // base64 string
+                setForm((prev) => ({
+                  ...prev,
+                  photo: reader.result,
+                }));
               };
               reader.readAsDataURL(file);
             }}
@@ -382,6 +411,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             onClick={() => {
               if (!form.id) return;
               onDelete(form.id);
+              onClose();
             }}
           >
             Delete Activity

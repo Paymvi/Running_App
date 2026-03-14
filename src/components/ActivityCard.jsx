@@ -30,7 +30,6 @@ export default function ActivityCard({
 
   return (
       <div
-          key={a.id}
           onClick={() =>
               setExpandedIndex(expandedIndex === index ? null : index)
           }
