@@ -89,7 +89,17 @@ const COLORS = {
 // bike: miles or minutes
 // workout: minutes or a "load" if you add it later
 function getActivityValue(a, bikeScaleMode = "time") {
-  const type = (a.type || a.sport || a.activityType || "run").toLowerCase();
+  function normalizeType(a) {
+    const raw = (a.type || a.sport || a.activityType || "").toLowerCase();
+
+    if (raw.includes("run")) return "run";
+    if (raw.includes("bike") || raw.includes("cycle")) return "bike";
+    if (raw.includes("swim")) return "swim";
+    if (raw.includes("workout") || raw.includes("strength") || raw.includes("lift")) return "workout";
+
+    return "run"; // safe fallback
+  }
+  const type = normalizeType(a);
 
   if (type === "workout") {
     const mins = Number(a.minutes ?? a.duration ?? a.durationMin ?? a.durationMinutes ?? 0);
@@ -230,6 +240,7 @@ export default function RunCalendar({ activities }) {
       const d = parseLocalYMD(a.date);
       if (!d || isNaN(d)) continue;
       const day = toYMD(d);
+      console.log("activity date key:", a.date, "->", day);
 
       const { type, value } = getActivityValue(a, bikeScaleMode);
       if (!enabledTypes.has(type)) continue;
@@ -304,9 +315,16 @@ export default function RunCalendar({ activities }) {
 
   const tileContent = ({ date, view }) => {
     if (view !== "month") return null;
+    
+    
 
     const key = toYMD(date);
+    
     const t = totalsByDay[key];
+    
+
+    console.log("tile date:", key, "calendar match:", t);
+
     if (!t) return null;
 
     const present = [];
@@ -373,6 +391,16 @@ export default function RunCalendar({ activities }) {
       </>
     );
   };
+
+  console.log("Calendar activities:", activities);
+  for (const a of activities || []) {
+    const { type, value } = getActivityValue(a, bikeScaleMode);
+
+    console.log("Calendar check:", a.type, a.miles, a.duration, value);
+    
+  }
+
+  
 
   return (
     <div className="run-calendar-card">

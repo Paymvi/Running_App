@@ -28,6 +28,8 @@ import {
 import useLazyLoad from "../hooks/useLazyLoad";
 import ActivityCard from "../components/ActivityCard";
 
+import { formatDateMDY } from "../utils/dateUtils";
+
 
 export default function Activity() {
   const [activities, setActivities] = useState([]);
@@ -468,8 +470,8 @@ export default function Activity() {
             activity.feel || "",
             activity.limiter || "",
             (activity.tags || []).join("|"),
-            activity.date ? `="${activity.date}"` : "",
-            activity.time ? `="${activity.time}"` : "",
+            activity.date || "",
+            activity.time || "",
             activity.miles || "",
             activity.duration || "",
             activity.notes || ""

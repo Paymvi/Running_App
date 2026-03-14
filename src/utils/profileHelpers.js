@@ -82,14 +82,11 @@ export function parseDurationMinutes(val) {
 // -------------------------
 // WEEK HELPERS (Mon -> Sun)
 // -------------------------
-export function startOfWeekMonday(dateObj) {
-  const d = new Date(dateObj);
+export function startOfWeekSunday(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sunday, 1 = Monday, ...
+  d.setDate(d.getDate() - day); // go back to Sunday
   d.setHours(0, 0, 0, 0);
-
-  // JS: Sun=0, Mon=1, ... Sat=6
-  const day = d.getDay();
-  const diff = (day === 0 ? -6 : 1) - day; // move back to Monday
-  d.setDate(d.getDate() + diff);
   return d;
 }
 

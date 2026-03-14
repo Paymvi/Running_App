@@ -23,3 +23,11 @@ export function parseLocalYMD(input) {
 
   return null;
 }
+
+export const formatDateMDY = (ymd) => {
+  if (!ymd) return "";
+
+  const [year, month, day] = ymd.split("-");
+
+  return `${Number(month)}/${Number(day)}/${year}`;
+};

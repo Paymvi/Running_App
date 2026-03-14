@@ -3009,7 +3009,9 @@ page {
 
 
 
-
+.run-calendar-card .react-calendar__tile {
+  background: transparent !important;
+}
 
 /*
 ══════════════════════════════════════════════════════════════════

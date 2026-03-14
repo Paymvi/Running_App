@@ -14,7 +14,7 @@ import {
   formatDate,
   parseDateSafe,
   parseDurationMinutes,
-  startOfWeekMonday,
+  startOfWeekSunday,
   addDays,
   weeksBetween,
   formatWeekRange,
@@ -337,7 +337,7 @@ const removeAvatar = () => {
 
             if (!earliestDate || d < earliestDate) earliestDate = d;
 
-            const weekStart = startOfWeekMonday(d);
+            const weekStart = startOfWeekSunday(d);
             const key = weekStart.toISOString().slice(0, 10);
 
             if (!map.has(key)) {
@@ -364,10 +364,10 @@ const removeAvatar = () => {
 
     // 2) determine range (first week -> current week)
     const now = new Date();
-    const endWeek = startOfWeekMonday(now);
+    const endWeek = startOfWeekSunday(now);
 
     // If no runs yet, still return a single current week with 0s
-    const startWeek = earliestDate ? startOfWeekMonday(earliestDate) : endWeek;
+    const startWeek = earliestDate ? startOfWeekSunday(earliestDate) : endWeek;
 
     // 3) generate EVERY week in the range (including zeros)
     const totalWeeks = weeksBetween(startWeek, endWeek);
@@ -400,7 +400,7 @@ const removeAvatar = () => {
         if (!selectedWeek?.weekStart) return false;
 
         const now = new Date();
-        const thisWeekStart = startOfWeekMonday(now);
+        const thisWeekStart = startOfWeekSunday(now);
 
         return (
             selectedWeek.weekStart.toISOString().slice(0, 10) ===
@@ -512,7 +512,7 @@ const removeAvatar = () => {
           />
         )}
         
-        if (!showEditProfile) return null;
+        
         {showEditProfile && (
           <EditProfileModal
               showEditProfile={showEditProfile}
