@@ -20,6 +20,7 @@ function getLocalTodayYMD() {
   "type": "run | bike | swim | workout",
   "intensity": "easy | tempo | intervals | long",
   "feel": "easy | medium | hard",
+  "limiter": "string",
   "tags": ["string"],
   "date": "YYYY-MM-DD",
   "time": "HH:MM",
@@ -64,6 +65,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     type: "run",
     intensity: "easy",
     feel: "medium",
+    limiter: "",
     tags: [],
     date: today,
     time: "",
@@ -87,6 +89,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
         ...emptyForm,
         ...initialActivity,
         id: initialActivity.id,
+        limiter: initialActivity.limiter || "",
         date: initialActivity.date || today,
         tags: Array.isArray(initialActivity.tags) ? initialActivity.tags : [],
         splits: initialActivity.splits?.length
@@ -275,6 +278,20 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="easy">☺️ Light</option>
             <option value="medium">😎 Steady</option>
             <option value="hard">😤 Tough</option>
+          </select>
+
+          <select name="limiter" value={form.limiter} onChange={handleChange}>
+            <option value="">⚪ No Limiter</option>
+
+            <option value="heavy">🪨 Heavy Legs</option>
+            <option value="lungs">🫁 Lungs Stopped Me</option>
+            <option value="muscle_burn">🔥 Muscle Burn</option>
+            <option value="joint_pain">⚠️ Foot / Knee / Hip Felt Sus</option>
+            <option value="energy_low">🔋 Low Energy</option>
+            <option value="heat">🥵 Heat</option>
+            <option value="sleepy">😴 Poor Sleep</option>
+            <option value="stomach">🤢 Stomach Issues</option>
+            <option value="bored">😒 Bored</option>
           </select>
         </div>
 

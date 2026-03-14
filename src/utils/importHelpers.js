@@ -37,6 +37,7 @@ export const rowsToActivities = (rows) => {
           type: row.type || "run",
           intensity: row.intensity || "easy",
           feel: row.feel || "medium",
+          limiter: row.limiter || "",
           tags: row.tags
             ? row.tags.split("|").map((t) => t.trim()).filter(Boolean)
             : [],
