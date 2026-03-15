@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import RunCalendar from "../components/RunCalendar";
 import NotesSettingsModal from "../components/NotesSettingsModal";
 
+import { FiCopy } from "react-icons/fi"
+
 function createEmptyNote(id) {
   return {
     id,
@@ -18,7 +20,8 @@ export default function Home() {
     const [noteCards, setNoteCards] = useState([createEmptyNote(1)]);
     const [settingsCardId, setSettingsCardId] = useState(null);
     const fileInputRefs = useRef({});
-  
+    const [copiedCardId, setCopiedCardId] = useState(null);
+    
 
   useEffect(() => {
     const savedActivities = localStorage.getItem("activities");
@@ -175,11 +178,43 @@ ${card.text}
     };
 
     const updateNoteCardSettings = (id, updates) => {
-    setNoteCards((prev) =>
-        prev.map((card) =>
-        card.id === id ? { ...card, ...updates } : card
-        )
-    );
+      setNoteCards((prev) =>
+          prev.map((card) =>
+          card.id === id ? { ...card, ...updates } : card
+          )
+      );
+    };
+
+    const copyNotesToClipboard = async (cardId, text) => {
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+
+        setCopiedCardId(cardId);
+
+        setTimeout(() => {
+          setCopiedCardId(null);
+        }, 2000);
+
+      } catch (err) {
+        console.error("Clipboard copy failed:", err);
+      }
+    };
+
+    const copyAllNotesText = async (id) => {
+      const textarea = textareaRefs.current[id];
+      if (!textarea) return;
+
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+
+      try {
+        await navigator.clipboard.writeText(textarea.value);
+      } catch (err) {
+        console.error("Copy failed:", err);
+      }
     };
 
   return (
@@ -198,20 +233,36 @@ ${card.text}
             </div>
 
             {card.isOpen && (
-            <div className="notes-card-body">
-                <textarea
-                    className="notes-input"
-                    placeholder="Write anything: goals, thoughts, race plans..."
-                    value={card.text}
-                    onChange={(e) => handleNotesChange(card.id, e.target.value)}
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    style={{
-                        minHeight: `${card.height}px`,
-                        fontSize: `${card.fontSize}px`,
-                    }}
-                />
+              <div className="notes-card-body">
+                  <div className="notes-card-body">
+                    <button
+                      className="notes-copy-btn"
+                      onClick={() => copyNotesToClipboard(card.id, card.text)}
+                      title="Copy notes"
+                    >
+                      <FiCopy />
+                    </button>
+
+                    {copiedCardId === card.id && (
+                      <div className="notes-copied-msg">
+                        Copied to your clipboard!
+                      </div>
+                    )}
+                  </div>
+
+                  <textarea
+                      className="notes-input"
+                      placeholder="Write anything: goals, thoughts, race plans..."
+                      value={card.text}
+                      onChange={(e) => handleNotesChange(card.id, e.target.value)}
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      style={{
+                          minHeight: `${card.height}px`,
+                          fontSize: `${card.fontSize}px`,
+                      }}
+                  />
 
                 <input
                     type="file"

@@ -3019,11 +3019,7 @@ page {
 
 
 
-
-
-
-
-
+/* Ball drop styling */
 
 .jar-drop-backdrop {
   position: fixed;
@@ -3084,6 +3080,85 @@ page {
 
   100% {
     transform: translateY(0);
+  }
+
+}
+
+
+/* Copy button styling */
+
+.notes-card-body {
+  position: relative;
+}
+
+.notes-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
+  background: transparent;
+  border: none;
+
+  cursor: pointer;
+  padding: 4px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notes-copy-btn svg {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.notes-copy-btn:hover svg {
+  color: white;
+}
+
+
+.notes-copy-btn:active {
+  transform: scale(0.85);
+}
+
+.notes-copied-msg {
+  position: absolute;
+  top: 10px;
+  right: 44px;
+
+  background: var(--card);
+  color: var(--text);
+
+  font-size: 10px;
+  padding: 6px 10px;
+
+  border-radius: 6px;
+
+  opacity: 0.95;
+
+  animation: fadeInOut 1s ease forwards;
+}
+
+@keyframes fadeInOut {
+
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 
 }
