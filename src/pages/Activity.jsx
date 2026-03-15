@@ -29,10 +29,25 @@ import useLazyLoad from "../hooks/useLazyLoad";
 import ActivityCard from "../components/ActivityCard";
 
 import { formatDateMDY } from "../utils/dateUtils";
+import JarDropModal from "../components/JarDropModal";
 
 
 export default function Activity() {
   const [activities, setActivities] = useState([]);
+  const [showJarDrop, setShowJarDrop] = useState(false);
+
+  const easyRuns = useMemo(() => {
+    return activities.filter(
+      (a) =>
+        a.type === "run" &&
+        a.intensity === "easy" &&
+        Number(a.miles) > 0 &&
+        Number(a.duration) > 0
+    );
+  }, [activities]);
+
+  const newestEasyRun = easyRuns[0];
+
 
   const loadActivitiesFromStorage = () => {
     const saved = localStorage.getItem("activities");
@@ -71,6 +86,16 @@ export default function Activity() {
 
       localStorage.removeItem("playActivitySound");
     }
+  }, []);
+
+  useEffect(() => {
+
+    const shouldPlay = localStorage.getItem("jarDrop");
+    if (shouldPlay === "true") {
+      setShowJarDrop(true);
+      localStorage.removeItem("jarDrop");
+    }
+
   }, []);
 
   const [open, setOpen] = useState(false);
@@ -191,6 +216,9 @@ export default function Activity() {
             setActivities([]);
             localStorage.removeItem("activities"); 
             // OR localStorage.setItem("activities", JSON.stringify([]));
+            if (navigator.vibrate) {
+              navigator.vibrate(120);
+            }
         }
     };
 
@@ -743,6 +771,13 @@ export default function Activity() {
               }}
               onSave={saveActivity}
               onDelete={deleteActivity}
+            />
+
+            <JarDropModal
+              isOpen={showJarDrop}
+              onClose={() => setShowJarDrop(false)}
+              runsBefore={easyRuns.slice(1)}
+              newRun={newestEasyRun}
             />
 
         </div>

@@ -1,6 +1,11 @@
 import React, { useMemo } from "react";
 
-export default function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
+export default function EasyJar({
+  runs = [],
+  title = "Easy Jar",
+  subtitle,
+  animatedDropRun = null
+}){
   // SVG coordinate system
   const W = 240;
   const H = 220;
@@ -111,7 +116,18 @@ export default function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
         date: p.data.date,
         };
     });
-    }, [runs, maxDur]);
+  }, [runs, maxDur]);
+
+  const animatedBall = animatedDropRun
+    ? {
+        cx: 120,
+        startY: 18,
+        r: 10,
+        fill: "rgba(252,76,2,0.9)",
+      }
+    : null;
+
+  
 
   return (
     <div className="jar-card">
@@ -190,6 +206,17 @@ export default function EasyJar({ runs = [], title = "Easy Jar", subtitle }) {
               />
             </g>
           ))}
+
+          {/* Animated falling ball */}
+          {animatedBall && (
+            <circle
+              cx={animatedBall.cx}
+              cy={animatedBall.startY}
+              r={animatedBall.r}
+              fill={animatedBall.fill}
+              className="jar-drop-ball"
+            />
+          )}
 
           {/* Base shadow */}
           <ellipse cx="170" cy="208" rx="95" ry="10" className="jar-shadow" />

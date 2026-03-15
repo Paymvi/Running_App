@@ -162,6 +162,16 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
 
     console.log("hiiiiiiiiii");
 
+    // trigger jar animation ONLY for easy runs
+    if (
+      activityToSave.type === "run" &&
+      activityToSave.intensity === "easy" &&
+      Number(activityToSave.miles) > 0 &&
+      Number(activityToSave.duration) > 0
+    ) {
+      localStorage.setItem("jarDrop", "true");
+    }
+
     // Tell next page load to play sound
     // (You can't refresh and play the sound here at the same time 
     // you need to use activity.jsx to play while this refreshes)
