@@ -10,7 +10,6 @@ function getLocalTodayYMD() {
   return `${y}-${m}-${d}`;
 }
 
-import completeSound from "/activity-save.mp3";
 
 // Schema
 

@@ -75,13 +75,13 @@ export default function Activity() {
 
     if (shouldPlay === "true") {
 
-      // Sound Effect by LIECIO from Pixabay
-      const audio = new Audio("/activity-save.mp3");
+      // Sound Effect by Koi Roylers from Pixabay
+      const audio = new Audio("/ball-drop.mp3");
       audio.volume = 0.6;
       audio.play().catch(console.error);
 
       if (navigator.vibrate) {
-        navigator.vibrate(120);
+        navigator.vibrate(60);
       }
 
       localStorage.removeItem("playActivitySound");

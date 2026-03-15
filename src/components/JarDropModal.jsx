@@ -8,6 +8,10 @@ export default function JarDropModal({
   newRun = null
 }) {
 
+  // Build the final jar state
+  const finalRuns = newRun ? [...runsBefore, newRun] : runsBefore;
+  const animatedIndex = newRun ? finalRuns.length - 1 : null;
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -47,8 +51,8 @@ export default function JarDropModal({
         <EasyJar
           title="Easy Run Jar"
           subtitle=""
-          runs={runsBefore}
-          animatedDropRun={newRun}
+          runs={finalRuns}
+          animatedIndex={animatedIndex}
         />
 
       </div>

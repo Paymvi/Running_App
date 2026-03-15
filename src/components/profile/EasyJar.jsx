@@ -4,7 +4,7 @@ export default function EasyJar({
   runs = [],
   title = "Easy Jar",
   subtitle,
-  animatedDropRun = null
+  animatedIndex = null
 }){
   // SVG coordinate system
   const W = 240;
@@ -118,15 +118,6 @@ export default function EasyJar({
     });
   }, [runs, maxDur]);
 
-  const animatedBall = animatedDropRun
-    ? {
-        cx: 120,
-        startY: 18,
-        r: 10,
-        fill: "rgba(252,76,2,0.9)",
-      }
-    : null;
-
   
 
   return (
@@ -138,10 +129,11 @@ export default function EasyJar({
 
       <div className="jar-wrap" aria-label="Easy Run Jar">
         <svg
-            width={W}
-            height={H}
-            viewBox={`0 0 ${W} ${H}`}
-            className="jar-svg">
+          width={W}
+          height={H}
+          viewBox={`0 0 ${W} ${H}`}
+          className="jar-svg"
+        >
           {/* Glow filter */}
           <defs>
             <filter id="ballGlow" x="-50%" y="-50%" width="200%" height="200%">
@@ -188,35 +180,35 @@ export default function EasyJar({
           />
 
           {/* Balls */}
-          {circles.map((c) => (
-            <g key={c.key} filter={c.glow > 0.75 ? "url(#ballGlow)" : undefined}>
-              <circle
-                cx={c.cx}
-                cy={c.cy}
-                r={c.r}
-                fill={c.fill}
-                className="jar-ball"
-              />
-              {/* tiny specular highlight */}
-              <circle
-                cx={c.cx - c.r * 0.25}
-                cy={c.cy - c.r * 0.25}
-                r={Math.max(1.6, c.r * 0.25)}
-                fill="rgba(255,255,255,0.35)"
-              />
-            </g>
-          ))}
+          {circles.map((c, i) => {
 
-          {/* Animated falling ball */}
-          {animatedBall && (
-            <circle
-              cx={animatedBall.cx}
-              cy={animatedBall.startY}
-              r={animatedBall.r}
-              fill={animatedBall.fill}
-              className="jar-drop-ball"
-            />
-          )}
+            const isAnimated = i === animatedIndex;
+
+            return (
+              <g
+                key={c.key}
+                filter={c.glow > 0.75 ? "url(#ballGlow)" : undefined}
+                className={isAnimated ? "jar-drop-ball" : ""}
+              >
+                <circle
+                  cx={c.cx}
+                  cy={c.cy}
+                  r={c.r}
+                  fill={c.fill}
+                  className="jar-ball"
+                />
+
+                {/* tiny specular highlight */}
+                <circle
+                  cx={c.cx - c.r * 0.25}
+                  cy={c.cy - c.r * 0.25}
+                  r={Math.max(1.6, c.r * 0.25)}
+                  fill="rgba(255,255,255,0.35)"
+                />
+              </g>
+            );
+
+          })}
 
           {/* Base shadow */}
           <ellipse cx="170" cy="208" rx="95" ry="10" className="jar-shadow" />
