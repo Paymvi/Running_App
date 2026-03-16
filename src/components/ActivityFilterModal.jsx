@@ -6,6 +6,8 @@ export default function ActivityFilterModal({
   filters,
   setFilters,
   onReset,
+  exportFormat,
+  setExportFormat,
 }) {
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -312,6 +314,23 @@ export default function ActivityFilterModal({
                   onChange={(e) => updateFilterValue("notesSearch", e.target.value)}
                 />
               </div>
+
+              <div style={{ height: "14px" }}></div>
+
+              <div className="filter-group">
+                <label className="filter-label">Export format</label>
+                <select
+                  className="filter-select"
+                  value={exportFormat}
+                  onChange={(e) => setExportFormat(e.target.value)}
+                >
+                  <option value="xlsx">Excel (.xlsx)</option>
+                  <option value="csv">CSV (.csv)</option>
+                </select>
+              </div>
+
+
+
             </div>
           )}
           

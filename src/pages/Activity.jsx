@@ -20,15 +20,15 @@ import {
 } from "../utils/stravaHelpers";
 
 import {
-  rowsToActivities,
   handleCSVImport,
-  handleExcelImport
+  handleExcelImport,
+  handleExportCSV,
+  handleExportExcel
 } from "../utils/importHelpers";
 
 import useLazyLoad from "../hooks/useLazyLoad";
 import ActivityCard from "../components/ActivityCard";
 
-import { formatDateMDY } from "../utils/dateUtils";
 import JarDropModal from "../components/JarDropModal";
 
 
@@ -109,6 +109,7 @@ export default function Activity() {
   );
   const [stravaStatus, setStravaStatus] = useState("");
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState("xlsx");
 
   const [filters, setFilters] = useState({
     searchName: "",
@@ -512,68 +513,12 @@ export default function Activity() {
         }
     };
     
-    const handleExportCSV = () => {
-        if (!activities.length) {
-            alert("No activities to export.");
-            return;
-        }
-
-        // Define headers
-        const headers = [
-            "id",
-            "title",
-            "description",
-            "type",
-            "intensity",
-            "feel",
-            "limiter",
-            "tags",
-            "date",
-            "time",
-            "miles",
-            "duration",
-            "notes"
-        ];
-
-        // Convert activities to CSV rows
-        const rows = activities.map((activity) => [
-            activity.id || "",
-            activity.title || "",
-            activity.description || "",
-            activity.type || "",
-            activity.intensity || "",
-            activity.feel || "",
-            activity.limiter || "",
-            (activity.tags || []).join("|"),
-            activity.date || "",
-            activity.time || "",
-            activity.miles || "",
-            activity.duration || "",
-            activity.notes || ""
-        ]);
-
-        // Combine header + rows
-        const csvContent =
-            [headers, ...rows]
-            .map((row) =>
-                row
-                .map((field) =>
-                    `"${String(field).replace(/"/g, '""')}"` // escape quotes
-                )
-                .join(",")
-            )
-            .join("\n");
-
-        // Create downloadable file
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "my_running_data.csv";
-        link.click();
-
-        URL.revokeObjectURL(url);
+    const handleExport = () => {
+      if (exportFormat === "xlsx") {
+        handleExportExcel(activities);
+      } else {
+        handleExportCSV(activities);
+      }
     };
 
     const deleteActivity = (id) => {
@@ -616,10 +561,10 @@ export default function Activity() {
                 </label>
 
                 <button
-                    onClick={handleExportCSV}
+                    onClick={handleExport}
                     className="control-btn btn-secondary"
                 >
-                Export CSV
+                Export
                 </button>
 
                 {/* For Strava modal */}
@@ -707,6 +652,8 @@ export default function Activity() {
                 filters={filters}
                 setFilters={setFilters}
                 onReset={resetFilters}
+                exportFormat={exportFormat}
+                setExportFormat={setExportFormat}
             />
 
             {coachAlertCount > 0 &&

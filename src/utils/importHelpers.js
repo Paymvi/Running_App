@@ -1,6 +1,6 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { parseLocalYMD } from "./dateUtils";
+import { parseLocalYMD, formatDateMDY } from "./dateUtils";
 
 export const rowsToActivities = (rows) => {
   const normalizeExcelDate = (value) => {
@@ -95,4 +95,95 @@ export const handleExcelImport = async (file, activities, setActivities) => {
         console.error(error);
         alert("Failed to import Excel file.");
     }
+};
+
+
+const buildExportRows = (activities) => {
+  return activities.map((activity) => ({
+    id: activity.id || "",
+    title: activity.title || "",
+    description: activity.description || "",
+    type: activity.type || "",
+    intensity: activity.intensity || "",
+    feel: activity.feel || "",
+    limiter: activity.limiter || "",
+    tags: (activity.tags || []).join("|"),
+    date: activity.date ? formatDateMDY(activity.date) : "",
+    time: activity.time || "",
+    miles: activity.miles || "",
+    duration: activity.duration || "",
+    notes: activity.notes || "",
+  }));
+};
+
+export const handleExportCSV = (activities) => {
+  if (!activities.length) {
+    alert("No activities to export.");
+    return;
+  }
+
+  const headers = [
+    "id",
+    "title",
+    "description",
+    "type",
+    "intensity",
+    "feel",
+    "limiter",
+    "tags",
+    "date",
+    "time",
+    "miles",
+    "duration",
+    "notes",
+  ];
+
+  const rows = buildExportRows(activities).map((activity) => [
+    activity.id,
+    activity.title,
+    activity.description,
+    activity.type,
+    activity.intensity,
+    activity.feel,
+    activity.limiter,
+    activity.tags,
+    activity.date,
+    activity.time,
+    activity.miles,
+    activity.duration,
+    activity.notes,
+  ]);
+
+  const csvContent = [headers, ...rows]
+    .map((row) =>
+      row
+        .map((field) => `"${String(field).replace(/"/g, '""')}"`)
+        .join(",")
+    )
+    .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "my_running_data.csv";
+  link.click();
+
+  URL.revokeObjectURL(url);
+};
+
+export const handleExportExcel = (activities) => {
+  if (!activities.length) {
+    alert("No activities to export.");
+    return;
+  }
+
+  const exportRows = buildExportRows(activities);
+
+  const worksheet = XLSX.utils.json_to_sheet(exportRows);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Activities");
+  XLSX.writeFile(workbook, "my_running_data.xlsx");
 };
