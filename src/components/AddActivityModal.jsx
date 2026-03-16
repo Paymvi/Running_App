@@ -283,58 +283,13 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
           </>
         )}
 
-
-        {/* Activity Type Icons */}
-        {/* <div className="activity-type-group">
-
-          <button
-            type="button"
-            className={`activity-type ${form.type === "run" ? "active" : ""}`}
-            onClick={() => setForm({ ...form, type: "run" })}
-          >
-            <FaRunning />
-            <span>Run</span>
-          </button>
-
-          <button
-            type="button"
-            className={`activity-type ${form.type === "bike" ? "active" : ""}`}
-            onClick={() => setForm({ ...form, type: "bike" })}
-          >
-            <FaBiking />
-            <span>Bike</span>
-          </button>
-
-          <button
-            type="button"
-            className={`activity-type ${form.type === "swim" ? "active" : ""}`}
-            onClick={() => setForm({ ...form, type: "swim" })}
-          >
-            <FaSwimmingPool />
-            <span>Swim</span>
-          </button>
-
-        </div> */}
-
         {/* Keep these as selects */}
-        <div className="row">
+        <div className="row" style={{ marginBottom: "0px" }}>
           <select name="type" value={form.type} onChange={handleChange}>
             <option value="run">🏃‍➡️ Run</option>
             <option value="bike">🚲 Bike</option>
             <option value="swim">🥽 Swim</option>
             <option value="workout">💪 Workout</option>
-          </select>
-          <select name="intensity" value={form.intensity} onChange={handleChange}>
-            <option value="easy">🟢 Easy</option>
-            <option value="tempo">🟡 Tempo</option>
-            <option value="intervals">🔴 Intervals</option>
-            <option value="long">🟣 Long</option>
-          </select>
-
-          <select name="feel" value={form.feel} onChange={handleChange}>
-            <option value="easy">☺️ Light</option>
-            <option value="medium">😎 Steady</option>
-            <option value="hard">😤 Tough</option>
           </select>
 
           <select name="limiter" value={form.limiter} onChange={handleChange}>
@@ -351,6 +306,23 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="bored">😒 Bored</option>
           </select>
         </div>
+
+        <div className="row">
+          <select name="intensity" value={form.intensity} onChange={handleChange}>
+            <option value="easy">🟢 Easy</option>
+            <option value="tempo">🟡 Tempo</option>
+            <option value="intervals">🔴 Intervals</option>
+            <option value="long">🟣 Long</option>
+          </select>
+
+          <select name="feel" value={form.feel} onChange={handleChange}>
+            <option value="easy">☺️ Light</option>
+            <option value="medium">😎 Steady</option>
+            <option value="hard">😤 Tough</option>
+          </select>
+        </div>
+
+        
 
         <div className="tag-section">
           <h3>Tags</h3>
