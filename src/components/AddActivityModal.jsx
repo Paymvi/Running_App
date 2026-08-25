@@ -316,9 +316,9 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
           </select>
 
           <select name="feel" value={form.feel} onChange={handleChange}>
-            <option value="easy">☺️ Light</option>
+            <option value="easy">🍃 Light</option>
             <option value="medium">😎 Steady</option>
-            <option value="hard">😤 Tough</option>
+            <option value="hard">🔥 Tough</option>
           </select>
         </div>
 

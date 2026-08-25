@@ -26,20 +26,48 @@ export function formatDate(dateStr) {
 export function parseDateSafe(dateStr) {
   if (!dateStr) return null;
 
-  // Try normal parsing first (ISO format)
-  const iso = new Date(dateStr);
-  if (!isNaN(iso)) return iso;
+  // If it's already a Date object
+  if (dateStr instanceof Date) {
+    const d = new Date(dateStr);
+    return isNaN(d) ? null : d;
+  }
 
-  // Try M/D/YYYY format
-  const match = String(dateStr)
-    .trim()
-    .match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const value = String(dateStr).trim();
 
-  if (match) {
-    const month = Number(match[1]) - 1;
-    const day = Number(match[2]);
-    const year = Number(match[3]);
+  // -------------------------
+  // YYYY-MM-DD
+  // Parse as LOCAL date
+  // -------------------------
+  const isoMatch = value.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})/
+  );
+
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]) - 1;
+    const day = Number(isoMatch[3]);
+
     const d = new Date(year, month, day);
+    d.setHours(0, 0, 0, 0);
+
+    return isNaN(d) ? null : d;
+  }
+
+  // -------------------------
+  // M/D/YYYY
+  // -------------------------
+  const slashMatch = value.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+  );
+
+  if (slashMatch) {
+    const month = Number(slashMatch[1]) - 1;
+    const day = Number(slashMatch[2]);
+    const year = Number(slashMatch[3]);
+
+    const d = new Date(year, month, day);
+    d.setHours(0, 0, 0, 0);
+
     return isNaN(d) ? null : d;
   }
 
@@ -169,4 +197,32 @@ export function daysAgo(dateObj) {
     if (!dateObj) return null;
     const diff = new Date() - dateObj;
     return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+
+
+export function startOfWeekMonday(date) {
+  const d = new Date(date);
+
+  // JS:
+  // Sunday = 0
+  // Monday = 1
+  // Tuesday = 2
+  // ...
+  // Saturday = 6
+
+  const day = d.getDay();
+
+  // Monday should subtract 0 days.
+  // Tuesday subtracts 1.
+  // ...
+  // Sunday subtracts 6.
+  const diff = (day + 6) % 7;
+
+  d.setDate(d.getDate() - diff);
+
+  // Normalize so time-of-day doesn't interfere with comparisons
+  d.setHours(0, 0, 0, 0);
+
+  return d;
 }

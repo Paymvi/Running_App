@@ -3168,3 +3168,14 @@ page {
 END OF FILE
 ══════════════════════════════════════════════════════════════════
 */
+
+
+
+
+
+
+.home-weekly-mileage {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 16px;
+}

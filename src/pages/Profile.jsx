@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import LargeHeatmap from "../components/LargeHeatmap";
 import EasyJar from "../components/profile/EasyJar";
-import WeeklyMileage from "../components/profile/WeeklyMileage";
+// import WeeklyMileage from "../components/profile/WeeklyMileage";
 import ProfileTopSection from "../components/profile/ProfileTopSection";
 import PRPanel from "../components/profile/PRPanel";
 import MonthlySnapshot from "../components/profile/MonthlySnapshot";
@@ -474,35 +474,6 @@ const removeAvatar = () => {
 
             <br></br>
 
-            {/* WEEKLY MILEAGE */}
-            <div className="profile-section">
-            <div className="weekly-header">
-                <div className="weekly-header-title">
-                {isThisWeek ? "This week" : selectedWeek?.label || "Weekly"}
-                </div>
-
-                <div className="weekly-stats-row">
-                <div className="weekly-stat">
-                    <div className="weekly-stat-label">Distance</div>
-                    <div className="weekly-stat-value">{selectedWeek ? `${selectedWeek.miles} mi` : "-"}</div>
-                </div>
-
-                <div className="weekly-stat">
-                    <div className="weekly-stat-label">Time</div>
-                    <div className="weekly-stat-value">
-                    {selectedWeek ? formatHoursMinsFromMinutes(selectedWeek.minutes) : "-"}
-                    </div>
-                </div>
-                </div>
-            </div>
-
-            <WeeklyMileage
-              weeks={weeklySnapshot}
-              selectedIndex={selectedWeekIndex}
-              onSelect={(idx) => setSelectedWeekIndex(idx)}
-              scaleMode={weeklyScaleMode}
-            />
-            </div>
 
         {showJarHistory && (
           <PastJarsModal

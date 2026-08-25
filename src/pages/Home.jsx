@@ -1,8 +1,27 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import RunCalendar from "../components/RunCalendar";
 import NotesSettingsModal from "../components/NotesSettingsModal";
 
 import { FiCopy } from "react-icons/fi"
+
+import WeeklyMileage from "../components/profile/WeeklyMileage";
+import {
+  parseDateSafe,
+  parseDurationMinutes,
+  startOfWeekMonday,
+  addDays,
+  weeksBetween,
+  formatWeekRange,
+  formatHoursMinsFromMinutes,
+} from "../utils/profileHelpers";
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 function createEmptyNote(id) {
   return {
@@ -21,6 +40,12 @@ export default function Home() {
     const [settingsCardId, setSettingsCardId] = useState(null);
     const fileInputRefs = useRef({});
     const [copiedCardId, setCopiedCardId] = useState(null);
+
+    const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
+
+    const [weeklyScaleMode] = useState(
+      () => localStorage.getItem("weeklyScaleMode") || "dynamic"
+    );
     
 
   useEffect(() => {
@@ -63,6 +88,114 @@ export default function Home() {
         }
     }
     }, []);
+
+    // =========================================================
+    // WEEKLY MILEAGE
+    // Monday -> Sunday
+    // Includes 0-mile weeks
+    // =========================================================
+
+    const weeklySnapshot = useMemo(() => {
+      const map = new Map();
+      let earliestDate = null;
+
+      for (const activity of activities) {
+        // Weekly mileage only counts runs
+        if (activity.type && activity.type !== "run") continue;
+
+        const date = parseDateSafe(activity.date);
+        if (!date) continue;
+
+        if (!earliestDate || date < earliestDate) {
+          earliestDate = date;
+        }
+
+        const weekStart = startOfWeekMonday(date);
+        const key = localDateKey(weekStart);
+
+        if (!map.has(key)) {
+          map.set(key, {
+            weekStart,
+            miles: 0,
+            minutes: 0,
+            elevationFt: 0,
+          });
+        }
+
+        const week = map.get(key);
+
+        const miles = Number(activity.miles) || 0;
+        const minutes = parseDurationMinutes(activity.duration);
+
+        const elevation =
+          Number(
+            activity.elevationGainFt ??
+            activity.elevation_ft ??
+            activity.elevationFt ??
+            activity.elevation_gain_ft
+          ) || 0;
+
+        week.miles += miles;
+        week.minutes += minutes;
+        week.elevationFt += elevation;
+      }
+
+      // Current week
+      const now = new Date();
+      const endWeek = startOfWeekMonday(now);
+
+      // If there are no activities yet, still show current week
+      const startWeek = earliestDate
+        ? startOfWeekMonday(earliestDate)
+        : endWeek;
+
+      const totalWeeks = weeksBetween(startWeek, endWeek);
+
+      const weeks = [];
+
+      for (let i = 0; i <= totalWeeks; i++) {
+        const weekStart = addDays(startWeek, i * 7);
+        const key = localDateKey(weekStart);
+
+        const found = map.get(key);
+
+        weeks.push({
+          label: formatWeekRange(weekStart),
+          weekStart,
+          miles: found ? Number(found.miles.toFixed(1)) : 0,
+          minutes: found ? Math.round(found.minutes) : 0,
+          elevationFt: found ? Math.round(found.elevationFt) : 0,
+        });
+      }
+
+      return weeks;
+    }, [activities]);
+
+    const selectedWeek =
+      selectedWeekIndex !== null
+        ? weeklySnapshot[selectedWeekIndex]
+        : null;
+
+    const isThisWeek = useMemo(() => {
+      if (!selectedWeek?.weekStart) return false;
+
+      const thisWeekStart = startOfWeekMonday(new Date());
+
+      return (
+        selectedWeek.weekStart.getFullYear() === thisWeekStart.getFullYear() &&
+        selectedWeek.weekStart.getMonth() === thisWeekStart.getMonth() &&
+        selectedWeek.weekStart.getDate() === thisWeekStart.getDate()
+      );
+    }, [selectedWeek]);
+
+    useEffect(() => {
+      if (!weeklySnapshot.length) {
+        setSelectedWeekIndex(null);
+        return;
+      }
+
+      setSelectedWeekIndex(weeklySnapshot.length - 1);
+    }, [weeklySnapshot]);
 
     useEffect(() => {
         localStorage.setItem("homeNoteCards", JSON.stringify(noteCards));
@@ -220,6 +353,62 @@ ${card.text}
   return (
     <div className="page">
       <RunCalendar activities={activities} />
+
+
+      {/* WEEKLY MILEAGE */}
+      <div className="profile-section home-weekly-mileage">
+
+        <div className="weekly-header">
+
+          <div className="weekly-header-title">
+            {isThisWeek
+              ? "This week"
+              : selectedWeek?.label || "Weekly Mileage"}
+          </div>
+
+          <div className="weekly-stats-row">
+
+            <div className="weekly-stat">
+              <div className="weekly-stat-label">
+                Distance
+              </div>
+
+              <div className="weekly-stat-value">
+                {selectedWeek
+                  ? `${selectedWeek.miles} mi`
+                  : "-"}
+              </div>
+            </div>
+
+
+            <div className="weekly-stat">
+              <div className="weekly-stat-label">
+                Time
+              </div>
+
+              <div className="weekly-stat-value">
+                {selectedWeek
+                  ? formatHoursMinsFromMinutes(selectedWeek.minutes)
+                  : "-"}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <WeeklyMileage
+          weeks={weeklySnapshot}
+          selectedIndex={selectedWeekIndex}
+          onSelect={(index) => setSelectedWeekIndex(index)}
+          scaleMode={weeklyScaleMode}
+        />
+
+      </div>
+
+
+
 
       <div className="notes-stack">
         {noteCards.map((card, index) => (
