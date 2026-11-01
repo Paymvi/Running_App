@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React from "react";
+import useDialog from "../hooks/useDialog";
 
 export default function CalendarSettingsModal({
   open,
@@ -14,20 +15,22 @@ export default function CalendarSettingsModal({
   bikeScaleMode,
   setBikeScaleMode
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => e.key === "Escape" && onClose?.();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  const dialogRef = useDialog(open, onClose);
 
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className="modal-card"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="calendar-settings-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-head">
-          <div className="modal-title">Calendar Settings</div>
+          <div className="modal-title" id="calendar-settings-title">Calendar Settings</div>
           <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
@@ -40,6 +43,7 @@ export default function CalendarSettingsModal({
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Triathlete mode"
               checked={triathleteMode}
               onChange={(e) => setTriathleteMode(e.target.checked)}
             />
@@ -56,6 +60,7 @@ export default function CalendarSettingsModal({
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Hybrid athlete mode"
               checked={hybridMode}
               onChange={(e) => setHybridMode(e.target.checked)}
             />
@@ -107,6 +112,7 @@ export default function CalendarSettingsModal({
             value={runCustomMax}
             onChange={(e) => setRunCustomMax(e.target.value)}
             placeholder="Miles"
+            aria-label="Custom run scale (miles)"
             className="settings-input"
             />
         )}
@@ -140,7 +146,7 @@ export default function CalendarSettingsModal({
       </div>
 
         <div className="modal-foot">
-          <button className="secondary-btn" onClick={onClose}>Done</button>
+          <button type="button" className="secondary-btn" onClick={onClose}>Done</button>
         </div>
 
 

@@ -20,6 +20,13 @@ export const activityImages = {
         intervals: "Swim-Sprints.png",
         default: "Swim-Default.png",
     },
+    // No dedicated artwork yet: hikes use the run-long image, strength uses the workout image.
+    hike: {
+        default: "Run-Long-2.png",
+    },
+    strength: {
+        default: "Workout-2.png",
+    },
     workout: {
         easy: "Workout-2.png",
         long: "Workout-2.png",

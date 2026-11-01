@@ -1,30 +1,29 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import EasyJar from "./profile/EasyJar";
+import useDialog from "../hooks/useDialog";
+import { buildJarGroups, JAR_SIZE } from "../utils/activityModel";
+import { playSound, vibrate } from "../utils/feedback";
 
-export default function JarDropModal({
-  isOpen,
-  onClose,
-  runsBefore = [],
-  newRun = null
-}) {
+// Celebrates one newly created easy run: shows the jar that run landed in
+// (which may be an older jar if the run was backdated) and animates its ball.
+export default function JarDropModal({ activityId, activities, onClose }) {
+  const isOpen = Boolean(activityId);
 
-  // Build the final jar state
-  const finalRuns = newRun ? [...runsBefore, newRun] : runsBefore;
-  const animatedIndex = newRun ? finalRuns.length - 1 : null;
+  const { runs, animatedIndex } = useMemo(() => {
+    if (!activityId) return { runs: [], animatedIndex: null };
+    const group = buildJarGroups(activities).groups.find((g) => g.some((r) => r.id === activityId)) || [];
+    const index = group.findIndex((r) => r.id === activityId);
+    return { runs: group, animatedIndex: index >= 0 ? index : null };
+  }, [activityId, activities]);
+
+  const dialogRef = useDialog(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const soundTimer = setTimeout(() => {
-
-      const audio = new Audio("/activity-save.mp3");
-      audio.volume = 0.6;
-      audio.play().catch(console.error);
-
-      if (navigator.vibrate) {
-        navigator.vibrate([80, 40, 120]);
-      }
-
+      playSound("/activity-save.mp3");
+      vibrate([80, 40, 120]);
     }, 1100);
 
     const closeTimer = setTimeout(() => {
@@ -38,20 +37,26 @@ export default function JarDropModal({
 
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !runs.length) return null;
 
   return (
-    <div className="jar-drop-backdrop">
-      <div className="jar-drop-modal">
+    <div className="jar-drop-backdrop" onClick={onClose}>
+      <div
+        className="jar-drop-modal"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="jar-drop-title"
+      >
 
-        <div className="jar-drop-title">
+        <div className="jar-drop-title" id="jar-drop-title">
           Easy run added 🫙
         </div>
 
         <EasyJar
           title="Easy Run Jar"
-          subtitle=""
-          runs={finalRuns}
+          subtitle={`${runs.length}/${JAR_SIZE} balls${runs.length === JAR_SIZE ? " · jar complete!" : ""}`}
+          runs={runs}
           animatedIndex={animatedIndex}
         />
 

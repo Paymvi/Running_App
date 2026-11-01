@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import useDialog from "../hooks/useDialog";
 
 export default function ActivityFilterModal({
   isOpen,
@@ -6,11 +7,12 @@ export default function ActivityFilterModal({
   filters,
   setFilters,
   onReset,
-  exportFormat,
-  setExportFormat,
+  unit = "mi",
 }) {
 
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  // null = follow the filters (open when any advanced filter is set); otherwise the user's choice.
+  const [advancedChoice, setAdvancedChoice] = useState(null);
+  const dialogRef = useDialog(isOpen, onClose);
 
   const toggleArrayValue = (key, value) => {
     setFilters((prev) => {
@@ -33,19 +35,10 @@ export default function ActivityFilterModal({
     }));
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
 
   
   
-  useEffect(() => {
-    const hasAdvancedFilters =
+  const hasAdvancedFilters = Boolean(
       filters.distanceMin ||
       filters.distanceMax ||
       filters.durationMin ||
@@ -55,12 +48,8 @@ export default function ActivityFilterModal({
       filters.feels.length > 0 ||
       filters.dateStart ||
       filters.dateEnd ||
-      filters.notesSearch;
-
-    if (hasAdvancedFilters) {
-      setShowAdvanced(true);
-    }
-  }, [filters]);
+      filters.notesSearch);
+  const showAdvanced = advancedChoice ?? hasAdvancedFilters;
 
 
 
@@ -71,11 +60,15 @@ export default function ActivityFilterModal({
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="activity-filter-modal"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="filter-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="activity-filter-header">
-          <h2>Filter Activities</h2>
-          <button className="modal-close-btn" onClick={onClose}>
+          <h2 id="filter-modal-title">Filter Activities</h2>
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close filters">
             ✕
           </button>
         </div>
@@ -85,8 +78,9 @@ export default function ActivityFilterModal({
 
           <div className="row">
             <div className="filter-group">
-              <label className="filter-label">Search by name</label>
+              <label className="filter-label" htmlFor="filter-name">Search by name</label>
               <input
+                id="filter-name"
                 type="text"
                 className="filter-input"
                 placeholder="Search title..."
@@ -98,8 +92,9 @@ export default function ActivityFilterModal({
             </div>
 
             <div className="filter-group">
-              <label className="filter-label">Search by date</label>
+              <label className="filter-label" htmlFor="filter-date">Search by date</label>
               <input
+                id="filter-date"
                 type="date"
                 className="filter-input"
                 value={filters.searchDate}
@@ -112,18 +107,21 @@ export default function ActivityFilterModal({
           
 
           <div className="filter-group">
-            <label className="filter-label">Activity type</label>
+            <div className="filter-label" id="filter-type-label">Activity type</div>
 
-            <div className="filter-chip-row">
+            <div className="filter-chip-row" role="group" aria-labelledby="filter-type-label">
               {[
                 { label: "Run", value: "run" },
                 { label: "Bike", value: "bike" },
                 { label: "Swim", value: "swim" },
+                { label: "Hike", value: "hike" },
                 { label: "Workout", value: "workout" },
+                { label: "Strength", value: "strength" },
               ].map((item) => (
                 <button
                   key={item.value}
                   type="button"
+                  aria-pressed={filters.types.includes(item.value)}
                   className={`filter-chip ${
                     filters.types.includes(item.value) ? "active" : ""
                   }`}
@@ -136,17 +134,19 @@ export default function ActivityFilterModal({
           </div>
 
           <div className="filter-group">
-            <label className="filter-label">Intensity</label>
-            <div className="filter-chip-row">
+            <div className="filter-label" id="filter-intensity-label">Intensity</div>
+            <div className="filter-chip-row" role="group" aria-labelledby="filter-intensity-label">
               {[
                 { label: "Easy", value: "easy" },
                 { label: "Tempo", value: "tempo" },
                 { label: "Sprint", value: "intervals" },
                 { label: "Long", value: "long" },
+                { label: "Unknown", value: "unknown" },
               ].map((item) => (
                 <button
                   key={item.value}
                   type="button"
+                  aria-pressed={filters.intensities.includes(item.value)}
                   className={`filter-chip chip-${item.value} ${
                     filters.intensities.includes(item.value) ? "active" : ""
                   }`}
@@ -172,8 +172,9 @@ export default function ActivityFilterModal({
           </div>
 
           <div className="filter-group">
-            <label className="filter-label">Sort by</label>
+            <label className="filter-label" htmlFor="filter-sort">Sort by</label>
             <select
+              id="filter-sort"
               className="filter-select"
               value={filters.sortBy}
               onChange={(e) => updateFilterValue("sortBy", e.target.value)}
@@ -187,7 +188,8 @@ export default function ActivityFilterModal({
             <button
               type="button"
               className="advanced-settings-toggle"
-              onClick={() => setShowAdvanced((prev) => !prev)}
+              aria-expanded={showAdvanced}
+              onClick={() => setAdvancedChoice(!showAdvanced)}
             >
               {showAdvanced ? "Hide Advanced Settings" : "Advanced Settings"}
             </button>
@@ -198,12 +200,13 @@ export default function ActivityFilterModal({
 
               <div className="row">
                 <div className="filter-group">
-                  <label className="filter-label">Distance range (miles)</label>
+                  <div className="filter-label">Distance range ({unit === "km" ? "km" : "miles"})</div>
                   <div className="range-row">
                     <input
                       type="number"
                       className="filter-input"
                       placeholder="Min"
+                      aria-label={`Minimum distance (${unit})`}
                       value={filters.distanceMin}
                       onChange={(e) => updateFilterValue("distanceMin", e.target.value)}
                     />
@@ -211,6 +214,7 @@ export default function ActivityFilterModal({
                       type="number"
                       className="filter-input"
                       placeholder="Max"
+                      aria-label={`Maximum distance (${unit})`}
                       value={filters.distanceMax}
                       onChange={(e) => updateFilterValue("distanceMax", e.target.value)}
                     />
@@ -218,12 +222,13 @@ export default function ActivityFilterModal({
                 </div>
 
                 <div className="filter-group">
-                  <label className="filter-label">Duration range (minutes)</label>
+                  <div className="filter-label">Duration range (minutes)</div>
                   <div className="range-row">
                     <input
                       type="number"
                       className="filter-input"
                       placeholder="Min"
+                      aria-label="Minimum duration (minutes)"
                       value={filters.durationMin}
                       onChange={(e) => updateFilterValue("durationMin", e.target.value)}
                     />
@@ -231,6 +236,7 @@ export default function ActivityFilterModal({
                       type="number"
                       className="filter-input"
                       placeholder="Max"
+                      aria-label="Maximum duration (minutes)"
                       value={filters.durationMax}
                       onChange={(e) => updateFilterValue("durationMax", e.target.value)}
                     />
@@ -240,13 +246,14 @@ export default function ActivityFilterModal({
 
               <div className="row">
                 <div className="filter-group">
-                  <label className="filter-label">Pace filter (min/mi)</label>
+                  <div className="filter-label">Pace filter (min/{unit})</div>
                   <div className="range-row">
                     <input
                       type="number"
                       step="0.01"
                       className="filter-input"
                       placeholder="Min pace"
+                      aria-label={`Fastest pace (min/${unit})`}
                       value={filters.paceMin}
                       onChange={(e) => updateFilterValue("paceMin", e.target.value)}
                     />
@@ -255,6 +262,7 @@ export default function ActivityFilterModal({
                       step="0.01"
                       className="filter-input"
                       placeholder="Max pace"
+                      aria-label={`Slowest pace (min/${unit})`}
                       value={filters.paceMax}
                       onChange={(e) => updateFilterValue("paceMax", e.target.value)}
                     />
@@ -262,17 +270,19 @@ export default function ActivityFilterModal({
                 </div>
 
                 <div className="filter-group">
-                  <label className="filter-label">Date range</label>
+                  <div className="filter-label">Date range</div>
                   <div className="range-row">
                     <input
                       type="date"
                       className="filter-input"
+                      aria-label="Start date"
                       value={filters.dateStart}
                       onChange={(e) => updateFilterValue("dateStart", e.target.value)}
                     />
                     <input
                       type="date"
                       className="filter-input"
+                      aria-label="End date"
                       value={filters.dateEnd}
                       onChange={(e) => updateFilterValue("dateEnd", e.target.value)}
                     />
@@ -281,8 +291,8 @@ export default function ActivityFilterModal({
               </div>
 
               <div className="filter-group">
-                <label className="filter-label">Feel</label>
-                <div className="filter-chip-row">
+                <div className="filter-label" id="filter-feel-label">Feel</div>
+                <div className="filter-chip-row" role="group" aria-labelledby="filter-feel-label">
                   {[
                     { label: "Easy", value: "easy" },
                     { label: "Medium", value: "medium" },
@@ -291,6 +301,7 @@ export default function ActivityFilterModal({
                     <button
                       key={item.value}
                       type="button"
+                      aria-pressed={filters.feels.includes(item.value)}
                       className={`filter-chip ${
                         filters.feels.includes(item.value) ? "active" : ""
                       }`}
@@ -305,8 +316,9 @@ export default function ActivityFilterModal({
               <div style={{ height: "14px" }}></div>
 
               <div className="filter-group">
-                <label className="filter-label">Notes search</label>
+                <label className="filter-label" htmlFor="filter-notes">Notes search</label>
                 <input
+                  id="filter-notes"
                   type="text"
                   className="filter-input"
                   placeholder="Search notes and descriptions..."
@@ -315,19 +327,6 @@ export default function ActivityFilterModal({
                 />
               </div>
 
-              <div style={{ height: "14px" }}></div>
-
-              <div className="filter-group">
-                <label className="filter-label">Export format</label>
-                <select
-                  className="filter-select"
-                  value={exportFormat}
-                  onChange={(e) => setExportFormat(e.target.value)}
-                >
-                  <option value="xlsx">Excel (.xlsx)</option>
-                  <option value="csv">CSV (.csv)</option>
-                </select>
-              </div>
 
 
 

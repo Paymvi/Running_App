@@ -5,22 +5,52 @@ import NotesSettingsModal from "../components/NotesSettingsModal";
 import { FiCopy } from "react-icons/fi"
 
 import WeeklyMileage from "../components/profile/WeeklyMileage";
-import {
-  parseDateSafe,
-  parseDurationMinutes,
-  startOfWeekMonday,
-  addDays,
-  weeksBetween,
-  formatWeekRange,
-  formatHoursMinsFromMinutes,
-} from "../utils/profileHelpers";
+import { useActivities } from "../utils/activityStore";
+import { readJSON, describeWriteError, downloadText } from "../utils/storage";
+import { formatWeekRange, formatHoursMinsFromMinutes } from "../utils/profileHelpers";
+import { isCountable } from "../utils/activityModel";
+import { startOfWeekMonday, weeklyRunTotals } from "../utils/stats";
+import { formatDistance, useUnit } from "../utils/units";
 
-function localDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+const NOTES_KEY = "homeNoteCards";
 
-  return `${year}-${month}-${day}`;
+// "" when saved, otherwise a message to show.
+function writeNotes(cards) {
+  try {
+    localStorage.setItem(NOTES_KEY, JSON.stringify(cards));
+    return "";
+  } catch (e) {
+    return `Notes not saved: ${describeWriteError(e)}`;
+  }
+}
+
+// Saved note cards (or the old single-note format), normalized.
+function loadNoteCards() {
+  const parsed = readJSON(NOTES_KEY, null);
+
+  if (Array.isArray(parsed) && parsed.length > 0) {
+    return parsed.map((card, index) => ({
+      id: card?.id ?? index + 1,
+      title: card?.title || `Notes ${index + 1}`,
+      text: card?.text || "",
+      isOpen: card?.isOpen ?? false,
+      height: Number(card?.height) || 380,
+      fontSize: Number(card?.fontSize) || 12,
+    }));
+  }
+
+  // fallback from old single-note version
+  let oldSavedNotes = null;
+  try {
+    oldSavedNotes = localStorage.getItem("homeNotes");
+  } catch {
+    // storage unavailable
+  }
+  if (oldSavedNotes) {
+    return [{ id: 1, title: "Notes 1", text: oldSavedNotes, isOpen: false, height: 380, fontSize: 12 }];
+  }
+
+  return [createEmptyNote(1)];
 }
 
 function createEmptyNote(id) {
@@ -35,146 +65,41 @@ function createEmptyNote(id) {
 }
 
 export default function Home() {
-    const [activities, setActivities] = useState([]);
-    const [noteCards, setNoteCards] = useState([createEmptyNote(1)]);
+    const { activities } = useActivities();
+    const unit = useUnit();
+    const [noteCards, setNoteCards] = useState(loadNoteCards);
+    const [pendingImport, setPendingImport] = useState(null); // { id, text } awaiting Replace/Append
+    const [notesSaveError, setNotesSaveError] = useState("");
     const [settingsCardId, setSettingsCardId] = useState(null);
     const fileInputRefs = useRef({});
     const [copiedCardId, setCopiedCardId] = useState(null);
 
+    // null = follow the newest week
     const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
 
-    const [weeklyScaleMode] = useState(
-      () => localStorage.getItem("weeklyScaleMode") || "dynamic"
+    const [weeklyScaleMode] = useState(() => {
+      try {
+        return localStorage.getItem("weeklyScaleMode") || "dynamic";
+      } catch {
+        return "dynamic";
+      }
+    });
+
+    // Completed activities only: plans never show as done training.
+    const completed = useMemo(() => activities.filter(isCountable), [activities]);
+
+    // Weekly run mileage, Monday–Sunday, zero weeks included (shared with coaching).
+    const weeklySnapshot = useMemo(
+      () => weeklyRunTotals(activities).map((w) => ({ ...w, label: formatWeekRange(w.weekStart) })),
+      [activities]
     );
-    
 
-  useEffect(() => {
-    const savedActivities = localStorage.getItem("activities");
-    if (savedActivities) {
-        setActivities(JSON.parse(savedActivities));
-    }
+    const effectiveWeekIndex =
+      selectedWeekIndex !== null && selectedWeekIndex < weeklySnapshot.length
+        ? selectedWeekIndex
+        : weeklySnapshot.length - 1;
 
-    const savedNoteCards = localStorage.getItem("homeNoteCards");
-
-    if (savedNoteCards) {
-        const parsed = JSON.parse(savedNoteCards);
-
-        if (Array.isArray(parsed) && parsed.length > 0) {
-        const normalizedCards = parsed.map((card, index) => ({
-            id: card.id ?? index + 1,
-            title: card.title || `Notes ${index + 1}`,
-            text: card.text || "",
-            isOpen: card.isOpen ?? false,
-            height: Number(card.height) || 380,
-            fontSize: Number(card.fontSize) || 12,
-        }));
-
-        setNoteCards(normalizedCards);
-        }
-    } else {
-        // fallback from old single-note version
-        const oldSavedNotes = localStorage.getItem("homeNotes");
-        if (oldSavedNotes) {
-        setNoteCards([
-            {
-            id: 1,
-            title: "Notes 1",
-            text: oldSavedNotes,
-            isOpen: false,
-            height: 380,
-            fontSize: 12,
-            },
-        ]);
-        }
-    }
-    }, []);
-
-    // =========================================================
-    // WEEKLY MILEAGE
-    // Monday -> Sunday
-    // Includes 0-mile weeks
-    // =========================================================
-
-    const weeklySnapshot = useMemo(() => {
-      const map = new Map();
-      let earliestDate = null;
-
-      for (const activity of activities) {
-        // Weekly mileage only counts runs
-        if (activity.type && activity.type !== "run") continue;
-
-        const date = parseDateSafe(activity.date);
-        if (!date) continue;
-
-        if (!earliestDate || date < earliestDate) {
-          earliestDate = date;
-        }
-
-        const weekStart = startOfWeekMonday(date);
-        const key = localDateKey(weekStart);
-
-        if (!map.has(key)) {
-          map.set(key, {
-            weekStart,
-            miles: 0,
-            minutes: 0,
-            elevationFt: 0,
-          });
-        }
-
-        const week = map.get(key);
-
-        const miles = Number(activity.miles) || 0;
-        const minutes = parseDurationMinutes(activity.duration);
-
-        const elevation =
-          Number(
-            activity.elevationGainFt ??
-            activity.elevation_ft ??
-            activity.elevationFt ??
-            activity.elevation_gain_ft
-          ) || 0;
-
-        week.miles += miles;
-        week.minutes += minutes;
-        week.elevationFt += elevation;
-      }
-
-      // Current week
-      const now = new Date();
-      const endWeek = startOfWeekMonday(now);
-
-      // If there are no activities yet, still show current week
-      const startWeek = earliestDate
-        ? startOfWeekMonday(earliestDate)
-        : endWeek;
-
-      const totalWeeks = weeksBetween(startWeek, endWeek);
-
-      const weeks = [];
-
-      for (let i = 0; i <= totalWeeks; i++) {
-        const weekStart = addDays(startWeek, i * 7);
-        const key = localDateKey(weekStart);
-
-        const found = map.get(key);
-
-        weeks.push({
-          label: formatWeekRange(weekStart),
-          weekStart,
-          miles: found ? Number(found.miles.toFixed(1)) : 0,
-          minutes: found ? Math.round(found.minutes) : 0,
-          elevationFt: found ? Math.round(found.elevationFt) : 0,
-        });
-      }
-
-      return weeks;
-    }, [activities]);
-
-    const selectedWeek =
-      selectedWeekIndex !== null
-        ? weeklySnapshot[selectedWeekIndex]
-        : null;
+    const selectedWeek = weeklySnapshot[effectiveWeekIndex] || null;
 
     const isThisWeek = useMemo(() => {
       if (!selectedWeek?.weekStart) return false;
@@ -188,18 +113,34 @@ export default function Home() {
       );
     }, [selectedWeek]);
 
+    // Debounced so typing doesn't rewrite every card on each keystroke. Edits still
+    // pending are written immediately when the page is hidden/closed or Home unmounts.
+    const pendingCards = useRef(null);
     useEffect(() => {
-      if (!weeklySnapshot.length) {
-        setSelectedWeekIndex(null);
-        return;
-      }
-
-      setSelectedWeekIndex(weeklySnapshot.length - 1);
-    }, [weeklySnapshot]);
-
-    useEffect(() => {
-        localStorage.setItem("homeNoteCards", JSON.stringify(noteCards));
+      pendingCards.current = noteCards;
+      const timer = setTimeout(() => {
+        pendingCards.current = null;
+        setNotesSaveError(writeNotes(noteCards));
+      }, 400);
+      return () => clearTimeout(timer);
     }, [noteCards]);
+
+    useEffect(() => {
+      const flush = () => {
+        if (!pendingCards.current) return;
+        const error = writeNotes(pendingCards.current);
+        pendingCards.current = null;
+        setNotesSaveError(error);
+      };
+      const onHide = () => document.visibilityState === "hidden" && flush();
+      window.addEventListener("pagehide", flush);
+      document.addEventListener("visibilitychange", onHide);
+      return () => {
+        window.removeEventListener("pagehide", flush);
+        document.removeEventListener("visibilitychange", onHide);
+        flush();
+      };
+    }, []);
 
     const toggleNoteCard = (id) => {
         setNoteCards((prev) =>
@@ -253,23 +194,10 @@ export default function Home() {
         setNoteCards((prev) => prev.filter((card) => card.id !== id));
     };
 
+  // Exactly the card's text, so importing the file back gives the same note.
   const exportNotes = (card) => {
-    const today = new Date().toLocaleDateString();
-    const text = `Date: ${today}
-
-Notes:
-${card.text}
-`;
-
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `run-notes-${card.id}-${today}.txt`;
-    link.click();
-
-    URL.revokeObjectURL(url);
+    const safeTitle = String(card.title).replace(/[^\w-]+/g, "-").replace(/^-|-$/g, "") || `notes-${card.id}`;
+    downloadText(`${safeTitle}.txt`, card.text, "text/plain;charset=utf-8");
   };
 
     const handleImportClick = (id) => {
@@ -290,16 +218,29 @@ ${card.text}
 
         reader.onload = (event) => {
         const text = event.target.result || "";
+        const current = noteCards.find((card) => card.id === id);
 
-        setNoteCards((prev) =>
-            prev.map((card) =>
-            card.id === id ? { ...card, text: text, isOpen: true } : card
-            )
-        );
+        // A card with text asks Replace or Append (see the prompt rendered in the card).
+        if (current?.text) {
+          setPendingImport({ id, text });
+          return;
+        }
+        applyImport(id, text, "replace");
         };
 
         reader.readAsText(file);
         e.target.value = "";
+    };
+
+    const applyImport = (id, text, mode) => {
+        setNoteCards((prev) =>
+            prev.map((card) =>
+            card.id === id
+              ? { ...card, isOpen: true, text: mode === "append" ? `${card.text}${card.text.endsWith("\n") ? "" : "\n"}${text}` : text }
+              : card
+            )
+        );
+        setPendingImport(null);
     };
 
     const openSettingsModal = (id) => {
@@ -335,30 +276,15 @@ ${card.text}
       }
     };
 
-    const copyAllNotesText = async (id) => {
-      const textarea = textareaRefs.current[id];
-      if (!textarea) return;
-
-      textarea.focus();
-      textarea.select();
-      textarea.setSelectionRange(0, textarea.value.length);
-
-      try {
-        await navigator.clipboard.writeText(textarea.value);
-      } catch (err) {
-        console.error("Copy failed:", err);
-      }
-    };
-
   return (
     <div className="page">
-      <RunCalendar activities={activities} />
+      <RunCalendar activities={completed} />
 
 
       {/* WEEKLY MILEAGE */}
       <div className="profile-section home-weekly-mileage">
 
-        <div className="weekly-header">
+        <div className="weekly-header" aria-live="polite">
 
           <div className="weekly-header-title">
             {isThisWeek
@@ -375,7 +301,7 @@ ${card.text}
 
               <div className="weekly-stat-value">
                 {selectedWeek
-                  ? `${selectedWeek.miles} mi`
+                  ? formatDistance(selectedWeek.miles, unit)
                   : "-"}
               </div>
             </div>
@@ -400,9 +326,10 @@ ${card.text}
 
         <WeeklyMileage
           weeks={weeklySnapshot}
-          selectedIndex={selectedWeekIndex}
+          selectedIndex={effectiveWeekIndex}
           onSelect={(index) => setSelectedWeekIndex(index)}
           scaleMode={weeklyScaleMode}
+          unit={unit}
         />
 
       </div>
@@ -411,29 +338,36 @@ ${card.text}
 
 
       <div className="notes-stack">
-        {noteCards.map((card, index) => (
+        {notesSaveError && (
+          <div className="field-error" role="alert">{notesSaveError}</div>
+        )}
+        {noteCards.map((card) => (
           <div key={card.id} className="notes-card">
-            <div
+            <button
+              type="button"
               className="notes-header"
+              aria-expanded={card.isOpen}
               onClick={() => toggleNoteCard(card.id)}
             >
               <h3>{card.title}</h3>
-              <span>{card.isOpen ? "▲" : "▼"}</span>
-            </div>
+              <span aria-hidden="true">{card.isOpen ? "▲" : "▼"}</span>
+            </button>
 
             {card.isOpen && (
               <div className="notes-card-body">
                   <div className="notes-card-body">
                     <button
+                      type="button"
                       className="notes-copy-btn"
                       onClick={() => copyNotesToClipboard(card.id, card.text)}
                       title="Copy notes"
+                      aria-label="Copy notes"
                     >
                       <FiCopy />
                     </button>
 
                     {copiedCardId === card.id && (
-                      <div className="notes-copied-msg">
+                      <div className="notes-copied-msg" role="status">
                         Copied to your clipboard!
                       </div>
                     )}
@@ -441,6 +375,7 @@ ${card.text}
 
                   <textarea
                       className="notes-input"
+                      aria-label={`${card.title} text`}
                       placeholder="Write anything: goals, thoughts, race plans..."
                       value={card.text}
                       onChange={(e) => handleNotesChange(card.id, e.target.value)}
@@ -463,8 +398,18 @@ ${card.text}
                     style={{ display: "none" }}
                 />
 
+                {pendingImport?.id === card.id && (
+                  <div className="notes-import-choice" role="group" aria-label="Imported text">
+                    <span>This card already has text. Imported file:</span>
+                    <button type="button" className="secondary-btn" onClick={() => applyImport(card.id, pendingImport.text, "replace")}>Replace</button>
+                    <button type="button" className="secondary-btn" onClick={() => applyImport(card.id, pendingImport.text, "append")}>Append</button>
+                    <button type="button" className="secondary-btn" onClick={() => setPendingImport(null)}>Cancel</button>
+                  </div>
+                )}
+
                 <div className="notes-actions">
                   <button
+                    type="button"
                     className="secondary-btn"
                     onClick={() => handleImportClick(card.id)}
                   >
@@ -472,6 +417,7 @@ ${card.text}
                   </button>
 
                   <button
+                    type="button"
                     className="secondary-btn"
                     onClick={() => exportNotes(card)}
                   >
@@ -479,14 +425,18 @@ ${card.text}
                   </button>
 
                   <button
+                    type="button"
                     className="secondary-btn notes-small-btn"
+                    aria-label="Remove this notes card"
                     onClick={() => removeNoteCard(card.id)}
                   >
                     -
                   </button>
 
                   <button
+                    type="button"
                     className="secondary-btn notes-small-btn"
+                    aria-label="Add a notes card"
                     onClick={addNoteCard}
                   >
                     +
@@ -494,6 +444,7 @@ ${card.text}
 
 
                     <button
+                        type="button"
                         className="secondary-btn notes-settings-btn"
                         onClick={() => openSettingsModal(card.id)}
                     >

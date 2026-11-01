@@ -1,24 +1,13 @@
-import React, { useEffect } from "react";
+import React from "react";
+import useDialog from "../hooks/useDialog";
 
 export default function CoachHelpModal({ isOpen, onClose }) {
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") onClose?.();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
+  const dialogRef = useDialog(isOpen, onClose);
 
   if (!isOpen) return null;
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Coach alerts help"
       onClick={onClose}
       style={{
         position: "fixed",
@@ -32,6 +21,10 @@ export default function CoachHelpModal({ isOpen, onClose }) {
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Coach alerts help"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "min(720px, 100%)",
@@ -77,9 +70,16 @@ export default function CoachHelpModal({ isOpen, onClose }) {
         {/* Content */}
         <div style={{ opacity: 0.92, lineHeight: 1.45, fontSize: 9 }}>
           <p style={{ marginTop: 0 }}>
-            Coach alerts are <strong>automatic training notes</strong> based on your recent
-            activities. They’re meant to help you avoid “silent” mistakes like pace creep,
+            Coach alerts are <strong>automatic training notes</strong> based on your completed
+            runs, looked at as of today. They’re meant to help you avoid “silent” mistakes like pace creep,
             too much intensity, or big mileage jumps.
+          </p>
+          <p>
+            Only runs count: planned activities and other sports are ignored. Weeks run Monday–Sunday,
+            and this week so far is compared with the same days of last week. Runs with
+            <strong> unknown effort</strong> (for example Strava imports) are neither easy nor hard;
+            when most of a week’s runs have unknown effort the coach says so instead of guessing.
+            Runs without a time have no pace, so pace checks skip them. Choose “Hidden” to turn alerts off.
           </p>
 
           <div style={{ marginTop: 12 }}>
@@ -98,7 +98,7 @@ export default function CoachHelpModal({ isOpen, onClose }) {
                 </li>
 
                 <li>
-                🔴 <strong>Easy pace creep</strong>: your “easy” run pace was much faster than your recent easy baseline and felt medium or hard.
+                🔴 <strong>Easy pace creep</strong>: your latest “easy” run was much faster than your previous 10 easy runs and felt medium or hard.
                 </li>
 
                 <li>
@@ -106,7 +106,7 @@ export default function CoachHelpModal({ isOpen, onClose }) {
                 </li>
 
                 <li>
-                🟡 <strong>Mileage spike</strong>: your weekly mileage jumped ~25% or more compared to last week.
+                🟡 <strong>Mileage spike</strong>: this week’s mileage so far is ~25% or more above the same days of last week.
                 </li>
 
                 <li>
@@ -114,7 +114,7 @@ export default function CoachHelpModal({ isOpen, onClose }) {
                 </li>
 
                 <li>
-                🟡 <strong>Easy pace drift</strong>: your recent easy runs are faster than your baseline and feel tougher (possible fatigue or ego pacing).
+                🟡 <strong>Easy pace drift</strong>: your last 5 easy runs are faster than the 10 easy runs before them and feel tougher (possible fatigue or ego pacing).
                 </li>
 
                 <li>
@@ -122,15 +122,15 @@ export default function CoachHelpModal({ isOpen, onClose }) {
                 </li>
 
                 <li>
-                🟡 <strong>Intensity imbalance</strong>: less than ~45% of your runs this week were easy.
+                🟡 <strong>Intensity imbalance</strong>: ~45% or less of this week’s run distance (with a known effort) was easy.
                 </li>
 
                 <li>
-                🟢 <strong>High easy-run discipline</strong>: ~75% or more of your runs this week were easy.
+                🟢 <strong>High easy-run discipline</strong>: ~75% or more of this week’s run distance (with a known effort) was easy.
                 </li>
 
                 <li>
-                🟢 <strong>Stable mileage week</strong>: your weekly mileage stayed within ~15% of last week.
+                🟢 <strong>Stable mileage week</strong>: this week’s mileage so far is within ~15% of the same days of last week.
                 </li>
 
                 <li>

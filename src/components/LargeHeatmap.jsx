@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import { parseLocalYMD, toYMD } from "../utils/dateUtils";
 
 /*
   GitHub-style activity heatmap
@@ -7,33 +8,6 @@ import React, { useMemo } from "react";
   - each square = one day
   - month labels shown across top
 */
-
-function parseLocalYMD(input) {
-  if (!input) return null;
-  if (input instanceof Date) return input;
-
-  const clean = String(input).split("T")[0];
-
-  // YYYY-MM-DD
-  if (clean.includes("-")) {
-    const [y, m, d] = clean.split("-").map(Number);
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
-  }
-
-  // M/D/YYYY
-  if (clean.includes("/")) {
-    const [m, d, y] = clean.split("/").map(Number);
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
-  }
-
-  return null;
-}
-
-const pad2 = (n) => String(n).padStart(2, "0");
-const toYMD = (d) =>
-  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -96,7 +70,11 @@ function getActivityScore(activity) {
     return 0;
   }
 
-  if (type === "workout") {
+  // Hiking has no agreed equivalence to the other sports, so it does not score.
+  if (type === "hike") return 0;
+
+  // Strength sessions keep the workout scoring they had when they were logged as workouts.
+  if (type === "workout" || type === "strength") {
     let effortBonus = 1;
     if (feel === "easy") effortBonus = 1;
     else if (feel === "medium") effortBonus = 1.5;
@@ -132,41 +110,48 @@ export default function ActivityHeatmap({
   showMonthLabels = true,
   title = "Activity Heatmap",
 }) {
+  // 0 = the window ending this week (or the latest logged week); each step goes weeksToShow further back.
+  const [page, setPage] = useState(0);
+
+  const { totalsByDay, earliestDate, latestDate, totalActiveDays } = useMemo(() => {
+    const totals = {};
+    let earliest = null;
+    let latest = null;
+
+    for (const activity of activities) {
+      const d = parseLocalYMD(activity?.date);
+      if (!d) continue;
+
+      const score = getActivityScore(activity);
+      if (!score || score <= 0) continue;
+
+      if (!earliest || d < earliest) earliest = d;
+      if (!latest || d > latest) latest = d;
+
+      const key = toYMD(d);
+      totals[key] = (totals[key] || 0) + score;
+    }
+
+    return {
+      totalsByDay: totals,
+      earliestDate: earliest,
+      latestDate: latest,
+      totalActiveDays: Object.keys(totals).length,
+    };
+  }, [activities]);
+
   const {
     weeks,
     monthLabels,
-    totalActiveDays,
     maxScore,
+    rangeLabel,
+    hasEarlier,
   } = useMemo(() => {
-    const totalsByDay = {};
-    let earliestDate = null;
-
-  for (const activity of activities) {
-    const d = parseLocalYMD(activity?.date);
-    if (!d || Number.isNaN(d.getTime())) continue;
-
-    if (!earliestDate || d < earliestDate) {
-      earliestDate = d;
-    }
-
-    const key = toYMD(d);
-    const score = getActivityScore(activity);
-
-    if (!score || score <= 0) continue;
-
-    totalsByDay[key] = (totalsByDay[key] || 0) + score;
-  }
-
+    // Only a bounded window is rendered; older history is reached with "Earlier".
     const today = startOfDay(new Date());
-    const endDate = addDays(startOfWeekSunday(today), 6);
-
-    let startDate;
-
-    if (earliestDate) {
-      startDate = startOfWeekSunday(earliestDate);
-    } else {
-      startDate = startOfWeekSunday(today);
-    }
+    const anchor = latestDate && latestDate > today ? latestDate : today;
+    const endDate = addDays(startOfWeekSunday(anchor), 6 - page * weeksToShow * 7);
+    const startDate = addDays(startOfWeekSunday(endDate), -(weeksToShow - 1) * 7);
 
     const allDays = [];
     let cursor = new Date(startDate);
@@ -183,10 +168,8 @@ export default function ActivityHeatmap({
       cursor = addDays(cursor, 1);
     }
 
-    const visibleMaxScore = Math.max(
-      0,
-      ...allDays.map((d) => d.score)
-    );
+    let visibleMaxScore = 0;
+    for (const d of allDays) visibleMaxScore = Math.max(visibleMaxScore, d.score);
 
     const weekColumns = [];
     for (let i = 0; i < allDays.length; i += 7) {
@@ -210,15 +193,16 @@ export default function ActivityHeatmap({
       }
     }
 
-    const activeDays = allDays.filter((d) => d.score > 0).length;
+    const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
     return {
       weeks: weekColumns,
       monthLabels: labels,
-      totalActiveDays: activeDays,
       maxScore: visibleMaxScore,
+      rangeLabel: `${fmt(startDate)} – ${fmt(endDate)}`,
+      hasEarlier: Boolean(earliestDate && earliestDate < startDate),
     };
-  }, [activities, weeksToShow]);
+  }, [totalsByDay, earliestDate, latestDate, page, weeksToShow]);
 
   return (
     <div className="activity-heatmap-card">
@@ -294,7 +278,25 @@ export default function ActivityHeatmap({
 
         <div className="activity-heatmap-footer">
           <div className="activity-heatmap-note">
-            Full training history
+            <button
+              type="button"
+              className="tertiary-btn"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasEarlier}
+              aria-label="Show earlier year"
+            >
+              ‹ Earlier
+            </button>{" "}
+            <span aria-live="polite">{rangeLabel}</span>{" "}
+            <button
+              type="button"
+              className="tertiary-btn"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              aria-label="Show later year"
+            >
+              Later ›
+            </button>
           </div>
 
           <div className="activity-heatmap-legend">

@@ -1,0 +1,25 @@
+# Lint, unit/integration tests and production build on every push and pull request.
+# The browser smoke test (tests/browser-smoke.js) is a manual pre-release step; see README.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # npm ci installs exactly package-lock.json (including the pinned SheetJS tarball).
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

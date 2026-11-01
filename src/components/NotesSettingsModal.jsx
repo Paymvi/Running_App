@@ -1,17 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useDialog from "../hooks/useDialog";
 
 export default function NotesSettingsModal({ card, onClose, onSave }) {
   const [title, setTitle] = useState(card?.title || "");
   const [height, setHeight] = useState(card?.height || 380);
   const [fontSize, setFontSize] = useState(card?.fontSize || 12);
-
-  useEffect(() => {
-    if (card) {
-      setTitle(card.title || "");
-      setHeight(card.height || 380);
-      setFontSize(card.fontSize || 12);
-    }
-  }, [card]);
+  const dialogRef = useDialog(Boolean(card), onClose);
 
   if (!card) return null;
 
@@ -33,13 +27,18 @@ export default function NotesSettingsModal({ card, onClose, onSave }) {
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="notes-settings-modal"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notes-settings-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2>Notes Settings</h2>
+        <h2 id="notes-settings-title">Notes Settings</h2>
 
         <div className="notes-settings-row">
-          <label>Name</label>
+          <label htmlFor="notes-settings-name">Name</label>
           <input
+            id="notes-settings-name"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -50,8 +49,9 @@ export default function NotesSettingsModal({ card, onClose, onSave }) {
         <div className="row">
 
             <div className="notes-settings-row">
-            <label>Box Height (px)</label>
+            <label htmlFor="notes-settings-height">Box Height (px)</label>
             <input
+                id="notes-settings-height"
                 type="number"
                 value={height}
                 onChange={(e) => setHeight(e.target.value)}
@@ -60,8 +60,9 @@ export default function NotesSettingsModal({ card, onClose, onSave }) {
             </div>
 
             <div className="notes-settings-row">
-            <label>Font Size (px)</label>
+            <label htmlFor="notes-settings-font">Font Size (px)</label>
             <input
+                id="notes-settings-font"
                 type="number"
                 value={fontSize}
                 onChange={(e) => setFontSize(e.target.value)}
@@ -78,11 +79,11 @@ export default function NotesSettingsModal({ card, onClose, onSave }) {
         </div> */}
 
         <div className="notes-settings-actions">
-          <button className="secondary-btn" onClick={onClose}>
+          <button type="button" className="secondary-btn" onClick={onClose}>
             Cancel
           </button>
 
-          <button className="secondary-btn" onClick={handleSave}>
+          <button type="button" className="secondary-btn" onClick={handleSave}>
             Save
           </button>
         </div>

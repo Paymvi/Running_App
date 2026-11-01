@@ -1,184 +1,44 @@
-// src/utils/coachAlert.js
+// Coach alerts: pure training logic (no UI). Running only, analyzed as of TODAY.
+// - Only completed runs count; planned and unconfirmed records are ignored.
+// - Weeks are Monday–Sunday, and the current week-to-date is compared with the
+//   same days of last week.
+// - Pace baselines never include the runs being evaluated.
+// - "unknown" effort is neither easy nor hard; analyses that need a missing input
+//   (pace without a duration, effort without an intensity) are skipped.
 
-/* Why is this in utils and not in compoennts?
- Because this is logic, not UI
+import { parseLocalYMD, toYMD, calendarDaysBetween } from "./dateUtils.js";
+import { activityMiles, activityMph, compareActivitiesNewestFirst, isCountableRun } from "./activityModel.js";
+import { easyShare, startOfWeekMonday } from "./stats.js";
+import { formatDistance, speedLabel, toDisplay } from "./units.js";
 
- The coach alert system is:
- Pure training logic that analyzes data and returns a result.
- That makes it a utility function, not a component.
-
-*/
-
-function isValidDate(d) {
-  return d instanceof Date && !isNaN(d);
-}
-
-function toDate(activity) {
-  const d = new Date(activity.date);
-  return isValidDate(d) ? d : null;
-}
-
-function startOfWeek(date) {
-  const d = new Date(date);
-  const day = d.getDay(); // 0..6 (Sun..Sat)
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - day);
-  return d;
-}
-
-function endOfWeek(date) {
-  const s = startOfWeek(date);
-  const e = new Date(s);
-  e.setDate(e.getDate() + 7);
-  return e;
-}
-
-function sumMiles(list) {
-  return list.reduce((acc, a) => acc + (Number(a.miles) || 0), 0);
-}
-
-// So it only looks at runs
-function runOnly(list) {
-  return list.filter(a => (a.type || "").toLowerCase() === "run");
-}
+const toDate = (a) => parseLocalYMD(a.date);
+const sumMiles = (list) => list.reduce((acc, a) => acc + activityMiles(a), 0);
 
 function avgMph(list) {
-  const vals = list.map(a => Number(a.mph)).filter(v => isFinite(v) && v > 0);
-  if (!vals.length) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
+  const vals = list.map(activityMph).filter((v) => v !== null);
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
 }
 
 function median(nums) {
-  const arr = nums.slice().sort((a,b) => a-b);
+  const arr = nums.slice().sort((a, b) => a - b);
   const n = arr.length;
   if (!n) return null;
   const mid = Math.floor(n / 2);
-  return n % 2 ? arr[mid] : (arr[mid-1] + arr[mid]) / 2;
+  return n % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
 }
 
-function daysSince(dateA, dateB) {
-  const ms = (dateB.getTime() - dateA.getTime());
-  return Math.floor(ms / (1000 * 60 * 60 * 24));
-}
+const HARD = new Set(["tempo", "hard", "interval", "intervals", "race"]);
+const isHard = (a) => HARD.has((a.intensity || "").toLowerCase());
+const isEasy = (a) => (a.intensity || "").toLowerCase() === "easy";
 
-function isHardIntensity(intensity) {
-  const i = (intensity || "").toLowerCase();
-  return i === "tempo" || i === "hard" || i === "interval" || i === "race";
-}
+// Alerts about "your last run" only apply while that run is recent.
+const RECENT_DAYS = 7;
 
-function easyRuns(activities) {
-  return activities
-    .filter(a => (a.type || "").toLowerCase() === "run")
-    .filter(a => (a.intensity || "").toLowerCase() === "easy")
-    .filter(a => isFinite(Number(a.mph)) && Number(a.mph) > 0);
-}
+export function generateCoachAlerts(activities, maxAlerts = 1, { today = new Date(), unit = "mi" } = {}) {
+  const requested = Math.trunc(Number(maxAlerts));
+  const clampN = Number.isFinite(requested) ? Math.max(0, Math.min(requested, 6)) : 1;
 
-function easyBaselineMph(activities, count = 10) {
-  const easy = easyRuns(activities).slice(0, count); // newest-first
-  if (easy.length < 4) return null;
-  return avgMph(easy);
-}
-
-function getWeekSlice(sorted, now) {
-  const ws = startOfWeek(now);
-  const we = endOfWeek(now);
-
-  const thisWeek = sorted.filter(a => {
-    const d = toDate(a);
-    return d && d >= ws && d < we;
-  });
-
-  const lastWeekStart = new Date(ws);
-  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-  const lastWeekEnd = new Date(ws);
-
-  const lastWeek = sorted.filter(a => {
-    const d = toDate(a);
-    return d && d >= lastWeekStart && d < lastWeekEnd;
-  });
-
-  return { thisWeek, lastWeek, ws };
-}
-
-function countRunDaysLastNDays(sorted, now, nDays = 6) {
-  // counts unique calendar days with at least one run
-  const seen = new Set();
-  for (const a of runOnly(sorted)) {
-    const d = toDate(a);
-    if (!d) continue;
-    const diff = daysSince(d, now);
-    if (diff < 0) continue;
-    if (diff <= nDays) {
-      seen.add(d.toISOString().slice(0, 10));
-    }
-  }
-  return seen.size;
-}
-
-function findLongestRunInDays(sorted, now, days = 14) {
-  let best = null;
-  for (const a of runOnly(sorted)) {
-    const d = toDate(a);
-    if (!d) continue;
-    const diff = daysSince(d, now);
-    if (diff < 0 || diff > days) continue;
-    if (!best || (Number(a.miles) || 0) > (Number(best.miles) || 0)) best = a;
-  }
-  return best;
-}
-
-function detectWallPattern(sorted, now) {
-  // If last 4 runs are all within ~0.6 miles of each other (and under 4 miles), you're “stuck”
-  const last = runOnly(sorted).slice(0, 5).filter(a => isFinite(Number(a.miles)) && Number(a.miles) > 0);
-  if (last.length < 4) return null;
-
-  const miles = last.slice(0, 4).map(a => Number(a.miles));
-  const med = median(miles);
-  if (!med) return null;
-
-  const within = miles.every(m => Math.abs(m - med) <= 0.6);
-  if (within && med <= 4.0) {
-    return { med, sample: miles };
-  }
-  return null;
-}
-
-function easyDriftWarning(sorted) {
-  // Compare recent easy mph vs baseline easy mph
-  const baseline = easyBaselineMph(sorted, 10);
-  const recentEasy = easyRuns(sorted).slice(0, 5);
-  if (!baseline || recentEasy.length < 4) return null;
-
-  const recentAvg = avgMph(recentEasy);
-  if (!recentAvg) return null;
-
-  // drift threshold (mph) – tweak later
-  const drift = recentAvg - baseline;
-
-  // Feel trend: if any of the recent easy runs felt medium/hard, flag more strongly
-  const tougherFeelCount = recentEasy.filter(a => {
-    const f = (a.feel || "").toLowerCase();
-    return f === "medium" || f === "hard";
-  }).length;
-
-  if (drift >= 0.35 && tougherFeelCount >= 2) {
-    return { baseline, recentAvg, drift };
-  }
-
-  return null;
-}
-
-export function generateCoachAlerts(activities, maxAlerts = 1) {
-  const clampN = Math.max(0, Math.min(Number(maxAlerts) ?? 1, 6));
-
-  // Priority (bigger = more important)
-  const PRIORITY = {
-    red: 4,
-    yellow: 3,
-    green: 2,
-    blue: 1,
-  };
-
+  const PRIORITY = { red: 4, yellow: 3, green: 2, blue: 1 };
   const make = (color, title, detail, key) => ({
     key,
     toneClass: `easy-zone-${color}`,
@@ -187,285 +47,167 @@ export function generateCoachAlerts(activities, maxAlerts = 1) {
     priority: PRIORITY[color] || 1,
   });
 
-  if (!activities || activities.length === 0) {
-    return [
-      make(
-        "blue",
-        "Log your first run 👟",
-        "Add a few runs and I’ll start giving coach notes.",
-        "empty-first-run"
-      ),
-    ];
+  const now = new Date(today);
+  now.setHours(0, 0, 0, 0);
+  const daysAgo = (a) => calendarDaysBetween(toDate(a), now);
+
+  const sorted = (activities || [])
+    .filter((a) => a && isCountableRun(a) && daysAgo(a) >= 0)
+    .sort(compareActivitiesNewestFirst);
+
+  if (sorted.length === 0) {
+    return [make("blue", "Log your first run 👟", "Add a few runs and I’ll start giving coach notes.", "empty-first-run")].slice(0, clampN);
   }
 
-  const sorted = runOnly(activities)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const dist = (miles) => formatDistance(miles, unit);
+  const speed = (mph) => `${toDisplay(mph, unit).toFixed(1)} ${speedLabel(unit)}`;
+
   const latest = sorted[0];
-  const now = toDate(latest) || new Date();
-
-  const { thisWeek, lastWeek } = getWeekSlice(sorted, now);
-
-  const thisWeekMiles = sumMiles(runOnly(thisWeek));
-  const lastWeekMiles = sumMiles(runOnly(lastWeek));
-
+  const latestRecent = daysAgo(latest) <= RECENT_DAYS;
   const intensity = (latest.intensity || "").toLowerCase();
   const feel = (latest.feel || "").toLowerCase();
-  const latestMph = Number(latest.mph);
+  const latestMph = activityMph(latest);
+
+  // Week-to-date vs the same number of days last week.
+  const ws = startOfWeekMonday(now);
+  const dayIndex = calendarDaysBetween(ws, now);
+  const between = (from, days) =>
+    sorted.filter((a) => {
+      const diff = calendarDaysBetween(from, toDate(a));
+      return diff >= 0 && diff <= days;
+    });
+  const lastWs = new Date(ws);
+  lastWs.setDate(ws.getDate() - 7);
+  const thisWeek = between(ws, dayIndex);
+  const lastWeekSamePart = between(lastWs, dayIndex);
+  const thisWeekMiles = sumMiles(thisWeek);
+  const lastWeekMiles = sumMiles(lastWeekSamePart);
+  const portion = dayIndex === 6 ? "" : " (same days)";
+
+  // Easy runs with a usable pace, newest first.
+  const easyPaced = sorted.filter((a) => isEasy(a) && activityMph(a) !== null);
 
   const alerts = [];
-  const pushUnique = (alert) => {
-    if (!alert) return;
-    if (alerts.some((a) => a.key === alert.key)) return;
-    alerts.push(alert);
+  const push = (alert) => {
+    if (alert && !alerts.some((a) => a.key === alert.key)) alerts.push(alert);
   };
 
-  // -------------------------
-  // 🔴 RED (highest priority)
-  // -------------------------
-
-  // R1: Easy but felt hard
-  if (intensity === "easy" && feel === "hard") {
-    pushUnique(
-      make(
-        "red",
-        "Marked easy… but it felt hard 🟥",
-        "That’s a classic fatigue signal. Slow down next easy run or take a reset day.",
-        "r1-easy-felt-hard"
-      )
-    );
+  // 🔴 R1: easy but felt hard
+  if (latestRecent && intensity === "easy" && feel === "hard") {
+    push(make("red", "Marked easy… but it felt hard 🟥", "That’s a classic fatigue signal. Slow down next easy run or take a reset day.", "r1-easy-felt-hard"));
   }
 
-  // R2: Back-to-back hard efforts
-  if (sorted.length >= 2) {
-    const a0 = sorted[0], a1 = sorted[1];
-    if (isHardIntensity(a0.intensity) && isHardIntensity(a1.intensity)) {
-      pushUnique(
-        make(
-          "red",
-          "Back-to-back hard days 🚨",
-          "Stacking intensity is how tempo creep turns into burnout. Next run: easy or rest.",
-          "r2-b2b-hard"
-        )
-      );
+  // 🔴 R2: back-to-back hard efforts on the same or consecutive days
+  if (latestRecent && sorted.length >= 2) {
+    const [a0, a1] = sorted;
+    if (isHard(a0) && isHard(a1) && calendarDaysBetween(toDate(a1), toDate(a0)) <= 1) {
+      push(make("red", "Back-to-back hard days 🚨", "Stacking intensity is how tempo creep turns into burnout. Next run: easy or rest.", "r2-b2b-hard"));
     }
   }
 
-  // R3: “This wasn’t easy” pace creep vs baseline + feel medium/hard
-  const baseline = easyBaselineMph(sorted, 10);
-  const tooFastForEasy =
-    intensity === "easy" &&
-    baseline !== null &&
-    isFinite(latestMph) &&
-    latestMph > baseline + 0.4 &&
-    (feel === "medium" || feel === "hard");
-
-  if (tooFastForEasy) {
-    pushUnique(
-      make(
-        "red",
-        "That wasn’t easy 😅",
-        `Easy pace creep: baseline ~${baseline.toFixed(1)} mph. Keep easy truly easy.`,
-        "r3-easy-pace-creep"
-      )
-    );
+  // 🔴 R3: latest easy run much faster than the baseline of the 10 easy runs before it
+  const baselineRuns = easyPaced.filter((a) => a !== latest).slice(0, 10);
+  const baseline = baselineRuns.length >= 4 ? avgMph(baselineRuns) : null;
+  if (
+    latestRecent && intensity === "easy" && baseline !== null && latestMph !== null &&
+    latestMph > baseline + 0.4 && (feel === "medium" || feel === "hard")
+  ) {
+    push(make("red", "That wasn’t easy 😅", `Easy pace creep: baseline ~${speed(baseline)}. Keep easy truly easy.`, "r3-easy-pace-creep"));
   }
 
-  // -------------------------
-  // 🟡 YELLOW (caution)
-  // -------------------------
-
-  // Y1: 3+ hard efforts in last 7 days
-  const last7 = sorted.slice(0, 12);
-  const hardCount7 = last7.filter((a) => {
-    const d = toDate(a);
-    if (!d) return false;
-    return daysSince(d, now) <= 7 && isHardIntensity(a.intensity);
-  }).length;
-
+  // 🟡 Y1: 3+ hard efforts in the last 7 days
+  const hardCount7 = sorted.filter((a) => daysAgo(a) <= 7 && isHard(a)).length;
   if (hardCount7 >= 3) {
-    pushUnique(
-      make(
-        "yellow",
-        "A lot of intensity this week ⚠️",
-        `You’ve hit ${hardCount7} hard efforts in the last 7 days. Consider an easy reset.`,
-        "y1-too-much-intensity"
-      )
-    );
+    push(make("yellow", "A lot of intensity this week ⚠️", `You’ve hit ${hardCount7} hard efforts in the last 7 days. Consider an easy reset.`, "y1-too-much-intensity"));
   }
 
-  // Y2: Mileage spike vs last week
+  // 🟡 Y2: mileage spike vs the same part of last week
   if (lastWeekMiles >= 1 && thisWeekMiles >= 1) {
     const change = ((thisWeekMiles - lastWeekMiles) / lastWeekMiles) * 100;
     if (change >= 25) {
-      pushUnique(
-        make(
-          "yellow",
-          `Mileage jump: +${Math.round(change)}% ⚠️`,
-          `This week: ${thisWeekMiles.toFixed(1)} mi • Last week: ${lastWeekMiles.toFixed(1)} mi.`,
-          "y2-mileage-spike"
-        )
-      );
+      push(make("yellow", `Mileage jump: +${Math.round(change)}% ⚠️`, `This week: ${dist(thisWeekMiles)} • Last week${portion}: ${dist(lastWeekMiles)}.`, "y2-mileage-spike"));
     }
   }
 
-  // Y3: No-rest-days pattern (ran 5+ of last 6 days)
-  const runDays6 = countRunDaysLastNDays(sorted, now, 6);
+  // 🟡 Y3: ran 5+ of the last 6 days
+  const runDays6 = new Set(sorted.filter((a) => daysAgo(a) <= 6).map((a) => toYMD(toDate(a)))).size;
   if (runDays6 >= 5) {
-    pushUnique(
-      make(
-        "yellow",
-        "No-rest pattern ⚠️",
-        `You ran ${runDays6} of the last 6 days. A rest day can make you faster.`,
-        "y3-no-rest"
-      )
-    );
+    push(make("yellow", "No-rest pattern ⚠️", `You ran ${runDays6} of the last 6 days. A rest day can make you faster.`, "y3-no-rest"));
   }
 
-  // Y4: Easy pace drift upward + feel getting tougher
-  const drift = easyDriftWarning(sorted);
-  if (drift) {
-    pushUnique(
-      make(
-        "yellow",
-        "Easy pace is drifting (fatigue?) ⚠️",
-        `Recent easy avg ~${drift.recentAvg.toFixed(1)} mph vs baseline ~${drift.baseline.toFixed(1)} mph.`,
-        "y4-easy-drift"
-      )
-    );
-  }
-
-  // Y5: Wall pattern (stuck at same distance)
-  const wall = detectWallPattern(sorted, now);
-  if (wall) {
-    pushUnique(
-      make(
-        "yellow",
-        "You keep hitting the same wall 🧱",
-        `Last runs cluster around ~${wall.med.toFixed(1)} mi. Try adding +0.2 mi on your next easy run.`,
-        "y5-wall"
-      )
-    );
-  }
-
-  // Y6: Too little easy (this week)
-  const totalCount = runOnly(thisWeek).length;
-  const easyCount = runOnly(thisWeek)
-    .filter((a) => (a.intensity || "").toLowerCase() === "easy").length;
-  if (totalCount >= 3) {
-    const easyPct = Math.round((easyCount / totalCount) * 100);
-    if (easyPct <= 45) {
-      pushUnique(
-        make(
-          "yellow",
-          "Intensity imbalance ⚠️",
-          `${easyPct}% easy this week. Consider making the next run a true easy day.`,
-          "y6-easy-too-low"
-        )
-      );
+  // 🟡 Y4: recent 5 easy runs vs the 10 easy runs before them, with tougher feel
+  const recentEasy = easyPaced.slice(0, 5);
+  const driftBase = easyPaced.slice(5, 15);
+  if (latestRecent && recentEasy.length >= 4 && driftBase.length >= 4) {
+    const recentAvg = avgMph(recentEasy);
+    const base = avgMph(driftBase);
+    const tougher = recentEasy.filter((a) => ["medium", "hard"].includes((a.feel || "").toLowerCase())).length;
+    if (recentAvg - base >= 0.35 && tougher >= 2) {
+      push(make("yellow", "Easy pace is drifting (fatigue?) ⚠️", `Recent easy avg ~${speed(recentAvg)} vs baseline ~${speed(base)}.`, "y4-easy-drift"));
     }
   }
 
-  // -------------------------
-  // 🟢 GREEN (praise)
-  // -------------------------
-
-  if (totalCount >= 3) {
-    const easyPct = Math.round((easyCount / totalCount) * 100);
-    if (easyPct >= 75) {
-      pushUnique(
-        make(
-          "green",
-          `Discipline week ✅ ${easyPct}% easy`,
-          "This is how base gets built. Keep stacking.",
-          "g1-discipline"
-        )
-      );
+  // 🟡 Y5: last 4 runs stuck at the same distance (under 4 mi)
+  const lastWithMiles = sorted.slice(0, 5).filter((a) => activityMiles(a) > 0).slice(0, 4).map(activityMiles);
+  if (latestRecent && lastWithMiles.length === 4) {
+    const med = median(lastWithMiles);
+    if (lastWithMiles.every((m) => Math.abs(m - med) <= 0.6) && med <= 4.0) {
+      push(make("yellow", "You keep hitting the same wall 🧱", `Last runs cluster around ~${dist(med)}. Try adding a little on your next easy run.`, "y5-wall"));
     }
   }
 
-  if (lastWeekMiles >= 3 && thisWeekMiles >= 3) {
+  // Easy % of this week's run miles with a known effort.
+  const known = thisWeek.filter((a) => (a.intensity || "unknown") !== "unknown");
+  const share = easyShare(thisWeek);
+  if (known.length >= 3 && share.pct !== null) {
+    if (share.pct <= 45) {
+      push(make("yellow", "Intensity imbalance ⚠️", `${share.pct}% of this week’s miles were easy. Consider making the next run a true easy day.`, "y6-easy-too-low"));
+    }
+    if (share.pct >= 75) {
+      push(make("green", `Discipline week ✅ ${share.pct}% easy`, "This is how base gets built. Keep stacking.", "g1-discipline"));
+    }
+  }
+
+  // 🔵 Effort unknown for most runs this week: easy/hard analysis is incomplete.
+  if (thisWeek.length - known.length > 0 && thisWeek.length - known.length >= known.length) {
+    const n = thisWeek.length - known.length;
+    push(make("blue", "Effort unknown ❔", `${n} run${n === 1 ? "" : "s"} this week ha${n === 1 ? "s" : "ve"} no intensity, so easy % and hard-day checks only use the rest. Edit them to set the effort.`, "b3-unknown-effort"));
+  }
+
+  // 🟢 steady week (same-days comparison)
+  if (lastWeekMiles >= 3 && thisWeekMiles >= 3 && thisWeek.length >= 3) {
     const changeAbs = Math.abs((thisWeekMiles - lastWeekMiles) / lastWeekMiles) * 100;
-    if (changeAbs <= 15 && totalCount >= 3) {
-      pushUnique(
-        make(
-          "green",
-          "Steady week ✅",
-          `Mileage stayed stable (${thisWeekMiles.toFixed(1)} mi). Consistency is the cheat code.`,
-          "g2-steady-week"
-        )
-      );
+    if (changeAbs <= 15) {
+      push(make("green", "Steady week ✅", `Mileage stayed stable (${dist(thisWeekMiles)}). Consistency is the cheat code.`, "g2-steady-week"));
     }
   }
 
-  if (sorted.length >= 2) {
-    const d0 = toDate(sorted[0]);
-    const d1 = toDate(sorted[1]);
-    if (d0 && d1) {
-      const gap = daysSince(d1, d0);
-      if (gap >= 7) {
-        pushUnique(
-          make(
-            "green",
-            "Welcome back ✅",
-            `You returned after ${gap} days. Keep it easy for a few runs and rebuild.`,
-            "g3-comeback"
-          )
-        );
-      }
+  // 🟢 comeback after a 7+ day gap
+  if (latestRecent && sorted.length >= 2) {
+    const gap = calendarDaysBetween(toDate(sorted[1]), toDate(sorted[0]));
+    if (gap >= 7) {
+      push(make("green", "Welcome back ✅", `You returned after ${gap} days. Keep it easy for a few runs and rebuild.`, "g3-comeback"));
     }
   }
 
-  // -------------------------
-  // 🔵 BLUE (informative)
-  // -------------------------
-
+  // 🔵 long run overdue (as of today)
   const longRun = sorted.find((a) => (a.intensity || "").toLowerCase() === "long");
-  if (longRun) {
-    const d = toDate(longRun);
-    if (d) {
-      const ds = daysSince(d, now);
-      if (ds >= 14) {
-        pushUnique(
-          make(
-            "blue",
-            "Long run is overdue 👻",
-            `Last long run was ${ds} days ago. Even a chill long run counts.`,
-            "b1-long-overdue"
-          )
-        );
-      }
-    }
+  if (longRun && daysAgo(longRun) >= 14) {
+    push(make("blue", "Long run is overdue 👻", `Last long run was ${daysAgo(longRun)} days ago. Even a chill long run counts.`, "b1-long-overdue"));
   }
 
-  if (isHardIntensity(intensity)) {
-    pushUnique(
-      make(
-        "blue",
-        "Next move: easy reset 🧊",
-        "You went hard last time. Keep the next run easy to actually get fitter.",
-        "b2-next-move"
-      )
-    );
+  if (latestRecent && isHard(latest)) {
+    push(make("blue", "Next move: easy reset 🧊", "You went hard last time. Keep the next run easy to actually get fitter.", "b2-next-move"));
   }
 
-  // Always have at least one message
   if (alerts.length === 0) {
-    pushUnique(
-      make(
-        "blue",
-        "Coach note: keep stacking reps 🧱",
-        "Consistency beats hero workouts.",
-        "b-default"
-      )
-    );
+    push(make("blue", "Coach note: keep stacking reps 🧱", "Consistency beats hero workouts.", "b-default"));
   }
 
-  // Sort by priority (RED first), then keep stable order otherwise
   alerts.sort((a, b) => b.priority - a.priority);
-
   return alerts.slice(0, clampN);
 }
 
-export function generateCoachAlert(activities) {
-  return generateCoachAlerts(activities, 1)[0];
+export function generateCoachAlert(activities, options) {
+  return generateCoachAlerts(activities, 1, options)[0];
 }

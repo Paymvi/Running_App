@@ -1,75 +1,94 @@
-import React from "react";
+import React, { useState } from "react";
 import { FiEdit2 } from "react-icons/fi";
-import { parseLocalYMD } from "../utils/dateUtils";
+import { formatDisplayDate } from "../utils/dateUtils";
 import { getDefaultImage } from "../utils/activityHelpers";
+import { activityMiles, activityMinutes, activityPaceParts, isPlanned, isUnconfirmed } from "../utils/activityModel";
+import { formatTime } from "../utils/profileHelpers";
+import { distLabel, speedLabel, toDisplay, useUnit } from "../utils/units";
+import usePhoto, { photoErrorText } from "../hooks/usePhoto";
 
 export default function ActivityCard({
   a,
-  index,
-  expandedIndex,
-  setExpandedIndex,
+  expanded,
+  onToggle,
   prIds,
   onEdit
 }) {
+  const unit = useUnit();
+  const photo = usePhoto(a?.photoId);
+  const [photoBroken, setPhotoBroken] = useState(false);
 
   if (!a) return null;
 
-  const miles = parseFloat(a.miles || 0);
-  const duration = parseFloat(a.duration || 0);
+  const miles = activityMiles(a);
+  const duration = activityMinutes(a);
+  const pace = activityPaceParts(a);
+  const shownDistance = toDisplay(miles, unit);
 
+  // Pace needs both distance and time; a missing time means "no pace", not zero.
   let avgPace = null;
-  let mph = null;
-
-  if (miles > 0 && duration > 0) {
-      const pace = duration / miles; // minutes per mile
-      const paceMin = Math.floor(pace);
-      const paceSec = Math.round((pace - paceMin) * 60);
-      avgPace = `${paceMin}:${paceSec.toString().padStart(2, "0")}`;
-      mph = (miles / (duration / 60)).toFixed(1);
+  let speed = null;
+  if (pace) {
+      avgPace = `${formatTime(pace.minutes / toDisplay(pace.miles, unit))} /${distLabel(unit)}`;
+      speed = (toDisplay(pace.miles, unit) / (pace.minutes / 60)).toFixed(1);
   }
+
+  const isPR = prIds.has(a.id);
+  const photoSrc = photo.src || a.photo || null;
 
   return (
       <div
-          onClick={() =>
-              setExpandedIndex(expandedIndex === index ? null : index)
-          }
+          onClick={onToggle}
           className={`
               activity-card
-              ${expandedIndex === index ? "expanded" : ""}
-              ${prIds.has(a.id) ? "pr-gold" : ""}
+              ${expanded ? "expanded" : ""}
+              ${isPR ? "pr-gold" : ""}
+              ${isPlanned(a) || isUnconfirmed(a) ? "activity-planned" : ""}
           `}
       >
       <div className="card-left">
 
-          {prIds.has(a.id) && (
-              <div className="pr-badge">🏆 PR</div>
+          {isPR && (
+              <div className="pr-badge" title="Fastest whole-activity time at this event distance">🏆 PR · whole activity</div>
           )}
 
           <div className="meta-row">
 
-              
+
               <span className="meta-date">
-                  {a.date
-                  ? (() => {
-                      const d = parseLocalYMD(a.date);
-                      if (!d || isNaN(d)) return "";
-                      return d.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                      });
-                      })() : ""}
+                  {formatDisplayDate(a.date) || String(a.date || "")}
               </span>
+              {isPlanned(a) && <span className="planned-badge">Planned</span>}
+              {isUnconfirmed(a) && (
+                  <span className="needs-review-badge" title="Dated in the future when plans were introduced. Edit it to mark it planned or completed.">
+                      Planned or done?
+                  </span>
+              )}
+              {a.needsReview?.some((f) => f !== "status") && (
+                  <span className="needs-review-badge" title={`Couldn't read: ${a.needsReview.filter((f) => f !== "status").join(", ")}`}>
+                      Needs review
+                  </span>
+              )}
           </div>
 
           <h3 className="card-title" style={{ fontWeight: "bold" }}>
-              {a.title || "Untitled Activity"}
+              <button
+                  type="button"
+                  className="card-toggle"
+                  aria-expanded={expanded}
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      onToggle();
+                  }}
+              >
+                  {a.title || "Untitled Activity"}
+              </button>
           </h3>
 
           {a.description && (
               <p
                   className="description-preview"
-                  style={{ whiteSpace: "pre-line" }} 
+                  style={{ whiteSpace: "pre-line" }}
               >
                   {a.description}
               </p>
@@ -81,30 +100,30 @@ export default function ActivityCard({
           <div className="stat">
               <span className="stat-label">Distance</span>
               <span className="stat-value">
-              {a.miles || "-"} mi
+              {miles > 0 ? `${Number(shownDistance.toFixed(2))} ${distLabel(unit)}` : `- ${distLabel(unit)}`}
               </span>
           </div>
 
           <div className="stat">
               <span className="stat-label">Time</span>
               <span className="stat-value">
-              {a.duration || "-"} min
+              {duration > 0 ? `${Number(duration.toFixed(2))} min` : "- min"}
               </span>
           </div>
 
           <div className="stat">
               <span className="stat-label">Avg Pace</span>
-              <span className="stat-value">
+              <span className="stat-value" title={pace ? undefined : "Needs both distance and time"}>
               {avgPace || "-"}
               </span>
           </div>
           </div>
 
-          {mph && <div className="mph-badge">{mph} mph</div>}
+          {speed && <div className="mph-badge">{speed} {speedLabel(unit)}</div>}
 
-          {expandedIndex === index && (
+          {expanded && (
           <div style={{ marginTop: 16 }}>
-              
+
 
           {a.notes && (
           <div className="expanded-section private-notes">
@@ -128,22 +147,26 @@ export default function ActivityCard({
 
           </div>
           )}
-          
+
 
 
       </div>
 
       <div className="card-right">
-          {a.photo ? (
-          <img src={a.photo} alt="activity" />
+          {photoSrc && !photoBroken ? (
+          <img src={photoSrc} alt={`Photo for ${a.title || "activity"}`} onError={() => setPhotoBroken(true)} />
+          ) : photo.error || photoBroken ? (
+          <div className="image-placeholder photo-error" role="note">
+              {photoBroken ? "This photo couldn't be displayed (the image data is damaged)." : photoErrorText(photo.error)}
+          </div>
           ) : (
           <div className="image-placeholder">
-              
+
               <img
                   src={getDefaultImage(a.type, a.intensity)}
-                  alt="activity"
+                  alt=""
               />
-              
+
           </div>
           )}
       </div>

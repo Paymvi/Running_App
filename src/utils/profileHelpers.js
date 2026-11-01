@@ -1,136 +1,23 @@
 // Make sure to make it "export function" so that react can import them
 
 
+import { formatDisplayDate } from "./dateUtils.js";
+
+// Minutes -> "m:ss". Rounds total seconds once so 5.999 becomes "6:00", not "5:60".
 export function formatTime(min) {
-  if (!isFinite(min)) return "-";
-  const m = Math.floor(min);
-  const s = Math.round((min - m) * 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  if (!Number.isFinite(min) || min < 0) return "-";
+  const total = Math.round(min * 60);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-export function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d)) return "";
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
+export const formatDate = formatDisplayDate;
 
 // -------------------------
-// SAFE DATE PARSER (handles M/D/YYYY and ISO)
+// WEEK HELPERS
 // -------------------------
-export function parseDateSafe(dateStr) {
-  if (!dateStr) return null;
-
-  // If it's already a Date object
-  if (dateStr instanceof Date) {
-    const d = new Date(dateStr);
-    return isNaN(d) ? null : d;
-  }
-
-  const value = String(dateStr).trim();
-
-  // -------------------------
-  // YYYY-MM-DD
-  // Parse as LOCAL date
-  // -------------------------
-  const isoMatch = value.match(
-    /^(\d{4})-(\d{1,2})-(\d{1,2})/
-  );
-
-  if (isoMatch) {
-    const year = Number(isoMatch[1]);
-    const month = Number(isoMatch[2]) - 1;
-    const day = Number(isoMatch[3]);
-
-    const d = new Date(year, month, day);
-    d.setHours(0, 0, 0, 0);
-
-    return isNaN(d) ? null : d;
-  }
-
-  // -------------------------
-  // M/D/YYYY
-  // -------------------------
-  const slashMatch = value.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
-  );
-
-  if (slashMatch) {
-    const month = Number(slashMatch[1]) - 1;
-    const day = Number(slashMatch[2]);
-    const year = Number(slashMatch[3]);
-
-    const d = new Date(year, month, day);
-    d.setHours(0, 0, 0, 0);
-
-    return isNaN(d) ? null : d;
-  }
-
-  return null;
-}
-
-// -------------------------
-// SAFE DURATION PARSER (handles mm:ss or decimal minutes)
-// -------------------------
-export function parseDurationMinutes(val) {
-  if (val == null) return 0;
-
-  if (typeof val === "number") return val;
-
-  const s = String(val).trim();
-
-  // mm:ss or hh:mm:ss
-  if (s.includes(":")) {
-    const parts = s.split(":").map((p) => Number(p.trim()));
-
-    if (parts.length === 2) {
-      const [m, sec] = parts;
-      return m + sec / 60;
-    }
-
-    if (parts.length === 3) {
-      const [h, m, sec] = parts.map(Number);
-      return h * 60 + m + sec / 60;
-    }
-
-    return 0;
-  }
-
-  const n = Number(s);
-  return isFinite(n) ? n : 0;
-}
-
-
-
-// -------------------------
-// WEEK HELPERS (Mon -> Sun)
-// -------------------------
-export function startOfWeekSunday(date) {
-  const d = new Date(date);
-  const day = d.getDay(); // 0 = Sunday, 1 = Monday, ...
-  d.setDate(d.getDate() - day); // go back to Sunday
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-export function addDays(dateObj, days) {
-  const d = new Date(dateObj);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-export function weeksBetween(startWeek, endWeek) {
-  const ms = endWeek.getTime() - startWeek.getTime();
-  return Math.round(ms / (7 * 24 * 60 * 60 * 1000));
-}
-
 export function formatWeekRange(startDateObj) {
-  const end = addDays(startDateObj, 6);
+  const end = new Date(startDateObj);
+  end.setDate(end.getDate() + 6);
   const sameMonth = startDateObj.getMonth() === end.getMonth();
   const sameYear = startDateObj.getFullYear() === end.getFullYear();
 
@@ -157,14 +44,6 @@ export function formatHoursMinsFromMinutes(totalMinutes) {
   const m = mins % 60;
   return `${h}h ${m}m`;
 }
-
-
-export function chunkArray(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 
 
 export function getEasyZone(pct) {
@@ -197,32 +76,4 @@ export function daysAgo(dateObj) {
     if (!dateObj) return null;
     const diff = new Date() - dateObj;
     return Math.floor(diff / (1000 * 60 * 60 * 24));
-}
-
-
-
-export function startOfWeekMonday(date) {
-  const d = new Date(date);
-
-  // JS:
-  // Sunday = 0
-  // Monday = 1
-  // Tuesday = 2
-  // ...
-  // Saturday = 6
-
-  const day = d.getDay();
-
-  // Monday should subtract 0 days.
-  // Tuesday subtracts 1.
-  // ...
-  // Sunday subtracts 6.
-  const diff = (day + 6) % 7;
-
-  d.setDate(d.getDate() - diff);
-
-  // Normalize so time-of-day doesn't interfere with comparisons
-  d.setHours(0, 0, 0, 0);
-
-  return d;
 }

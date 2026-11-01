@@ -1,5 +1,13 @@
 import React, { useMemo } from "react";
 
+// jar interior bounds (where balls can be placed)
+const inner = {
+  x: 40,
+  y: 45,
+  w: 160,
+  h: 150,
+};
+
 export default function EasyJar({
   runs = [],
   title = "Easy Jar",
@@ -10,20 +18,11 @@ export default function EasyJar({
   const W = 240;
   const H = 220;
 
-  // jar interior bounds (where balls can be placed)
-    const inner = {
-        x: 40,
-        y: 45,
-        w: 160,
-        h: 150,
-    };
-
-  // compute max duration for brightness scaling
-  const durations = runs.map((r) => r.duration || 0).filter(Boolean);
-  const maxDur = Math.max(30, ...durations); // at least 30 so it doesn't blow out
 
   // place circles with a simple deterministic packing attempt
   const circles = useMemo(() => {
+    // max duration for brightness scaling; at least 30 so it doesn't blow out
+    const maxDur = runs.reduce((m, r) => Math.max(m, r.duration || 0), 30);
     const placed = [];
 
     if (!runs.length) return placed;
@@ -116,7 +115,7 @@ export default function EasyJar({
         date: p.data.date,
         };
     });
-  }, [runs, maxDur]);
+  }, [runs]);
 
   
 
@@ -127,8 +126,10 @@ export default function EasyJar({
         <div className="jar-sub">{subtitle}</div>
       </div>
 
-      <div className="jar-wrap" aria-label="Easy Run Jar">
+      <div className="jar-wrap">
         <svg
+          role="img"
+          aria-label={`${title}: ${runs.length} of 25 easy runs`}
           width={W}
           height={H}
           viewBox={`0 0 ${W} ${H}`}

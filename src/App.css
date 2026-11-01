@@ -2,7 +2,7 @@
 ══════════════════════════════════════════════════════════════════
 🏃 TRAINING APP — GLOBAL STYLESHEET
 ══════════════════════════════════════════════════════════════════
-This stylesheet defines the visual system for the training tracker Veelo.
+This stylesheet defines the visual system for the training tracker Velo.
 The structure is organized by feature areas rather than page files.
 
 Design Philosophy
@@ -727,17 +727,7 @@ textarea {
    🚴 STRAVA INTEGRATION
    Connect + import activities
    ═══════════════════════════════════════════════ */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 16px;
-}
-
+/* .modal-overlay is defined once, near the top of this file. */
 .strava-modal {
   width: 100%;
   max-width: 420px;
@@ -3178,4 +3168,250 @@ END OF FILE
   margin-top: 24px;
   padding: 24px;
   border-radius: 16px;
+}
+
+
+/* ---- Audit repairs: new elements, keyboard focus, reduced motion ---- */
+
+/* Elements that became real buttons keep their previous look. */
+button.notes-header,
+.card-toggle,
+.section-title-btn,
+button.pr-cell,
+button.profile-avatar-lg,
+button.import-btn {
+  font: inherit;
+  color: inherit;
+}
+
+button.notes-header {
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.card-toggle,
+.section-title-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font-weight: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+button.pr-cell {
+  width: 100%;
+  cursor: pointer;
+}
+
+button.profile-avatar-lg {
+  padding: 0;
+  cursor: pointer;
+}
+
+button.import-btn {
+  border: 0;
+  font-size: 14px;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.import-btn:disabled,
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.field-error {
+  color: #ff6b6b;
+  font-size: 13px;
+  margin: 4px 0 8px;
+}
+
+.split-totals {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 6px 0;
+}
+
+.needs-review-badge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #ffb703;
+  border: 1px solid rgba(255, 190, 0, 0.4);
+  background: rgba(255, 190, 0, 0.12);
+}
+
+.storage-banner {
+  margin: 12px 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.storage-banner-error {
+  background: rgba(255, 80, 80, 0.12);
+  border: 1px solid rgba(255, 80, 80, 0.4);
+}
+
+.storage-banner-warn {
+  background: rgba(255, 190, 0, 0.12);
+  border: 1px solid rgba(255, 190, 0, 0.35);
+}
+
+.storage-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.backup-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0 8px;
+}
+
+.planned-badge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #8ecaff;
+  border: 1px solid rgba(120, 200, 255, 0.4);
+  background: rgba(120, 200, 255, 0.12);
+}
+
+/* Plans are shown, but visibly not "done". */
+.activity-card.activity-planned {
+  opacity: 0.75;
+  border-style: dashed;
+}
+
+.photo-error {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  font-size: 11px;
+  color: #ffb703;
+  text-align: center;
+}
+
+.export-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.export-format {
+  min-height: 32px;
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.undo-bar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+
+.undo-bar span {
+  flex: 1;
+}
+
+.backup-modal {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.backup-section-title {
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+
+.notes-import-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.pr-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.chart-data {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chart-data summary {
+  cursor: pointer;
+}
+
+.chart-data table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+.chart-data caption {
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.chart-data th,
+.chart-data td {
+  text-align: left;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--border);
+  font-weight: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

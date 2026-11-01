@@ -26,4 +26,9 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // The Strava server and the tests run in Node, not the browser.
+    files: ['server/**/*.js', 'tests/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])

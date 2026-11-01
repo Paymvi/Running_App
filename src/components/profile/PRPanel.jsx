@@ -1,96 +1,57 @@
 import React from "react";
 import { formatDate, formatTime, daysAgo } from "../../utils/profileHelpers";
+import { PR_EVENTS } from "../../utils/prDetection";
+import { speedLabel, toDisplay } from "../../utils/units";
 
+// Whole-activity records: the fastest completed run that is at least the event
+// distance and no more than 3% longer, timed by its full recorded duration.
 export default function PRPanel({
   prs,
   selectedPR,
   setSelectedPR,
+  unit = "mi",
 }) {
-
-  function getMph(time, distanceMiles) {
-    if (!time || !distanceMiles) return null;
-
-    // assumes `time` is stored in minutes
-    const hours = time / 60;
-    if (hours <= 0) return null;
-
-    return (distanceMiles / hours).toFixed(1);
-  }
-
+  // Average speed over the whole activity (its own distance, not the event distance).
+  const speed = (pr) => {
+    if (!pr.time || !Number.isFinite(pr.time)) return null;
+    return `${(toDisplay(pr.miles, unit) / (pr.time / 60)).toFixed(1)} ${speedLabel(unit)}`;
+  };
 
   return (
     <div className="profile-panel pr-panel">
     <div className="panel-title">🎖️ PRs</div>
+    <div className="pr-note">Whole-activity times</div>
     {selectedPR && selectedPR.date && (
-      <div className="pr-selected-date">
+      <div className="pr-selected-date" aria-live="polite">
         {selectedPR.label} PR: {formatDate(selectedPR.date)}
-        {selectedPR.time && selectedPR.distanceMiles && (
-          <> • {getMph(selectedPR.time, selectedPR.distanceMiles)} mph</>
-        )}
+        {selectedPR.speed && <> • {selectedPR.speed}</>}
       </div>
     )}
 
     <div className="pr-table">
-        <div className="pr-row">
-        <div className="pr-cell label">Mile</div>
-            <div
-            className="pr-cell value clickable"
-            onClick={() => {
-              if (selectedPR?.label === "Mile") {
-                setSelectedPR(null);
-              } else {
-                setSelectedPR({
-                  label: "Mile",
-                  date: prs.mile.date,
-                  time: prs.mile.time,
-                  distanceMiles: 1,
-                });
+      {PR_EVENTS.map((event) => {
+        const pr = prs[event.key];
+        return (
+          <div className="pr-row" key={event.key}>
+            <div className="pr-cell label">{event.label}</div>
+            <button
+              type="button"
+              className="pr-cell value clickable"
+              aria-pressed={selectedPR?.label === event.label}
+              aria-label={`${event.label} whole-activity PR: ${Number.isFinite(pr.time) ? formatTime(pr.time) : "none yet"}`}
+              onClick={() =>
+                setSelectedPR(
+                  selectedPR?.label === event.label
+                    ? null
+                    : { label: event.label, date: pr.date, speed: speed(pr) }
+                )
               }
-            }}
             >
-            {formatTime(prs.mile.time)}
-            </div>
-        </div>
-        <div className="pr-row">
-        <div className="pr-cell label">5K</div>
-            <div
-            className="pr-cell value clickable"
-            onClick={() => {
-              if (selectedPR?.label === "5K") {
-                setSelectedPR(null);
-              } else {
-                setSelectedPR({
-                  label: "5K",
-                  date: prs.fiveK.date,
-                  time: prs.fiveK.time,
-                  distanceMiles: 3.10686,
-                });
-              }
-            }}
-            >
-            {formatTime(prs.fiveK.time)}
-            </div>
-        </div>
-        <div className="pr-row">
-        <div className="pr-cell label">10K</div>
-            <div
-            className="pr-cell value clickable"
-                onClick={() => {
-                  if (selectedPR?.label === "10K") {
-                    setSelectedPR(null);
-                  } else {
-                    setSelectedPR({
-                      label: "10K",
-                      date: prs.tenK.date,
-                      time: prs.tenK.time,
-                      distanceMiles: 6.21371,
-                    });
-                  }
-            }}
-            >
-            {formatTime(prs.tenK.time)}
-            </div>
-        </div>
+              {formatTime(pr.time)}
+            </button>
+          </div>
+        );
+      })}
     </div>
 
     {prs.latestPRDate && (
@@ -102,5 +63,5 @@ export default function PRPanel({
     </div>
 
   );
-            
+
 }

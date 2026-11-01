@@ -1,11 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { prefersReducedMotion, vibrate } from "../../utils/feedback";
+import { distLabel, toDisplay } from "../../utils/units";
+import { formatHoursMinsFromMinutes } from "../../utils/profileHelpers";
 
+// `weeks[].miles` is in miles; the chart plots and labels the display unit.
 export default function WeeklyMileage({
-  weeks = [],
+  weeks: weeksInMiles = [],
   selectedIndex = 0,
   onSelect,
   scaleMode = "dynamic",
+  unit = "mi",
 }) {
+  const weeks = useMemo(
+    () => weeksInMiles.map((w) => ({ ...w, miles: Number(toDisplay(w.miles, unit).toFixed(1)) })),
+    [weeksInMiles, unit]
+  );
+  const dl = distLabel(unit);
   const scrollerRef = useRef(null);
   const [pulseIndex, setPulseIndex] = useState(null);
   const [visibleMax, setVisibleMax] = useState(4); // y-axis max for visible window
@@ -31,7 +41,7 @@ export default function WeeklyMileage({
 
     // spacing per week (controls how wide the chart is)
     const slot = 20; // px per week (tweak to taste)
-    const visibleWeeks = 4; // about 3 months
+    const contextWeeks = 2; // weeks kept visible to the right of the selection when scrolling
     // const W = Math.max(520, pad.l + pad.r + (weeks.length - 1) * slot);
     const W = pad.l + pad.r + weeks.length * slot;
 
@@ -78,11 +88,8 @@ export default function WeeklyMileage({
     const el = scrollerRef.current;
     if (!el || !weeks.length) return;
 
-    // fixed mode = always use highest week across the full chart
-    if (scaleMode === "max") {
-      setVisibleMax(chartMax);
-      return;
-    }
+    // fixed mode uses chartMax directly (see activeMax)
+    if (scaleMode === "max") return;
 
     const computeVisible = () => {
       const scrollLeft = el.scrollLeft;
@@ -112,13 +119,15 @@ export default function WeeklyMileage({
     computeVisible();
 
     el.addEventListener("scroll", computeVisible, { passive: true });
-    window.addEventListener("resize", computeVisible);
+    // Container size can change without a window resize (layout, rotation).
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(computeVisible) : null;
+    observer?.observe(el);
 
     return () => {
       el.removeEventListener("scroll", computeVisible);
-      window.removeEventListener("resize", computeVisible);
+      observer?.disconnect();
     };
-  }, [weeks, pad.l, slot, scaleMode, chartMax]);
+  }, [weeks, pad.l, slot, scaleMode]);
 
     useEffect(() => {
     const el = scrollerRef.current;
@@ -126,16 +135,41 @@ export default function WeeklyMileage({
 
         if (selectedIndex == null) return;
 
-        const newestX = pad.l + selectedIndex * slot;
+        const x = pad.l + selectedIndex * slot;
+        const left = el.scrollLeft;
+        const right = left + el.clientWidth;
 
-        // show the last ~3 months by default
-        const scrollTarget = newestX - visibleWeeks * slot + slot * 2;
+        // Only scroll when the selected week is off screen (or at the edge).
+        if (x - slot >= left && x + slot * contextWeeks <= right) return;
 
         el.scrollTo({
-            left: Math.max(0, scrollTarget),
-            behavior: "smooth",
+            left: Math.max(0, x + slot * contextWeeks - el.clientWidth),
+            behavior: prefersReducedMotion() ? "auto" : "smooth",
         });
-    }, [selectedIndex, pad.l, slot, visibleWeeks]);
+    }, [selectedIndex, pad.l, slot, contextWeeks]);
+
+  const select = (i) => {
+    onSelect?.(i);
+    vibrate(12); // short subtle tap
+    setPulseIndex(i);
+    setTimeout(() => setPulseIndex(null), 220);
+  };
+
+  // Arrow keys move the selected week; the page header shows its totals.
+  const onKeyDown = (e) => {
+    if (!weeks.length) return;
+    const current = selectedIndex ?? weeks.length - 1;
+    const next =
+      e.key === "ArrowLeft" ? current - 1 :
+      e.key === "ArrowRight" ? current + 1 :
+      e.key === "Home" ? 0 :
+      e.key === "End" ? weeks.length - 1 : null;
+    if (next === null) return;
+    e.preventDefault();
+    onSelect?.(Math.max(0, Math.min(weeks.length - 1, next)));
+  };
+
+  const selectedWeek = weeks[selectedIndex];
 
   return (
     <div className="weekly-card">
@@ -156,7 +190,7 @@ export default function WeeklyMileage({
             >
             {/* top label */}
             <text x="8" y={pad.t} className="weekly-axis">
-              {Math.round(activeMax)} mi
+              {Math.round(activeMax)} {dl}
             </text>
 
             {/* bottom label */}
@@ -166,22 +200,30 @@ export default function WeeklyMileage({
                 className="weekly-axis"
                 dominantBaseline="middle"
             >
-            0 mi
+            0 {dl}
             </text>
 
             </svg>
         </div>
 
         {/* RIGHT: scrolling chart */}
-        <div className="weekly-chart-scroll" ref={scrollerRef}>
+        <div
+            className="weekly-chart-scroll"
+            ref={scrollerRef}
+            tabIndex={0}
+            role="group"
+            aria-label={`Weekly mileage chart, ${weeks.length} weeks. Use left and right arrow keys to choose a week.${
+              selectedWeek ? ` Selected: ${selectedWeek.label}, ${selectedWeek.miles} ${dl}.` : ""
+            }`}
+            onKeyDown={onKeyDown}
+        >
             <svg
             width={W}
             height={H}
             viewBox={`0 0 ${W} ${H}`}
             className="weekly-svg"
             shapeRendering="geometricPrecision"
-            role="img"
-            aria-label="Weekly mileage chart"
+            aria-hidden="true"
             >
             <defs>
                 <linearGradient id="weeklyFill" x1="0" y1="0" x2="0" y2="1">
@@ -233,21 +275,10 @@ export default function WeeklyMileage({
                     className={`weekly-dot clickable ${
                       pulseIndex === p.i ? "weekly-dot-pulse" : ""
                     }`}
-                    onClick={() => {
-                      onSelect?.(p.i);
-
-                      // mobile haptic feedback
-                      if (navigator.vibrate) {
-                        navigator.vibrate(12); // short subtle tap
-                      }
-
-                      setPulseIndex(p.i);
-
-                      setTimeout(() => {
-                        setPulseIndex(null);
-                      }, 220);
-                    }}
+                    onClick={() => select(p.i)}
                 >
+                    {/* larger invisible touch target */}
+                    <circle cx={p.x} cy={p.y} r={slot / 2} fill="transparent" />
                     <circle
                     cx={p.x}
                     cy={p.y}
@@ -294,6 +325,30 @@ export default function WeeklyMileage({
             </svg>
         </div>
     </div>
+
+    {/* Text alternative to the chart: every week's numbers, newest first. */}
+    <details className="chart-data">
+        <summary>Show weekly data as a table</summary>
+        <table>
+            <caption>Run distance per week (Monday–Sunday), completed runs only</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Week</th>
+                    <th scope="col">Distance ({dl})</th>
+                    <th scope="col">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {[...weeks].reverse().map((w) => (
+                    <tr key={w.label}>
+                        <th scope="row">{w.label}</th>
+                        <td>{w.miles}</td>
+                        <td>{formatHoursMinsFromMinutes(w.minutes || 0)}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </details>
         
     </div>
   );

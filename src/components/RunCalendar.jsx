@@ -1,8 +1,11 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { distLabel, toDisplay, useUnit } from "../utils/units";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { FiSettings } from "react-icons/fi";
 import CalendarSettingsModal from "./CalendarSettingsModal"; // adjust path
+import { parseLocalYMD, toYMD } from "../utils/dateUtils";
+import { readJSON } from "../utils/storage";
 
 
 /*
@@ -49,32 +52,6 @@ function getWorkoutCalendarLabel(activity) {
   return "Workout";
 }
 
-// Fix for YYYY-MM-DD timezone shift bug
-function parseLocalYMD(input) {
-  if (!input) return null;
-  if (input instanceof Date) return input;
-
-  // Remove time if present
-  const clean = String(input).split("T")[0];
-
-  // Case 1: YYYY-MM-DD
-  if (clean.includes("-")) {
-    const [y, m, d] = clean.split("-").map(Number);
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
-  }
-
-  // Case 2: M/D/YYYY or MM/DD/YYYY
-  if (clean.includes("/")) {
-    const [m, d, y] = clean.split("/").map(Number);
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
-  }
-  return null;
-}
-
-const pad2 = (n) => String(n).padStart(2, "0");
-const toYMD = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 
 const COLORS = {
@@ -92,6 +69,7 @@ function getActivityValue(a, bikeScaleMode = "time") {
   function normalizeType(a) {
     const raw = (a.type || a.sport || a.activityType || "").toLowerCase();
 
+    if (raw === "hike") return "hike"; // no calendar layer for hikes; never counted as a run
     if (raw.includes("run")) return "run";
     if (raw.includes("bike") || raw.includes("cycle")) return "bike";
     if (raw.includes("swim")) return "swim";
@@ -165,40 +143,26 @@ function buildHeatBackground(parts) {
 
 
 export default function RunCalendar({ activities }) {
+  const unit = useUnit();
+
+  // persisted settings, read once
+  const [saved] = useState(() => readJSON("calendar_settings_v1", {}) || {});
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [runScaleMode, setRunScaleMode] = useState("auto"); 
+  const [runScaleMode, setRunScaleMode] = useState(saved.runScaleMode || "auto");
   // "auto" = scale to your highest run
   // "custom" = scale to user input
 
-  const [runCustomMax, setRunCustomMax] = useState(6.2);
+  const [runCustomMax, setRunCustomMax] = useState(Number(saved.runCustomMax || 6.2));
 
   // toggles (persisted)
-  const [triathleteMode, setTriathleteMode] = useState(false);
-  const [hybridMode, setHybridMode] = useState(false);
+  const [triathleteMode, setTriathleteMode] = useState(!!saved.triathleteMode);
+  const [hybridMode, setHybridMode] = useState(!!saved.hybridMode);
 
   // bike heatmap mode
   // "distance" = use miles
   // "time" = use minutes
-  const [bikeScaleMode, setBikeScaleMode] = useState("time");
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("calendar_settings_v1");
-      if (!raw) return;
-
-      const s = JSON.parse(raw);
-
-      setTriathleteMode(!!s.triathleteMode);
-      setHybridMode(!!s.hybridMode);
-
-      setRunScaleMode(s.runScaleMode || "auto");
-      setRunCustomMax(Number(s.runCustomMax || 6.2));
-
-      setBikeScaleMode(s.bikeScaleMode || "time");
-
-    } catch {}
-  }, []);
+  const [bikeScaleMode, setBikeScaleMode] = useState(saved.bikeScaleMode || "time");
 
 
 
@@ -215,7 +179,9 @@ export default function RunCalendar({ activities }) {
           bikeScaleMode
         })
       );
-    } catch {}
+    } catch {
+      // settings are a convenience; keep working with in-memory values
+    }
   }, [triathleteMode, hybridMode, runScaleMode, runCustomMax, bikeScaleMode]);
 
 
@@ -238,9 +204,8 @@ export default function RunCalendar({ activities }) {
 
     for (const a of activities || []) {
       const d = parseLocalYMD(a.date);
-      if (!d || isNaN(d)) continue;
+      if (!d) continue;
       const day = toYMD(d);
-      console.log("activity date key:", a.date, "->", day);
 
       const { type, value } = getActivityValue(a, bikeScaleMode);
       if (!enabledTypes.has(type)) continue;
@@ -321,9 +286,6 @@ export default function RunCalendar({ activities }) {
     const key = toYMD(date);
     
     const t = totalsByDay[key];
-    
-
-    console.log("tile date:", key, "calendar match:", t);
 
     if (!t) return null;
 
@@ -372,7 +334,8 @@ export default function RunCalendar({ activities }) {
     } else if (top.type === "bike" && bikeScaleMode === "time") {
       tileLabel = `${Math.round(top.value)} min`;
     } else {
-      tileLabel = `${top.value.toFixed(top.value >= 10 ? 0 : 1)} mi`;
+      const shown = toDisplay(top.value, unit);
+      tileLabel = `${shown.toFixed(shown >= 10 ? 0 : 1)} ${distLabel(unit)}`;
     }
 
     return (
@@ -392,13 +355,6 @@ export default function RunCalendar({ activities }) {
     );
   };
 
-  console.log("Calendar activities:", activities);
-  for (const a of activities || []) {
-    const { type, value } = getActivityValue(a, bikeScaleMode);
-
-    console.log("Calendar check:", a.type, a.miles, a.duration, value);
-    
-  }
 
   
 
@@ -409,6 +365,7 @@ export default function RunCalendar({ activities }) {
           <h2 className="run-calendar-title">Training Calendar</h2>
 
           <button
+            type="button"
             className="icon-btn"
             onClick={() => setSettingsOpen(true)}
             aria-label="Calendar settings"
