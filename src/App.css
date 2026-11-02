@@ -446,7 +446,8 @@ textarea {
 /* Button row */
 .controls-row {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap; /* the toolbar is wider than small phones; unwrapped it widened the page */
+  gap: 0 8px; /* buttons already carry margin-bottom between rows */
   align-items: center;
 }
 
@@ -3324,6 +3325,7 @@ button.import-btn {
 
 .export-format {
   min-height: 32px;
+  margin-bottom: 10px; /* matches .control-btn so the pair lines up */
   border-radius: 8px;
   background: var(--card);
   color: var(--text);
@@ -3351,8 +3353,14 @@ button.import-btn {
   flex: 1;
 }
 
-.backup-modal {
+/* Dialogs never outgrow the visible screen; their content scrolls instead.
+   dvh excludes mobile browser toolbars; vh is the fallback. (.backup-modal is also a .strava-modal.) */
+.strava-modal,
+.modal-card,
+.edit-profile-modal,
+.activity-filter-modal {
   max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
 }
 

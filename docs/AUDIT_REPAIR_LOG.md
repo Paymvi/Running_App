@@ -83,7 +83,7 @@ All of these were run on November 1, 2026, after the last code change.
 | `npm run lint` | 39 errors, 3 warnings | 0 / 0 | **0 errors, 0 warnings** |
 | `npm test` | No tests | 61 pass | **96 tests in 9 files: 96 pass, 0 fail** |
 | `npm audit` | 27 entries (1 critical, 15 high) | 7 (1 high: `xlsx`) | **6 moderate, 0 high, 0 critical.** All six are ESLint's `minimatch` chain (development tooling, not shipped). Saved in [audit-dependency-results-after-repair.json](../audit-dependency-results-after-repair.json). |
-| Browser smoke (`tests/browser-smoke.js`) | Not performed | 31 / 31 | **52 of 52 checks pass** on three runs of the final code, with no uncaught exceptions or console errors. Headless Chrome, `vite preview` of the production build, synthetic data, throwaway profile. |
+| Browser smoke (`tests/browser-smoke.js`) | Not performed | 31 / 31 | **54 of 54 checks pass** on two runs after the mobile layout fix (see [Mobile layout regression](#mobile-layout-regression-after-pass-2)), with no uncaught exceptions or console errors. Headless Chrome, `vite preview` of the production build, synthetic data, throwaway profile. |
 | `npm ci` (clean install) | Not run | Not run | **Passed** (240 packages added). `package-lock.json` hash unchanged. Every check above was rerun on this install. |
 
 What the browser smoke run covers:
@@ -111,7 +111,7 @@ What the browser smoke run covers:
   - the Strava dialog works with no server running.
 - **Profile:** PRs are labelled "Whole-activity", there's no flag, and the title and icon are Velo.
 - **Weekly chart:** the data table has rows and a caption.
-- **Width:** no horizontal scroll at phone width.
+- **Phone width:** at 320 px with mobile emulation, Home, Activity and Profile are no wider than the screen, and the "+" button and tab bar are on screen and clickable (not covered).
 - **Bike-only history** renders.
 - **Reset:**
   - stays disabled until RESET is typed;
@@ -140,6 +140,62 @@ What the browser smoke run covers:
 | **F24** Strava hardcoded to localhost | `VITE_API_URL` setting, a message when the server can't be reached, hosting steps documented | An always-on HTTPS host for `server/` on the **same site** as the frontend (needed for the `SameSite=Lax` cookie). `FRONTEND_URL` and `STRAVA_REDIRECT_URI` set to production URLs, the callback domain registered in Strava's app settings, and the frontend rebuilt with the production `VITE_API_URL`. | Hosting (external, not approved) |
 | **F28** Server operational controls | Input validation, timeouts, status mapping, logs without sensitive data, `/health`, graceful shutdown, config check at start | A **persistent session store** (sessions are in memory, so a restart signs you out and only one process works) and **rate limiting** on `/auth` and `/api`. Both are needed before anyone other than you uses the server. | Choice of host (F24) |
 | **F50** Recovery, sync and deletion | Trash with undo, reset with backup first, backups that include photos, retention, cross-tab sync, stale-write refusal | Sync between phone and laptop, accounts and offline use: data stays in one browser, and backup files are the only way to move it. | Your undecided product choice |
+
+## Mobile layout regression (after pass 2)
+
+**Symptom you reported:** on a phone the "+" (Add activity) button was sometimes off screen, the tab bar sometimes missing, and the app no longer fit without zooming out.
+
+**Reference version:** `37a8a8b` (the commit before the repair commit `1e01d82`). It was built in a temporary worktree and measured side by side with the current build in headless Chrome with mobile emulation.
+
+**Cause 1: the Activity toolbar became wider than the phone.**
+- The repairs added a **Backup** button and an **Excel/CSV** dropdown to the Activity toolbar (`.controls-row`). That row is a flex row that never wrapped, so it grew to 443 px.
+- A phone browser handles content wider than the screen by widening the whole layout viewport to fit it (443 px instead of 320–430). Fixed elements are positioned against that viewport, which is now wider and proportionally taller than the screen. So the "+" button and tab bar landed off the right and bottom edges, and zooming out was the only way to reach them.
+- This happened only on Activity. Leaving it could look "sometimes" because the other pages fit.
+- **Measured before the fix:** Activity was 443 px wide at 320, 360, 390, 412 and 430 px. The "+" button was outside the screen at 320–412 px, and the tab bar was outside at every one of those widths. Home and Profile fit, as they did in `37a8a8b`.
+- **Fix:** `.controls-row` wraps (`flex-wrap: wrap`), with a 0 row gap because the buttons already have a bottom margin. On desktop the toolbar is still one row. The dropdown also got the buttons' bottom margin so it lines up with Export.
+
+**Cause 2: several dialogs could be taller than the screen.**
+- Calendar settings, Strava (which is taller since the repairs), coach help and Edit profile had no height cap. When the screen was too short, the centered dialog spilled past both edges. Its close (✕) button ended up above the top of the screen and Done/Got it below the bottom, and neither could be scrolled to.
+- This showed at 360×480, 740×360 (landscape), and for coach help even at 320–430×740.
+- **Fix:** these dialogs now use the same pattern Backup, Filters and Past jars already used: `max-height: 85dvh` (`85vh` as a fallback), with scrolling inside the dialog. `dvh` excludes the mobile browser toolbars. Backup and Filters are now in the same rule. `.backup-modal` was folded into it, since every Backup dialog is also a `.strava-modal`.
+
+**Checked and found not to be causes:**
+- viewport metadata, which is unchanged (`width=device-width, initial-scale=1.0`, with zoom not restricted);
+- `.tabbar` and `.floating-btn` rules, which are unchanged;
+- ancestor transforms;
+- the removed duplicate `.modal-overlay` rule, which was identical to the one kept;
+- dialog scroll lock and `inert`, which were cleared after every close in every case tested, with the scroll position kept;
+- the new chart data table, which fits when opened.
+
+**Changed files:**
+- `src/App.css`: `.controls-row`, `.export-format`, and the dialog height rule that replaces `.backup-modal`;
+- `src/components/CoachHelpModal.jsx`: the same height cap, since its styles are inline;
+- `tests/browser-smoke.js`: new section 6c. It replaces the old width check, which looked only at Profile in a 420 px desktop-mode window and so never saw Activity.
+
+**Verified (headless Chrome, mobile emulation, throwaway profile, synthetic data with 40 activities, long titles, long notes with an unbroken word and URL):**
+- **Sizes:** 320, 360, 390, 412 and 430 px wide at 740 px tall, plus 360×480 (short), 740×360 (landscape) and 1280×800 (desktop). For each size:
+  - Home, Activity and Profile, at the top and scrolled to the bottom;
+  - the page is no wider than the screen;
+  - the "+" button and tab bar are fully on screen and are the topmost element at their centre, so they're clickable. On Activity in `37a8a8b` the "+" button failed this check: part of the page covered it.
+- **Units:** repeated in kilometers at 320, 360, 360×480, 740×360 and 1280×800.
+- **Dialogs:** Add activity, edit activity, notes settings, calendar settings, Backup, Strava, Filters, coach help, Edit profile and Past jars, at 320×740, 360×480, 430×740, 740×360 and 1280×800, in miles and kilometers. Each one was opened from a scrolled page and then checked:
+  - the dialog is within the screen width;
+  - every button and field can be scrolled into view and clicked;
+  - Escape closes it;
+  - afterwards scrolling is unlocked, nothing is left `inert`, the scroll position is unchanged, and the "+" button and tab bar are back on screen.
+- **Other states:**
+  - the weekly chart's data table, opened, at 320×568 and 740×360;
+  - empty history on all three pages at 320×568.
+- **Comparison:** screenshots of `37a8a8b`, the build before the fix and the build after it, at matching sizes. Apart from the wrapped toolbar on narrow phones, the fixed build matches the earlier layout.
+- **New smoke check:** to confirm section 6c detects the bug, the wrap fix was temporarily removed. The Activity check then failed (443/320, "+" and tab bar off screen). The file was restored and its hash verified.
+
+**Not verified, so check on a real phone:**
+- iOS Safari and Android Chrome, with their collapsing toolbars and the home-indicator safe area;
+- pinch-zoom in and back out;
+- rotating while a dialog is open;
+- the on-screen keyboard covering fields in the Add activity dialog.
+
+Emulation sets the viewport size, but it doesn't reproduce real browser toolbars or the on-screen keyboard.
 
 ---
 
@@ -520,7 +576,7 @@ Runs once, on the first load of this version, in [src/utils/migrations.js](../sr
 - **Changed:**
   - 96 tests (35 new in `tests/approved.test.js`, plus updated ones).
   - **GitHub Actions** ([.github/workflows/ci.yml](../.github/workflows/ci.yml)) runs `npm ci`, lint, tests and build on every push and pull request.
-  - The browser smoke script now has 50 checks and is documented as a manual pre-release step.
+  - The browser smoke script now has 54 checks and is documented as a manual pre-release step.
 - **Left:** The workflow hasn't run on GitHub yet, since nothing was pushed.
 
 ### F49: Storage, state and rules duplicated · **Fixed**

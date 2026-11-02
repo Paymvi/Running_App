@@ -244,8 +244,6 @@ check("no hardcoded country flag", !(await evaluate(`!!document.querySelector('.
 check("page title is Velo with Velo icon", (await evaluate("document.title")) === "Velo" && (await evaluate(`document.querySelector('link[rel=icon]').getAttribute('href')`)) === "/velo.svg");
 await goto("/");
 check("weekly chart has a data-table alternative", await evaluate(`(() => { const d = document.querySelector('details.chart-data'); return !!d && /Show weekly data as a table/.test(d.textContent) && d.querySelectorAll('tbody tr').length > 0 && !!d.querySelector('caption'); })()`));
-await goto("/profile");
-check("no horizontal scroll at phone width", await evaluate(`document.documentElement.scrollWidth <= window.innerWidth`), String(await evaluate(`document.documentElement.scrollWidth + "/" + window.innerWidth`)));
 
 // ---------- 6b. Pending note edits survive leaving Home (F46) ----------
 // Each check leaves within the 400 ms save debounce, so only the leave-flush can persist the text.
@@ -271,6 +269,21 @@ const beforeNav = await storedNote();
 await send("Page.navigate", { url: APP + "/activity" });
 await sleep(1800);
 check("note typed then page navigation: final text saved on pagehide", shownNav === "start then tab away + reload" && beforeNav === "start then tab away" && (await storedNote()) === shownNav, JSON.stringify({ shownNav, beforeNav, after: await storedNote() }));
+
+// ---------- 6c. Phone width: nothing widens the page; "+" and tab bar stay on screen ----------
+// On a phone, content wider than the screen widens the layout viewport and pushes fixed elements off it.
+await send("Emulation.setDeviceMetricsOverride", { width: 320, height: 568, deviceScaleFactor: 2, mobile: true });
+for (const path of ["/", "/activity", "/profile"]) {
+  await goto(path);
+  const fit = await evaluate(`(() => {
+    const vw = document.documentElement.clientWidth;
+    const usable = (sel) => { const e = document.querySelector(sel), b = e.getBoundingClientRect();
+      return b.left >= 0 && b.right <= vw && b.bottom <= innerHeight && e.contains(document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)); };
+    return { scrollW: document.documentElement.scrollWidth, vw, fab: usable(".floating-btn"), tab: usable(".tabbar") };
+  })()`);
+  check(`320px ${path}: page fits, "+" and tab bar on screen`, fit.scrollW === fit.vw && fit.fab && fit.tab, JSON.stringify(fit));
+}
+await send("Emulation.clearDeviceMetricsOverride");
 
 // ---------- 7. Bike-only history (F01) ----------
 await evaluate(`localStorage.setItem("activities", JSON.stringify([{ id: "x", type: "bike", intensity: "easy", date: "2026-10-20", miles: 10, duration: 40 }]))`);

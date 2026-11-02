@@ -235,7 +235,8 @@ It covers:
 - dialog keyboard behaviour and inert background;
 - saving, editing, trash and undo;
 - units, the chart data table, reset and corrupt storage;
-- note edits typed just before leaving Home, which must still be saved.
+- note edits typed just before leaving Home, which must still be saved;
+- at a 320 px phone width, every page fits the screen and the "+" button and tab bar stay on screen.
 
 Stop the preview server afterwards. On Windows a running preview locks files in `node_modules` and makes `npm ci` fail.
 

@@ -28,6 +28,8 @@ export default function CoachHelpModal({ isOpen, onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "min(720px, 100%)",
+          maxHeight: "85dvh",
+          overflowY: "auto",
           borderRadius: 14,
           background: "#12141b",
           border: "1px solid rgba(255,255,255,0.10)",
