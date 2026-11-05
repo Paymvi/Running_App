@@ -3,7 +3,8 @@
 // Distances are stored in miles; see units.js for display conversion.
 
 import { normalizeYMD, parseLocalYMD, todayYMD } from "./dateUtils.js";
-import { fromDisplay, toDisplay } from "./units.js";
+import { formatTime } from "./profileHelpers.js";
+import { distLabel, fromDisplay, speedLabel, toDisplay } from "./units.js";
 
 export const TYPES = ["run", "bike", "swim", "hike", "workout", "strength"];
 // "unknown" = effort not recorded (e.g. Strava imports). It is neither easy nor hard.
@@ -14,6 +15,7 @@ export const JAR_SIZE = 25;
 
 const round = (n, dp) => Math.round(n * 10 ** dp) / 10 ** dp;
 const isBlank = (v) => v == null || String(v).trim() === "";
+const finiteOrNull = (n) => (Number.isFinite(n) ? n : null); // a 400-digit string parses to Infinity
 
 // Distance-like value (miles, mph). Returns a number >= 0, or null when blank/invalid.
 export function parseDistance(value) {
@@ -21,7 +23,7 @@ export function parseDistance(value) {
   if (typeof value === "number") return Number.isFinite(value) && value >= 0 ? value : null;
   const s = String(value).trim();
   if (!/^(\d+(\.\d*)?|\.\d+)$/.test(s)) return null;
-  return Number(s);
+  return finiteOrNull(Number(s));
 }
 
 // Duration in minutes. Accepts decimal minutes ("45", "45.5"), "m:ss" and "h:mm:ss".
@@ -31,8 +33,8 @@ export function parseDuration(value) {
   if (typeof value === "number") return Number.isFinite(value) && value >= 0 ? value : null;
   const s = String(value).trim();
   let m;
-  if ((m = s.match(/^(\d+):([0-5]\d)$/))) return Number(m[1]) + Number(m[2]) / 60;
-  if ((m = s.match(/^(\d+):([0-5]\d):([0-5]\d)$/))) return Number(m[1]) * 60 + Number(m[2]) + Number(m[3]) / 60;
+  if ((m = s.match(/^(\d+):([0-5]\d)$/))) return finiteOrNull(Number(m[1]) + Number(m[2]) / 60);
+  if ((m = s.match(/^(\d+):([0-5]\d):([0-5]\d)$/))) return finiteOrNull(Number(m[1]) * 60 + Number(m[2]) + Number(m[3]) / 60);
   return parseDistance(s);
 }
 
@@ -98,7 +100,7 @@ export function readDurationInput(value, original = null) {
   const s = String(value).trim();
   if (!/^\d+(:\d\d){0,2}$/.test(s)) return { error: "Use digits only: 0145 for 01:45, 13045 for 1:30:45." };
   const digits = s.replaceAll(":", "");
-  if (digits.length < 4 || (digits.length > 5 && !(stored >= 600))) {
+  if (digits.length < 4 || digits.length > (stored >= 600 ? 8 : 5)) {
     return { error: "Enter 4 digits (MMSS) or 5 digits (HMMSS)." };
   }
   const hasHours = digits.length > 4;
@@ -124,6 +126,17 @@ export function activityPaceParts(a) {
 export function activityMph(a) {
   const p = activityPaceParts(a);
   return p ? p.miles / (p.minutes / 60) : null;
+}
+
+// Average speed and pace as display text in `unit`; null unless distance and time are both recorded.
+export function activityAverages(a, unit = "mi") {
+  const p = activityPaceParts(a);
+  if (!p) return null;
+  const distance = toDisplay(p.miles, unit);
+  return {
+    speed: `${(distance / (p.minutes / 60)).toFixed(1)} ${speedLabel(unit)}`,
+    pace: `${formatTime(p.minutes / distance)} /${distLabel(unit)}`,
+  };
 }
 
 // Total valid duration / the matching distance; activities without both are left out of both sides.
@@ -156,24 +169,38 @@ export const isCountableRun = (a) => isCountable(a) && activityType(a) === "run"
 const DATA_REVIEW = ["date", "miles", "duration", "splits", "status"];
 export const hasDataReview = (a) => Boolean(a?.needsReview?.some((f) => DATA_REVIEW.includes(f)));
 
-// Each split is "distance at mph": miles = sum(distance), minutes = sum(distance / mph * 60).
+// Each split is "distance at mph", in any one unit. One entry per input row, null when the row is
+// blank or invalid. `minutes` is that split alone; `elapsed` is the running total at its end,
+// rounded like the stored duration so the last row always matches the activity's time.
+export function splitRows(splits = []) {
+  let total = 0;
+  return (splits || []).map((s) => {
+    const mph = parseDistance(s?.mph);
+    const distance = parseDistance(s?.distance);
+    if (!(mph > 0) || !(distance > 0)) return null;
+    const minutes = (distance / mph) * 60;
+    total += minutes;
+    return { mph, distance, minutes, elapsed: round(total, 2) };
+  });
+}
+
+const isFilledSplit = (s) => !isBlank(s?.mph) || !isBlank(s?.distance);
+
+// miles = sum(distance), minutes = sum(distance / mph * 60).
 export function computeSplitTotals(splits = []) {
   let miles = 0;
   let minutes = 0;
   let count = 0;
   const invalidRows = [];
 
-  (splits || []).forEach((s, i) => {
-    if (isBlank(s?.mph) && isBlank(s?.distance)) return;
-    const mph = parseDistance(s?.mph);
-    const distance = parseDistance(s?.distance);
-    if (!(mph > 0) || !(distance > 0)) {
+  splitRows(splits).forEach((row, i) => {
+    if (row) {
+      miles += row.distance;
+      minutes += row.minutes;
+      count += 1;
+    } else if (isFilledSplit(splits[i])) {
       invalidRows.push(i);
-      return;
     }
-    miles += distance;
-    minutes += (distance / mph) * 60;
-    count += 1;
   });
 
   return { miles: round(miles, 3), minutes: round(minutes, 2), count, invalidRows };
@@ -239,16 +266,17 @@ export function validateActivityForm(form, { unit = "mi", original = null, today
   let duration = null;
   let splits = [];
 
-  if (form.mode === "splits") {
+  // A Strength session left on the splits tab with nothing typed simply has no splits.
+  const useSplits = form.mode === "splits" && (form.type !== "strength" || (form.splits || []).some(isFilledSplit));
+
+  if (useSplits) {
     const unchanged = originalForm && JSON.stringify(form.splits) === JSON.stringify(originalForm.splits);
     const stored = unchanged
       ? original.splits
-      : (form.splits || [])
-          .filter((s) => !isBlank(s.mph) || !isBlank(s.distance))
-          .map((s) => ({
-            mph: parseDistance(s.mph) === null ? s.mph : toMiles(Number(s.mph)),
-            distance: parseDistance(s.distance) === null ? s.distance : toMiles(Number(s.distance)),
-          }));
+      : (form.splits || []).map((s) => ({ // blank rows stay so errors name the row the user sees
+          mph: parseDistance(s.mph) === null ? s.mph : toMiles(Number(s.mph)),
+          distance: parseDistance(s.distance) === null ? s.distance : toMiles(Number(s.distance)),
+        }));
     const totals = computeSplitTotals(stored);
     if (totals.invalidRows.length) {
       errors.splits = `Split ${totals.invalidRows.map((i) => i + 1).join(", ")}: enter speed and distance greater than 0.`;
@@ -257,7 +285,7 @@ export function validateActivityForm(form, { unit = "mi", original = null, today
     } else {
       miles = totals.miles;
       duration = totals.minutes;
-      splits = stored.map((s) => ({ mph: Number(s.mph), distance: Number(s.distance) }));
+      splits = stored.filter(isFilledSplit).map((s) => ({ mph: Number(s.mph), distance: Number(s.distance) }));
     }
   } else {
     if (!isBlank(form.miles)) {
@@ -285,7 +313,7 @@ export function validateActivityForm(form, { unit = "mi", original = null, today
       ...form,
       date,
       status: form.status,
-      mode: form.mode === "splits" ? "splits" : "timeMiles",
+      mode: useSplits ? "splits" : "timeMiles",
       miles: miles ?? "",
       duration: duration === null ? "" : round(duration, 2),
       splits,

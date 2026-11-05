@@ -1,12 +1,12 @@
 import React, { useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { FiImage } from "react-icons/fi";
+import { FiImage, FiPlus, FiX } from "react-icons/fi";
 import useDialog from "../hooks/useDialog";
 import usePhoto, { photoErrorText } from "../hooks/usePhoto";
 import { todayYMD } from "../utils/dateUtils";
-import { activityToForm, validateActivityForm, computeSplitTotals, editMaskedDuration, formatDuration, maskDuration, parseDuration, readDurationInput } from "../utils/activityModel";
+import { activityAverages, activityToForm, validateActivityForm, computeSplitTotals, editMaskedDuration, formatDuration, maskDuration, parseDistance, parseDuration, readDurationInput, splitRows } from "../utils/activityModel";
 import { resizeImageFile } from "../utils/image";
-import { distLabel, speedLabel, useUnit } from "../utils/units";
+import { distLabel, fromDisplay, speedLabel, useUnit } from "../utils/units";
 
 
 // Schema
@@ -91,6 +91,19 @@ function FieldError({ id, message }) {
   );
 }
 
+function MetricSummary({ stats }) {
+  return (
+    <dl className="metric-summary" aria-live="polite">
+      {stats.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 // Rendered only while open (App mounts it), so the form starts fresh each time.
 // onSave(activity, { photo, expected }) resolves to { ok, error? }.
 export default function AddActivityModal({ isOpen, onClose, onSave, initialActivity, onDelete }) {
@@ -106,6 +119,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
   const [saving, setSaving] = useState(false);
   const [durationFocused, setDurationFocused] = useState(false);
   const formRef = useRef(null);
+  const addSplitRef = useRef(null);
   const stored = usePhoto(newPhoto === undefined ? initialActivity?.photoId : null);
   const preview = newPhoto === undefined ? stored.src || initialActivity?.photo || null : newPhoto;
 
@@ -141,6 +155,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
   };
 
   const handleSplitChange = (index, field, value) => {
+    setErrors((prev) => ({ ...prev, splits: undefined }));
     setForm((prev) => ({
       ...prev,
       splits: prev.splits.map((split, i) =>
@@ -163,10 +178,22 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
   };
 
   const addSplit = () => {
-    setForm((prev) => ({
-      ...prev,
-      splits: [...prev.splits, { ...EMPTY_SPLIT }],
-    }));
+    flushSync(() =>
+      setForm((prev) => ({
+        ...prev,
+        splits: [...prev.splits, { ...EMPTY_SPLIT }],
+      }))
+    );
+    formRef.current?.querySelector(".split-row:last-child input")?.focus();
+  };
+
+  const removeSplit = (index) => {
+    setErrors((prev) => ({ ...prev, splits: undefined }));
+    setForm((prev) => {
+      const splits = prev.splits.filter((_, i) => i !== index);
+      return { ...prev, splits: splits.length ? splits : [{ ...EMPTY_SPLIT }] };
+    });
+    addSplitRef.current?.focus(); // the pressed button is about to disappear
   };
 
   const handlePhoto = async (e) => {
@@ -211,15 +238,20 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     if (result && !result.ok && result.error) setSaveError(result.error);
   };
 
-  // Live totals: typed in the form's unit, shown in the same unit.
-  const splitTotals = form.mode === "splits"
-    ? computeSplitTotals(form.splits.map((s) => ({ mph: s.mph, distance: s.distance })))
-    : null;
+  // Live figures: typed in the form's unit, shown in the same unit.
+  const rows = splitRows(form.splits);
+  const splitTotals = computeSplitTotals(form.splits);
+  const averagesOf = (distance, minutes) =>
+    activityAverages({ miles: fromDisplay(distance ?? 0, formUnit), duration: minutes }, formUnit);
   const invalid = (name) => (errors[name] ? { "aria-invalid": "true", "aria-describedby": `err-${name}` } : {});
   const reviewFields = (initialActivity?.needsReview || []).filter((f) => f in (initialActivity || {}));
   const dl = distLabel(formUnit);
   const typedDuration = readDurationInput(form.duration, initialActivity);
   const distanceName = formUnit === "km" ? "Kilometers" : "Miles";
+  const sl = speedLabel(formUnit);
+  const typedAverages = averagesOf(parseDistance(form.miles), typedDuration.minutes);
+  const splitAverages = averagesOf(splitTotals.miles, splitTotals.minutes);
+  const savedSplitCount = initialActivity?.mode === "splits" ? splitRows(initialActivity.splits).filter(Boolean).length : 0;
 
   return (
     <div className="dialog-layer">
@@ -301,81 +333,153 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
 
       {form.mode === "timeMiles" && (
         <>
-          <input
-            name="miles"
-            placeholder={form.type === "strength" ? `${distanceName} (optional)` : distanceName}
-            aria-label={`Distance (${dl})`}
-            inputMode="decimal"
-            value={form.miles}
-            onChange={handleChange}
-            {...invalid("miles")}
-          />
-          <FieldError id="err-miles" message={errors.miles} />
+          <div className="entry-grid">
+            <label className="entry-field">
+              <span className="entry-label">Distance{form.type === "strength" && " (optional)"}</span>
+              <span className="entry-input">
+                <input
+                  name="miles"
+                  placeholder="0.0"
+                  aria-label={`Distance (${dl})`}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={form.miles}
+                  onChange={handleChange}
+                  {...invalid("miles")}
+                />
+                <span className="entry-unit">{dl}</span>
+              </span>
+            </label>
 
-          <input
-            name="duration"
-            placeholder="Duration (MM:SS)"
-            aria-label="Duration"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            autoComplete="off"
-            // form.duration holds digits; the colons are display only.
-            value={durationFocused || typedDuration.minutes == null ? maskDuration(form.duration) : formatDuration(typedDuration.minutes)}
-            onChange={handleDurationChange}
-            onFocus={(e) => {
-              const input = e.target;
-              const allSelected = input.value && input.selectionEnd - input.selectionStart === input.value.length;
-              setDurationFocused(true);
-              // A value swap here (99:59 back from 1:39:59) drops the select-all from tabbing in.
-              if (allSelected) requestAnimationFrame(() => input.select());
-            }}
-            onBlur={() => {
-              setDurationFocused(false);
-              setErrors((prev) => ({ ...prev, duration: typedDuration.error }));
-            }}
-            {...invalid("duration")}
-            aria-describedby={errors.duration ? "duration-hint err-duration" : "duration-hint"}
-          />
+            <label className="entry-field">
+              <span className="entry-label">Time (MM:SS or H:MM:SS)</span>
+              <span className="entry-input">
+                <input
+                  name="duration"
+                  placeholder="MM:SS"
+                  aria-label="Duration"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
+                  // form.duration holds digits; the colons are display only.
+                  value={durationFocused || typedDuration.minutes == null ? maskDuration(form.duration) : formatDuration(typedDuration.minutes)}
+                  onChange={handleDurationChange}
+                  onFocus={(e) => {
+                    const input = e.target;
+                    const allSelected = input.value && input.selectionEnd - input.selectionStart === input.value.length;
+                    setDurationFocused(true);
+                    // A value swap here (99:59 back from 1:39:59) drops the select-all from tabbing in.
+                    if (allSelected) requestAnimationFrame(() => input.select());
+                  }}
+                  onBlur={() => {
+                    setDurationFocused(false);
+                    setErrors((prev) => ({ ...prev, duration: typedDuration.error }));
+                  }}
+                  {...invalid("duration")}
+                  aria-describedby={errors.duration ? "duration-hint err-duration" : "duration-hint"}
+                />
+              </span>
+            </label>
+          </div>
+          <FieldError id="err-miles" message={errors.miles} />
+          <FieldError id="err-duration" message={errors.duration} />
           <div id="duration-hint" className="field-hint">
-            Numbers only: 2530 = 25:30, 13045 = 1:30:45
+            Type digits only: 2530 = 25:30, 11500 = 1:15:00
             {parseDuration(initialActivity?.duration) >= 600 && ". Over 10 hours: HHMMSS"}
           </div>
-          <FieldError id="err-duration" message={errors.duration} />
+
+          {(form.type !== "strength" || typedAverages) && (
+            <MetricSummary stats={[["Avg speed", typedAverages?.speed ?? "—"], ["Avg pace", typedAverages?.pace ?? "—"]]} />
+          )}
+          {savedSplitCount > 0 && (
+            <div className="field-hint">
+              Saving with {distanceName} + Time removes the {savedSplitCount} saved split{savedSplitCount > 1 && "s"}.
+            </div>
+          )}
         </>
       )}
 
         {form.mode === "splits" && (
           <>
-            {form.splits.map((split, i) => (
-              <div key={i}>
-                <input
-                  placeholder={speedLabel(formUnit).toUpperCase()}
-                  aria-label={`Split ${i + 1} speed (${speedLabel(formUnit)})`}
-                  inputMode="decimal"
-                  value={split.mph}
-                  onChange={(e) =>
-                    handleSplitChange(i, "mph", e.target.value)
-                  }
-                  {...(errors.splits && splitTotals?.invalidRows.includes(i) ? invalid("splits") : {})}
-                />
-                <input
-                  placeholder="Distance"
-                  aria-label={`Split ${i + 1} distance (${dl})`}
-                  inputMode="decimal"
-                  value={split.distance}
-                  onChange={(e) =>
-                    handleSplitChange(i, "distance", e.target.value)
-                  }
-                />
-              </div>
-            ))}
+            <div className="field-hint">
+              Enter each split's speed and distance. Total distance and time come from these. If the last split is
+              shorter, enter its real distance (like 0.5).
+            </div>
+
+            <ol className="split-list">
+              {form.splits.map((split, i) => {
+                const row = rows[i];
+                const flagged = errors.splits && splitTotals.invalidRows.includes(i) ? invalid("splits") : {};
+                return (
+                  <li key={i} className="split-row">
+                    <span className="split-number" aria-hidden="true">{i + 1}</span>
+
+                    <label className="entry-field">
+                      <span className="entry-label">Speed</span>
+                      <span className="entry-input">
+                        <input
+                          placeholder="0.0"
+                          aria-label={`Split ${i + 1} speed (${sl})`}
+                          inputMode="decimal"
+                          autoComplete="off"
+                          value={split.mph}
+                          onChange={(e) => handleSplitChange(i, "mph", e.target.value)}
+                          {...flagged}
+                        />
+                        <span className="entry-unit">{sl}</span>
+                      </span>
+                    </label>
+
+                    <label className="entry-field">
+                      <span className="entry-label">Distance</span>
+                      <span className="entry-input">
+                        <input
+                          placeholder="0.0"
+                          aria-label={`Split ${i + 1} distance (${dl})`}
+                          inputMode="decimal"
+                          autoComplete="off"
+                          value={split.distance}
+                          onChange={(e) => handleSplitChange(i, "distance", e.target.value)}
+                          {...flagged}
+                        />
+                        <span className="entry-unit">{dl}</span>
+                      </span>
+                    </label>
+
+                    <button
+                      type="button"
+                      className="split-remove"
+                      aria-label={`Remove split ${i + 1}`}
+                      onClick={() => removeSplit(i)}
+                    >
+                      <FiX aria-hidden="true" />
+                    </button>
+
+                    <div className="split-derived">
+                      <span>Split time <strong>{row ? formatDuration(row.minutes) : "—"}</strong></span>
+                      <span>Elapsed <strong>{row ? formatDuration(row.elapsed) : "—"}</strong></span>
+                      <span>Pace <strong>{(row && averagesOf(row.distance, row.minutes)?.pace) ?? "—"}</strong></span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
             <FieldError id="err-splits" message={errors.splits} />
-            {splitTotals && splitTotals.count > 0 && splitTotals.invalidRows.length === 0 && (
-              <div className="split-totals" aria-live="polite">
-                Total: {splitTotals.miles} {dl} · {formatDuration(splitTotals.minutes)}
-              </div>
+
+            <button type="button" className="split-add" ref={addSplitRef} onClick={addSplit}>
+              <FiPlus aria-hidden="true" /> Add Split
+            </button>
+
+            {splitTotals.count > 0 && (
+              <MetricSummary
+                stats={[
+                  ["Distance", `${splitTotals.miles} ${dl}`],
+                  ["Time", formatDuration(splitTotals.minutes)],
+                  ["Avg speed", splitAverages?.speed ?? "—"],
+                  ["Avg pace", splitAverages?.pace ?? "—"],
+                ]}
+              />
             )}
-            <button type="button" onClick={addSplit}>+ Add Split</button>
           </>
         )}
 

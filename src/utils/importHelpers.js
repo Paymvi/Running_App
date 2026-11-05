@@ -87,10 +87,10 @@ export function rowsToActivities(rows, { today = todayYMD(), csv = false } = {})
     const splits = parseSplitsCell(r.splits || "");
     if (splits === null) errors.push(`invalid splits "${r.splits}"`);
     const mode = r.mode === "splits" && splits?.length ? "splits" : "timeMiles";
-    if (mode === "splits" && miles === null && duration === null) {
+    if (mode === "splits") {
       const totals = computeSplitTotals(splits);
-      miles = totals.miles;
-      duration = totals.minutes;
+      miles ??= totals.miles;
+      duration ??= totals.minutes;
     }
 
     // Strength sessions may have neither; everything else needs one of them.

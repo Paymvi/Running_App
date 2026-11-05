@@ -246,7 +246,7 @@ export default function ActivityFilterModal({
 
               <div className="row">
                 <div className="filter-group">
-                  <div className="filter-label">Pace filter (min/{unit})</div>
+                  <div className="filter-label">Pace filter (min/{unit}, 7.5 = 7:30)</div>
                   <div className="range-row">
                     <input
                       type="number"
