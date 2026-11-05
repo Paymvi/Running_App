@@ -1,5 +1,6 @@
 import React from "react";
-import { formatDate, formatTime, daysAgo } from "../../utils/profileHelpers";
+import { formatDate, daysAgo } from "../../utils/profileHelpers";
+import { formatDuration } from "../../utils/activityModel";
 import { PR_EVENTS } from "../../utils/prDetection";
 import { speedLabel, toDisplay } from "../../utils/units";
 
@@ -38,7 +39,7 @@ export default function PRPanel({
               type="button"
               className="pr-cell value clickable"
               aria-pressed={selectedPR?.label === event.label}
-              aria-label={`${event.label} whole-activity PR: ${Number.isFinite(pr.time) ? formatTime(pr.time) : "none yet"}`}
+              aria-label={`${event.label} whole-activity PR: ${Number.isFinite(pr.time) ? formatDuration(pr.time) : "none yet"}`}
               onClick={() =>
                 setSelectedPR(
                   selectedPR?.label === event.label
@@ -47,7 +48,7 @@ export default function PRPanel({
                 )
               }
             >
-              {formatTime(pr.time)}
+              {formatDuration(pr.time)}
             </button>
           </div>
         );

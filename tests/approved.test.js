@@ -55,7 +55,7 @@ import { fakeStorage, fakeMedia, run } from "./helpers.js";
 
 const form = (over = {}) => ({
   id: null, title: "", description: "", type: "run", intensity: "easy", feel: "medium", status: "completed",
-  limiter: "", tags: [], date: "2026-10-01", time: "", mode: "timeMiles", miles: "3", duration: "30",
+  limiter: "", tags: [], date: "2026-10-01", time: "", mode: "timeMiles", miles: "3", duration: "3000",
   splits: [{ mph: "", distance: "" }], notes: "", ...over,
 });
 const today = "2026-11-01";

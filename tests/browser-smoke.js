@@ -174,7 +174,7 @@ t = await text();
 check("blank distance/duration rejected with message", /Enter a distance or a duration/.test(t));
 check("typed title kept after failed save", (await evaluate(`document.querySelector('input[name="title"]').value`)) === "Smoke test run");
 await setField('input[name="miles"]', "2");
-await setField('input[name="duration"]', "20:00");
+await setField('input[name="duration"]', "2000");
 const navBefore = await evaluate("performance.getEntriesByType('navigation')[0].startTime + ':' + performance.timeOrigin");
 await evaluate(`document.querySelector('.primary-btn').click()`);
 await sleep(500);
@@ -284,6 +284,90 @@ for (const path of ["/", "/activity", "/profile"]) {
   check(`320px ${path}: page fits, "+" and tab bar on screen`, fit.scrollW === fit.vw && fit.fab && fit.tab, JSON.stringify(fit));
 }
 await send("Emulation.clearDeviceMetricsOverride");
+
+// ---------- 6b. Duration field ----------
+await evaluate(`localStorage.setItem("activities", JSON.stringify([
+  { id: "d1", title: "Old decimal", type: "run", intensity: "easy", feel: "easy", status: "completed", date: "2026-10-20", miles: 10, duration: 90.75 },
+  { id: "d2", title: "Very long", type: "bike", intensity: "easy", feel: "easy", status: "completed", date: "2026-10-19", miles: 100, duration: 612.5 }
+]))`);
+await goto("/activity");
+t = await text();
+check("older decimal minutes shown as H:MM:SS", /1:30:45/.test(t) && !/90\.75/.test(t));
+check("duration past 9:59:59 shown in full", /10:12:30/.test(t));
+await send("Emulation.setFocusEmulationEnabled", { enabled: true }); // headless pages otherwise get no focus/blur events
+const durValue = () => evaluate(`document.querySelector('input[name="duration"]').value`);
+const openEdit = async (title) => {
+  const card = `[...document.querySelectorAll('.card-toggle')].find((b) => b.textContent.includes(${JSON.stringify(title)}))`;
+  await evaluate(`${card}.getAttribute('aria-expanded') === 'true' || ${card}.click()`);
+  await sleep(200);
+  await evaluate(`${card}.closest('.activity-card').querySelector('.tertiary-btn').click()`);
+  await sleep(300);
+};
+const focusDur = async () => { await evaluate(`document.querySelector('input[name="duration"]').focus()`); await sleep(100); };
+const blurDur = async () => { await evaluate(`document.querySelector('input[name="duration"]').blur()`); await sleep(100); };
+await openEdit("Old decimal");
+check("edit form shows older record formatted", (await durValue()) === "1:30:45");
+await focusDur();
+check("colons stay while editing", (await durValue()) === "1:30:45");
+await blurDur();
+check("leaving without typing shows the format again", (await durValue()) === "1:30:45");
+await evaluate(`document.querySelector('.close-btn').click()`);
+await sleep(300);
+check("looking at the field doesn't mark the form dirty", !(await evaluate(`!!document.querySelector('.modal')`)));
+
+await openEdit("Old decimal");
+await evaluate(`document.querySelector('input[name="miles"]').focus()`);
+await key("Tab");
+await sleep(100);
+await send("Input.insertText", { text: "2530" });
+check("tabbing in selects the value, so typing replaces it", (await durValue()) === "25:30");
+await evaluate(`document.querySelector('input[name="duration"]').select()`);
+await send("Input.insertText", { text: "0" });
+await send("Input.insertText", { text: "1" });
+await send("Input.insertText", { text: "4" });
+check("colon shows while typing, no message mid-entry", (await durValue()) === "01:4" && !(await evaluate(`!!document.querySelector('#err-duration')`)));
+check("cursor stays where it was typed", (await evaluate(`document.querySelector('input[name="duration"]').selectionStart`)) === 4);
+await send("Input.insertText", { text: "a" });
+check("letters can't be typed", (await durValue()) === "01:4");
+await send("Input.insertText", { text: "." });
+check("a decimal point can't be typed", (await durValue()) === "01:4");
+const backspace = async () => {
+  await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Backspace", code: "Backspace", windowsVirtualKeyCode: 8 });
+  await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Backspace", code: "Backspace", windowsVirtualKeyCode: 8 });
+  await sleep(60);
+};
+await backspace();
+check("Backspace removes the last digit", (await durValue()) === "01:");
+await backspace();
+check("Backspace isn't stuck on the colon", (await durValue()) === "0:");
+await send("Input.insertText", { text: "1" });
+await send("Input.insertText", { text: "4" });
+await blurDur();
+check("incomplete input explained on leaving", /4 digits \(MMSS\)/.test(await text()) && (await durValue()) === "01:4");
+await focusDur();
+await evaluate(`document.querySelector('input[name="duration"]').setSelectionRange(4, 4)`);
+await send("Input.insertText", { text: "5" });
+await blurDur();
+check("leading zero kept, formats on leaving, message clears", (await durValue()) === "01:45" && !(await evaluate(`!!document.querySelector('#err-duration')`)));
+await focusDur();
+await setField('input[name="duration"]', "2575");
+await blurDur();
+check("invalid seconds explained", /Seconds must be 00–59/.test(await text()));
+await focusDur();
+await setField('input[name="duration"]', "1.75");
+check("pasted decimal minutes refused", (await durValue()) === "25:75");
+await setField('input[name="duration"]', "0145");
+await evaluate(`document.querySelector('.primary-btn').click()`);
+await sleep(500);
+check("typed duration stored as decimal minutes", JSON.parse(await evaluate(`localStorage.getItem("activities")`)).find((a) => a.id === "d1").duration === 1.75);
+await evaluate(`document.querySelector('.jar-drop-modal') && document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))`);
+await key("Escape");
+await sleep(200);
+
+await openEdit("Very long");
+await evaluate(`document.querySelector('.primary-btn').click()`);
+await sleep(500);
+check("over-range duration saved unchanged", JSON.parse(await evaluate(`localStorage.getItem("activities")`)).find((a) => a.id === "d2").duration === 612.5);
 
 // ---------- 7. Bike-only history (F01) ----------
 await evaluate(`localStorage.setItem("activities", JSON.stringify([{ id: "x", type: "bike", intensity: "easy", date: "2026-10-20", miles: 10, duration: 40 }]))`);

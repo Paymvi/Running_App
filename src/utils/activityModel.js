@@ -36,6 +36,80 @@ export function parseDuration(value) {
   return parseDistance(s);
 }
 
+export const durationSeconds = (minutes) => Math.round(minutes * 60);
+
+// Minutes -> "MM:SS", or "H:MM:SS" from one hour up. Rounds total seconds once, so never ":60".
+export function formatDuration(minutes) {
+  if (!Number.isFinite(minutes) || minutes < 0) return "-";
+  const total = durationSeconds(minutes);
+  const pad = (n) => String(n).padStart(2, "0");
+  const hours = Math.floor(total / 3600);
+  const mmss = `${pad(Math.floor(total / 60) % 60)}:${pad(total % 60)}`;
+  return hours ? `${hours}:${mmss}` : mmss;
+}
+
+const durationDigits = (minutes) => formatDuration(minutes).replaceAll(":", "");
+
+// Digits -> what the field shows while typing: "2:", "25:", "25:3", "25:30", "2:53:01".
+// Anything else (an unreadable stored value) is shown as it is.
+export function maskDuration(digits) {
+  const d = String(digits ?? "");
+  if (!/^\d+$/.test(d)) return d;
+  return d.length > 4 ? `${d.slice(0, -4)}:${d.slice(-4, -2)}:${d.slice(-2)}` : `${d.slice(0, 2)}:${d.slice(2)}`;
+}
+
+// Caret index in the masked text just after the nth digit; the end when no digits follow it.
+function maskCaret(digits, n) {
+  const masked = maskDuration(digits);
+  if (n >= digits.length) return masked.length;
+  let seen = 0;
+  let i = 0;
+  while (seen < n) if (/\d/.test(masked[i++])) seen += 1;
+  return i;
+}
+
+// One edit of the masked field. `digits` is the value before it, `value` and `caret` the input
+// after it. Returns the new { digits, caret }. A character that isn't a number cancels the edit.
+export function editMaskedDuration(digits, value, caret, forwardDelete = false) {
+  const shown = maskDuration(digits);
+  if (/[^\d:]/.test(value) && !/\D/.test(digits)) {
+    return { digits, caret: Math.max(0, Math.min(shown.length, caret - (value.length - shown.length))) };
+  }
+  let next = value.replace(/\D/g, "");
+  let before = value.slice(0, caret).replace(/\D/g, "").length;
+  // Only a colon was deleted: it comes straight back, so delete the digit beside it instead.
+  if (next === digits && value.length < shown.length) {
+    if (!forwardDelete) before = Math.max(0, before - 1);
+    next = next.slice(0, before) + next.slice(before + 1);
+  }
+  return { digits: next, caret: maskCaret(next, before) };
+}
+
+// What the user typed in the duration field: MMSS (up to 99:59) or HMMSS, colons optional.
+// Stored values go through parseDuration instead: they are minutes, never MMSS.
+// `original` is the record being edited. Its untouched duration is returned exactly, and a
+// record already past 9:59:59 (Strava, splits, imports) may also be retyped with more digits.
+// Returns { minutes } (null when blank) or { error }.
+export function readDurationInput(value, original = null) {
+  if (isBlank(value)) return { minutes: null };
+  const stored = parseDuration(original?.duration);
+  if (stored !== null && String(value) === durationDigits(stored)) return { minutes: stored };
+
+  const s = String(value).trim();
+  if (!/^\d+(:\d\d){0,2}$/.test(s)) return { error: "Use digits only: 0145 for 01:45, 13045 for 1:30:45." };
+  const digits = s.replaceAll(":", "");
+  if (digits.length < 4 || (digits.length > 5 && !(stored >= 600))) {
+    return { error: "Enter 4 digits (MMSS) or 5 digits (HMMSS)." };
+  }
+  const hasHours = digits.length > 4;
+  const hours = Number(digits.slice(0, -4) || 0);
+  const mins = Number(digits.slice(-4, -2));
+  const secs = Number(digits.slice(-2));
+  if (secs > 59) return { error: "Seconds must be 00–59." };
+  if (hasHours && mins > 59) return { error: "Minutes must be 00–59 when hours are included." };
+  return { minutes: hours * 60 + mins + secs / 60 };
+}
+
 // 0 when missing; use activityPaceParts when "missing" must not count as zero.
 export const activityMiles = (a) => parseDistance(a?.miles) ?? 0;
 export const activityMinutes = (a) => parseDuration(a?.duration) ?? 0;
@@ -114,6 +188,7 @@ const splitsToDisplay = (splits, unit) =>
   (splits || []).map((s) => ({ mph: displayNumber(s.mph, unit), distance: displayNumber(s.distance, unit) }));
 
 export function activityToForm(a, unit = "mi") {
+  const minutes = parseDuration(a.duration);
   return {
     ...a, // keep every stored field (source ids, legacy values, ...)
     title: a.title ?? "",
@@ -129,7 +204,8 @@ export function activityToForm(a, unit = "mi") {
     status: isUnconfirmed(a) ? "" : a.status === "planned" ? "planned" : "completed",
     mode: a.mode === "splits" ? "splits" : "timeMiles",
     miles: displayNumber(a.miles, unit),
-    duration: a.duration ?? "",
+    // Digits, as if typed; a value that can't be read stays visible for the user to fix.
+    duration: minutes === null ? a.duration ?? "" : durationDigits(minutes),
     splits: a.splits?.length ? splitsToDisplay(a.splits, unit) : [{ mph: "", distance: "" }],
   };
 }
@@ -192,10 +268,9 @@ export function validateActivityForm(form, { unit = "mi", original = null, today
       }
       if (miles === null) errors.miles = `${unitName} must be a number (0 or more).`;
     }
-    if (!isBlank(form.duration)) {
-      duration = parseDuration(form.duration);
-      if (duration === null) errors.duration = "Use minutes (45 or 45.5), mm:ss, or h:mm:ss.";
-    }
+    const typed = readDurationInput(form.duration, original);
+    duration = typed.minutes ?? null;
+    if (typed.error) errors.duration = typed.error;
     // Strength sessions may omit both; every other type needs a distance or a duration.
     if (form.type !== "strength" && !errors.miles && !errors.duration && !(miles > 0) && !(duration > 0)) {
       errors.miles = "Enter a distance or a duration.";

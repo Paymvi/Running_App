@@ -1,7 +1,7 @@
 // Training statistics shared by Home, Profile and coaching. Only completed runs count
 // (planned and unconfirmed records never do). Reporting weeks run Monday–Sunday.
 import { parseLocalYMD, toYMD } from "./dateUtils.js";
-import { activityMiles, activityMinutes, isCountableRun, weightedPace } from "./activityModel.js";
+import { activityMiles, activityMinutes, durationSeconds, isCountableRun, weightedPace } from "./activityModel.js";
 
 export function startOfWeekMonday(date) {
   const d = new Date(date);
@@ -46,7 +46,7 @@ export function weeklyRunTotals(activities, today = new Date()) {
     const key = toYMD(startOfWeekMonday(d));
     const w = byWeek.get(key) || { miles: 0, minutes: 0, elevationFt: 0 };
     w.miles += activityMiles(a);
-    w.minutes += activityMinutes(a);
+    w.minutes += durationSeconds(activityMinutes(a)) / 60; // whole seconds, so the total matches the cards
     w.elevationFt += elevationFt(a);
     byWeek.set(key, w);
   }
@@ -58,7 +58,7 @@ export function weeklyRunTotals(activities, today = new Date()) {
     weeks.push({
       weekStart: ws,
       miles: found ? Number(found.miles.toFixed(2)) : 0,
-      minutes: found ? Math.round(found.minutes) : 0,
+      minutes: found ? found.minutes : 0,
       elevationFt: found ? Math.round(found.elevationFt) : 0,
     });
   }

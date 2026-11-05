@@ -5,6 +5,7 @@ import "react-calendar/dist/Calendar.css";
 import { FiSettings } from "react-icons/fi";
 import CalendarSettingsModal from "./CalendarSettingsModal"; // adjust path
 import { parseLocalYMD, toYMD } from "../utils/dateUtils";
+import { formatDuration } from "../utils/activityModel";
 import { readJSON } from "../utils/storage";
 
 
@@ -332,7 +333,7 @@ export default function RunCalendar({ activities }) {
     if (top.type === "workout") {
       tileLabel = t.workoutLabel || "Workout";
     } else if (top.type === "bike" && bikeScaleMode === "time") {
-      tileLabel = `${Math.round(top.value)} min`;
+      tileLabel = formatDuration(top.value);
     } else {
       const shown = toDisplay(top.value, unit);
       tileLabel = `${shown.toFixed(shown >= 10 ? 0 : 1)} ${distLabel(unit)}`;

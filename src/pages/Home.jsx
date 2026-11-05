@@ -7,7 +7,8 @@ import { FiCopy } from "react-icons/fi"
 import WeeklyMileage from "../components/profile/WeeklyMileage";
 import { useActivities } from "../utils/activityStore";
 import { readJSON, describeWriteError, downloadText } from "../utils/storage";
-import { formatWeekRange, formatHoursMinsFromMinutes } from "../utils/profileHelpers";
+import { formatWeekRange } from "../utils/profileHelpers";
+import { formatDuration } from "../utils/activityModel";
 import { isCountable } from "../utils/activityModel";
 import { startOfWeekMonday, weeklyRunTotals } from "../utils/stats";
 import { formatDistance, useUnit } from "../utils/units";
@@ -314,7 +315,7 @@ export default function Home() {
 
               <div className="weekly-stat-value">
                 {selectedWeek
-                  ? formatHoursMinsFromMinutes(selectedWeek.minutes)
+                  ? formatDuration(selectedWeek.minutes)
                   : "-"}
               </div>
             </div>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FiEdit2 } from "react-icons/fi";
 import { formatDisplayDate } from "../utils/dateUtils";
 import { getDefaultImage } from "../utils/activityHelpers";
-import { activityMiles, activityMinutes, activityPaceParts, isPlanned, isUnconfirmed } from "../utils/activityModel";
+import { activityMiles, activityMinutes, activityPaceParts, formatDuration, isPlanned, isUnconfirmed } from "../utils/activityModel";
 import { formatTime } from "../utils/profileHelpers";
 import { distLabel, speedLabel, toDisplay, useUnit } from "../utils/units";
 import usePhoto, { photoErrorText } from "../hooks/usePhoto";
@@ -107,7 +107,7 @@ export default function ActivityCard({
           <div className="stat">
               <span className="stat-label">Time</span>
               <span className="stat-value">
-              {duration > 0 ? `${Number(duration.toFixed(2))} min` : "- min"}
+              {duration > 0 ? formatDuration(duration) : "-"}
               </span>
           </div>
 

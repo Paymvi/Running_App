@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { prefersReducedMotion, vibrate } from "../../utils/feedback";
 import { distLabel, toDisplay } from "../../utils/units";
-import { formatHoursMinsFromMinutes } from "../../utils/profileHelpers";
+import { formatDuration } from "../../utils/activityModel";
 
 // `weeks[].miles` is in miles; the chart plots and labels the display unit.
 export default function WeeklyMileage({
@@ -343,7 +343,7 @@ export default function WeeklyMileage({
                     <tr key={w.label}>
                         <th scope="row">{w.label}</th>
                         <td>{w.miles}</td>
-                        <td>{formatHoursMinsFromMinutes(w.minutes || 0)}</td>
+                        <td>{formatDuration(w.minutes || 0)}</td>
                     </tr>
                 ))}
             </tbody>

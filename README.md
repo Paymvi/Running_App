@@ -66,6 +66,7 @@ Copy [server/.env.example](server/.env.example) to `server/.env` and fill it in.
 | --- | --- |
 | Type | Run, Bike, Swim, Hike, Workout, Strength |
 | Distance / duration | Every type except **Strength** needs a distance, a duration or both. Strength may have neither. Without a duration there is no pace (shown as "-", never 0). |
+| Duration entry | Type digits: `MMSS` (`2530` = 25:30, up to 99:59) or `HMMSS` (`13045` = 1:30:45). Decimal minutes aren't accepted in the form. An activity already over 9:59:59 (from Strava, splits or an import) also accepts more digits as `HHMMSS`. Durations show as `MM:SS`, or `H:MM:SS` from one hour up. They are still stored as decimal minutes. |
 | Status | **Completed** or **Planned**. Completed activities can't be dated after today. Planned ones can be dated any time and never count as training until you edit them to Completed; passing the date doesn't change them. |
 | Intensity | Easy, Tempo, Intervals, Long, or **Effort unknown** (Strava's default). Unknown effort is neither easy nor hard. |
 | Date | A real date between 1900 and 2100 |

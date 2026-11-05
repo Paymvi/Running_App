@@ -10,7 +10,7 @@ import ActivityFilterModal from "../components/ActivityFilterModal";
 import BackupModal from "../components/BackupModal";
 
 import { parseLocalYMD, normalizeYMD } from "../utils/dateUtils";
-import { activityMiles, activityMinutes } from "../utils/activityModel";
+import { activityMiles, activityMinutes, formatDuration } from "../utils/activityModel";
 import { detectPRs } from "../utils/prDetection";
 import {
   useActivities,
@@ -367,7 +367,7 @@ export default function Activity({ onEditActivity, onDeleted }) {
         // Rows without an id that match an existing activity are never merged; the user chooses.
         let skip = new Set();
         if (possible.length) {
-          const sample = possible.slice(0, 5).map((a) => `  ${a.date} ${a.type} ${a.miles || "-"} mi ${a.duration || "-"} min`).join("\n");
+          const sample = possible.slice(0, 5).map((a) => `  ${a.date} ${a.type} ${a.miles || "-"} mi ${a.duration ? formatDuration(activityMinutes(a)) : "-"}`).join("\n");
           const skipThem = window.confirm(
             `${plural(possible.length, "row")} look like activities already in Velo (same date, sport, distance and time):\n${sample}${possible.length > 5 ? "\n  …" : ""}\n\nOK = skip these possible duplicates. Cancel = import them too.`
           );

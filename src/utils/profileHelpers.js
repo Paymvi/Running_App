@@ -37,15 +37,6 @@ export function formatWeekRange(startDateObj) {
   return `${startStr} - ${endStr}${yearStr}`;
 }
 
-export function formatHoursMinsFromMinutes(totalMinutes) {
-  if (!isFinite(totalMinutes)) return "-";
-  const mins = Math.round(totalMinutes);
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${h}h ${m}m`;
-}
-
-
 export function getEasyZone(pct) {
   if (pct < 50) {
     return {

@@ -13,7 +13,7 @@ import { run } from "./helpers.js";
 
 const form = (over = {}) => ({
   id: null, title: "Morning", description: "", type: "run", intensity: "easy", feel: "medium",
-  limiter: "", tags: [], date: "2026-10-01", time: "", mode: "timeMiles", miles: "3", duration: "30",
+  limiter: "", tags: [], date: "2026-10-01", time: "", mode: "timeMiles", miles: "3", duration: "3000",
   splits: [{ mph: "", distance: "" }], notes: "felt good; legs ok", status: "completed", ...over,
 });
 
@@ -49,7 +49,7 @@ test("invalid manual entries are rejected with field errors (F03)", () => {
 });
 
 test("time-only workouts are valid", () => {
-  const { activity } = validateActivityForm(form({ type: "workout", miles: "", duration: "45" }));
+  const { activity } = validateActivityForm(form({ type: "workout", miles: "", duration: "4500" }));
   assert.equal(activity.miles, "");
   assert.equal(activity.duration, 45);
 });

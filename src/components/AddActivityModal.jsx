@@ -1,10 +1,10 @@
 import React, { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { FiImage } from "react-icons/fi";
 import useDialog from "../hooks/useDialog";
 import usePhoto, { photoErrorText } from "../hooks/usePhoto";
 import { todayYMD } from "../utils/dateUtils";
-import { activityToForm, validateActivityForm, computeSplitTotals } from "../utils/activityModel";
-import { formatTime } from "../utils/profileHelpers";
+import { activityToForm, validateActivityForm, computeSplitTotals, editMaskedDuration, formatDuration, maskDuration, parseDuration, readDurationInput } from "../utils/activityModel";
 import { resizeImageFile } from "../utils/image";
 import { distLabel, speedLabel, useUnit } from "../utils/units";
 
@@ -104,6 +104,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
   const [saveError, setSaveError] = useState("");
   const [photoError, setPhotoError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [durationFocused, setDurationFocused] = useState(false);
   const formRef = useRef(null);
   const stored = usePhoto(newPhoto === undefined ? initialActivity?.photoId : null);
   const preview = newPhoto === undefined ? stored.src || initialActivity?.photo || null : newPhoto;
@@ -124,6 +125,19 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleDurationChange = (e) => {
+    const input = e.target;
+    const { digits, caret } = editMaskedDuration(
+      form.duration,
+      input.value,
+      input.selectionStart,
+      e.nativeEvent.inputType === "deleteContentForward"
+    );
+    if (digits === form.duration) input.value = maskDuration(digits); // refused edit: undo it before placing the caret
+    else flushSync(() => setForm((prev) => ({ ...prev, duration: digits })));
+    input.setSelectionRange(caret, caret);
   };
 
   const handleSplitChange = (index, field, value) => {
@@ -204,6 +218,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
   const invalid = (name) => (errors[name] ? { "aria-invalid": "true", "aria-describedby": `err-${name}` } : {});
   const reviewFields = (initialActivity?.needsReview || []).filter((f) => f in (initialActivity || {}));
   const dl = distLabel(formUnit);
+  const typedDuration = readDurationInput(form.duration, initialActivity);
   const distanceName = formUnit === "km" ? "Kilometers" : "Miles";
 
   return (
@@ -299,12 +314,32 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
 
           <input
             name="duration"
-            placeholder="Duration (minutes, mm:ss or h:mm:ss)"
+            placeholder="Duration (MM:SS)"
             aria-label="Duration"
-            value={form.duration}
-            onChange={handleChange}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="off"
+            // form.duration holds digits; the colons are display only.
+            value={durationFocused || typedDuration.minutes == null ? maskDuration(form.duration) : formatDuration(typedDuration.minutes)}
+            onChange={handleDurationChange}
+            onFocus={(e) => {
+              const input = e.target;
+              const allSelected = input.value && input.selectionEnd - input.selectionStart === input.value.length;
+              setDurationFocused(true);
+              // A value swap here (99:59 back from 1:39:59) drops the select-all from tabbing in.
+              if (allSelected) requestAnimationFrame(() => input.select());
+            }}
+            onBlur={() => {
+              setDurationFocused(false);
+              setErrors((prev) => ({ ...prev, duration: typedDuration.error }));
+            }}
             {...invalid("duration")}
+            aria-describedby={errors.duration ? "duration-hint err-duration" : "duration-hint"}
           />
+          <div id="duration-hint" className="field-hint">
+            Numbers only: 2530 = 25:30, 13045 = 1:30:45
+            {parseDuration(initialActivity?.duration) >= 600 && ". Over 10 hours: HHMMSS"}
+          </div>
           <FieldError id="err-duration" message={errors.duration} />
         </>
       )}
@@ -337,7 +372,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <FieldError id="err-splits" message={errors.splits} />
             {splitTotals && splitTotals.count > 0 && splitTotals.invalidRows.length === 0 && (
               <div className="split-totals" aria-live="polite">
-                Total: {splitTotals.miles} {dl} · {formatTime(splitTotals.minutes)}
+                Total: {splitTotals.miles} {dl} · {formatDuration(splitTotals.minutes)}
               </div>
             )}
             <button type="button" onClick={addSplit}>+ Add Split</button>
