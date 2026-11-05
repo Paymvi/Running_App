@@ -25,10 +25,10 @@ async function downloadFullBackup() {
 }
 
 // Backup & recovery: full backup/restore (records, photos, notes, profile, settings;
-// never the Strava connection), Recently deleted, automatic backups and app reset.
-export default function BackupModal({ isOpen, onClose }) {
+// never the Strava connection), Recently deleted, automatic backups, Delete All and app reset.
+export default function BackupModal({ isOpen, onClose, onDeleteAll }) {
   const dialogRef = useDialog(isOpen, onClose);
-  const { trash } = useActivities();
+  const { activities, trash } = useActivities();
   const fileRef = useRef(null);
   const [autoBackups, setAutoBackups] = useState(null);
   const [message, setMessage] = useState("");
@@ -226,6 +226,22 @@ export default function BackupModal({ isOpen, onClose }) {
                 </button>
               </div>
             )}
+          </section>
+
+          <section className="strava-modal-fyi" aria-labelledby="delete-all-title">
+            <h3 id="delete-all-title" className="backup-section-title">Delete all activities</h3>
+            <div>
+              Moves every activity to Recently deleted for {TRASH_DAYS} days. Notes, profile and settings are not
+              affected. A backup is saved first.
+            </div>
+            <button
+              type="button"
+              className="control-btn btn-danger"
+              disabled={!activities.length || working}
+              onClick={guarded(onDeleteAll)}
+            >
+              Delete All
+            </button>
           </section>
 
           <section className="strava-modal-fyi" aria-labelledby="reset-title">

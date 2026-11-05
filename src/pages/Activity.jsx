@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { FiFilter } from "react-icons/fi";
+import { FiArchive, FiDownload, FiFilter, FiHelpCircle, FiUpload } from "react-icons/fi";
 
 
 import { generateCoachAlerts } from "../utils/coachAlert";
@@ -158,6 +158,7 @@ export default function Activity({ onEditActivity, onDeleted }) {
         if (!result.ok) alert(result.error);
         else {
           vibrate(120);
+          setBackupModalOpen(false); // the dialog would otherwise cover the Undo bar
           onDeleted?.(ids, `${result.count} activities moved to Recently deleted.`);
         }
     };
@@ -442,88 +443,79 @@ export default function Activity({ onEditActivity, onDeleted }) {
     return (
         <div className="page">
           <div className="page-spacer"></div>
-            <div className="controls-row">
+            <div className="activity-toolbar">
 
-                <button
-                    type="button"
-                    className="import-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={Boolean(busy)}
-                >
-                Import
-                </button>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv,.xlsx,.xls"
-                    hidden
-                    onChange={(e) => {
-                        const file = e.target.files[0];
-                        e.target.value = ""; // allow choosing the same file again
-                        if (file) handleImportFile(file);
-                    }}
-                />
-
-                <span className="export-group">
+                <div className="toolbar-group" role="group" aria-label="Import and export">
                   <button
                       type="button"
-                      onClick={handleExport}
-                      className="control-btn btn-secondary"
+                      className="toolbar-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={Boolean(busy)}
                   >
-                  Export
+                  <FiDownload aria-hidden="true" />
+                  Import
                   </button>
-                  <select
-                      className="export-format"
-                      aria-label="Export format"
-                      value={exportFormat}
-                      onChange={(e) => setExportFormat(e.target.value)}
+                  <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      hidden
+                      onChange={(e) => {
+                          const file = e.target.files[0];
+                          e.target.value = ""; // allow choosing the same file again
+                          if (file) handleImportFile(file);
+                      }}
+                  />
+
+                  <span className="export-group">
+                    <button
+                        type="button"
+                        onClick={handleExport}
+                        className="toolbar-btn"
+                    >
+                    <FiUpload aria-hidden="true" />
+                    Export
+                    </button>
+                    <select
+                        className="toolbar-select"
+                        aria-label="Export format"
+                        title="Export format"
+                        value={exportFormat}
+                        onChange={(e) => setExportFormat(e.target.value)}
+                    >
+                        <option value="xlsx">as Excel</option>
+                        <option value="csv">as CSV</option>
+                    </select>
+                  </span>
+                </div>
+
+                <div className="toolbar-group" role="group" aria-label="Backup and Strava">
+                  <button
+                      type="button"
+                      onClick={() => setBackupModalOpen(true)}
+                      className="toolbar-btn toolbar-btn-ghost backup-btn"
+                      title="Backup, recovery and deleting data"
                   >
-                      <option value="xlsx">Excel</option>
-                      <option value="csv">CSV</option>
-                  </select>
-                </span>
+                  <FiArchive aria-hidden="true" />
+                  Backup
+                  </button>
 
-                <button
-                    type="button"
-                    onClick={() => setBackupModalOpen(true)}
-                    className="control-btn btn-secondary"
-                >
-                Backup
-                </button>
-
-                {/* For Strava modal */}
-                <button
-                    type="button"
-                    onClick={() => setStravaModalOpen(true)}
-                    className="strava-icon-btn"
-                    aria-label="Open Strava options"
-                    title="Open Strava options"
-                >
-                <img
-                    src="/strava-logo.png"
-                    alt=""
-                    className="strava-icon-img"
-                />
-                </button>
-
-                <button
-                    type="button"
-                    onClick={clearAllActivities}
-                    className="control-btn btn-danger"
-                    disabled={!activities.length}
-                >
-                Delete All
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => setFilterModalOpen(true)}
-                    className="filter-icon-btn"
-                    aria-label="Open activity filters"
-                    title="Open activity filters"
-                >
-                    <FiFilter />
-                </button>
+                  {/* For Strava modal */}
+                  <button
+                      type="button"
+                      onClick={() => setStravaModalOpen(true)}
+                      className="toolbar-btn toolbar-btn-ghost strava-btn"
+                      aria-label="Open Strava options"
+                      title="Open Strava options"
+                  >
+                  <img
+                      src="/strava-logo.png"
+                      alt=""
+                      className="strava-logo"
+                  />
+                  Strava
+                  </button>
+                </div>
 
             </div>
 
@@ -536,32 +528,31 @@ export default function Activity({ onEditActivity, onDeleted }) {
             <div className="coach-controls">
 
               <label className="coach-label" htmlFor="coach-alert-count">
-                  Coach alerts shown:
+                  Coach alerts
               </label>
 
-              <div className="coach-dropdown-row">
-                <select
-                    id="coach-alert-count"
-                    value={coachAlertCount}
-                    onChange={(e) => changeCoachCount(Number(e.target.value))}
-                    className="coach-select"
-                >
-                    <option value={0}>Hidden</option>
-                    <option value={1}>1 (Top priority)</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                    <option value={4}>4</option>
-                </select>
-                <button
-                    type="button"
-                    onClick={() => setCoachHelpOpen(true)}
-                    aria-label="What are coach alerts?"
-                    title="What are coach alerts?"
-                    className="coach-help-btn"
-                >
-                    ?
-                </button>
-              </div>
+              <button
+                  type="button"
+                  onClick={() => setCoachHelpOpen(true)}
+                  aria-label="What are coach alerts?"
+                  title="What are coach alerts?"
+                  className="coach-help-btn"
+              >
+                  <FiHelpCircle aria-hidden="true" />
+              </button>
+
+              <select
+                  id="coach-alert-count"
+                  value={coachAlertCount}
+                  onChange={(e) => changeCoachCount(Number(e.target.value))}
+                  className="toolbar-select coach-select"
+              >
+                  <option value={0}>Hidden</option>
+                  <option value={1}>1 (Top priority)</option>
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+              </select>
               {coachSaveError && <div className="field-error" role="alert">{coachSaveError}</div>}
             </div>
 
@@ -595,6 +586,7 @@ export default function Activity({ onEditActivity, onDeleted }) {
             <BackupModal
                 isOpen={backupModalOpen}
                 onClose={() => setBackupModalOpen(false)}
+                onDeleteAll={clearAllActivities}
             />
 
             {coachAlertCount > 0 &&
@@ -609,10 +601,22 @@ export default function Activity({ onEditActivity, onDeleted }) {
 
 
 
-            <div className="activity-results-count" aria-live="polite">
-                Showing {filteredActivities.length}{" "}
-                {filteredActivities.length === 1 ? "activity" : "activities"}
-                {rangeWarning && <span className="field-error"> · {rangeWarning}</span>}
+            <div className="activity-list-header">
+              <div className="activity-results-count" aria-live="polite">
+                  Showing {filteredActivities.length}{" "}
+                  {filteredActivities.length === 1 ? "activity" : "activities"}
+                  {rangeWarning && <span className="field-error"> · {rangeWarning}</span>}
+              </div>
+              <button
+                  type="button"
+                  onClick={() => setFilterModalOpen(true)}
+                  className="toolbar-btn toolbar-btn-ghost filter-btn"
+                  aria-label="Open activity filters"
+                  title="Open activity filters"
+              >
+                  <FiFilter aria-hidden="true" />
+                  Filters
+              </button>
             </div>
 
             {filteredActivities.slice(0, visibleCount).map((a) => (

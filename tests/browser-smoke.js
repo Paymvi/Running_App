@@ -200,12 +200,12 @@ await setField('input[name="title"]', "Smoke test run edited");
 await evaluate(`document.querySelector('.primary-btn').click()`);
 await sleep(500);
 check("edit saved without celebration", !(await evaluate(`!!document.querySelector('.jar-drop-modal')`)) && /edited/.test(await text()));
-await evaluate(`(() => { const b = document.querySelector('.filter-icon-btn'); b.focus(); b.click(); })()`);
+await evaluate(`(() => { const b = document.querySelector('.filter-btn'); b.focus(); b.click(); })()`);
 await sleep(300);
 check("filter dialog open", await evaluate(`!!document.querySelector('.activity-filter-modal[role="dialog"]')`));
 await key("Escape");
 check("Escape closes filter dialog", !(await evaluate(`!!document.querySelector('.activity-filter-modal')`)));
-check("focus returns to the opener", (await evaluate(`document.activeElement?.className || ""`)).includes("filter-icon-btn"), await evaluate(`document.activeElement?.outerHTML.slice(0, 80) || ""`));
+check("focus returns to the opener", (await evaluate(`document.activeElement?.className || ""`)).includes("filter-btn"), await evaluate(`document.activeElement?.outerHTML.slice(0, 80) || ""`));
 
 // ---------- 4b. Delete -> undo -> trash ----------
 await evaluate(`(() => { const b = [...document.querySelectorAll('.card-toggle')].find(b => b.textContent.includes("Smoke test run edited")); if (b.getAttribute("aria-expanded") !== "true") b.click(); })()`);
@@ -230,7 +230,7 @@ await evaluate(`localStorage.setItem("velo_units", "mi")`);
 await goto("/activity");
 
 // ---------- 5. Strava modal without server ----------
-await evaluate(`document.querySelector('.strava-icon-btn').click()`);
+await evaluate(`document.querySelector('.strava-btn').click()`);
 await sleep(1500);
 t = await text();
 check("Strava modal reports server unreachable; import disabled", /Can't reach the Velo server/.test(t) && (await evaluate(`document.querySelector('.strava-import-btn').disabled`)));
@@ -375,10 +375,25 @@ await goto("/activity");
 t = await text();
 check("bike-only history renders with first-run coach note", /Log your first run/.test(t) && /Showing 1 activity/.test(t));
 
+// ---------- 7a. Delete All lives in Backup & recovery, keeps its confirm, and leaves Undo reachable ----------
+await evaluate(`document.querySelector('.backup-btn').click()`);
+await sleep(500);
+await evaluate(`window.confirm = () => false`);
+await clickText(".backup-modal button", "Delete All");
+await sleep(300);
+check("declining the Delete All confirm changes nothing", JSON.parse(await evaluate(`localStorage.getItem("activities")`)).length === 1);
+await evaluate(`window.confirm = () => true`);
+await clickText(".backup-modal button", "Delete All");
+await sleep(800);
+check("Delete All closes the dialog and moves activities to trash", !(await evaluate(`!!document.querySelector('.backup-modal')`)) && /Showing 0 activities/.test(await text()) && JSON.parse(await evaluate(`localStorage.getItem("activities_trash")`)).length === 1);
+await clickText(".undo-bar button", "Undo");
+await sleep(300);
+check("Undo after Delete All restores activities", /Showing 1 activity/.test(await text()));
+
 // ---------- 7b. Reset Velo (typed confirmation, backup first) ----------
 await evaluate(`localStorage.setItem("profileName", "Smoke")`);
 await goto("/activity");
-await evaluate(`document.querySelectorAll('.control-btn').forEach(b => { if (b.textContent.trim() === "Backup") b.click(); })`);
+await evaluate(`document.querySelector('.backup-btn').click()`);
 await sleep(500);
 check("reset button disabled until RESET is typed", await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === "Reset Velo").disabled`));
 await setField("#reset-confirm", "RESET");

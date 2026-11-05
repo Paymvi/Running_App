@@ -181,7 +181,7 @@ export default function CoachHelpModal({ isOpen, onClose }) {
                 </div>
               </li>
               <li>
-                Then your “Coach alerts shown” setting chooses the <strong>top N</strong> alerts
+                Then your “Coach alerts” setting chooses the <strong>top N</strong> alerts
                 (so red/yellow typically appear before green/blue).
               </li>
             </ul>
