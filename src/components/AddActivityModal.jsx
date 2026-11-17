@@ -6,6 +6,7 @@ import usePhoto, { photoErrorText } from "../hooks/usePhoto";
 import { todayYMD } from "../utils/dateUtils";
 import { activityAverages, activityToForm, validateActivityForm, computeSplitTotals, editMaskedDuration, formatDuration, maskDuration, parseDistance, parseDuration, readDurationInput, splitRows } from "../utils/activityModel";
 import { resizeImageFile } from "../utils/image";
+import { readJSON } from "../utils/storage";
 import { distLabel, fromDisplay, speedLabel, useUnit } from "../utils/units";
 
 
@@ -118,6 +119,10 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
   const [photoError, setPhotoError] = useState("");
   const [saving, setSaving] = useState(false);
   const [durationFocused, setDurationFocused] = useState(false);
+  // Simple form (Activity page settings) hides limiter, feel, tags and status; hidden values are kept as-is.
+  const [simple] = useState(() => readJSON("simpleActivityForm", false) === true);
+  // Still show status when it isn't "completed", so planned or unreviewed activities can be resolved.
+  const [showStatus] = useState(() => !simple || initialForm(initialActivity, formUnit).status !== "completed");
   const formRef = useRef(null);
   const addSplitRef = useRef(null);
   const stored = usePhoto(newPhoto === undefined ? initialActivity?.photoId : null);
@@ -494,7 +499,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="strength">🏋️ Strength</option>
           </select>
 
-          <select name="limiter" aria-label="Limiter" value={form.limiter} onChange={handleChange}>
+          {!simple && <select name="limiter" aria-label="Limiter" value={form.limiter} onChange={handleChange}>
             <option value="">⚪ No Limiter</option>
 
             <option value="heavy">🪨 Heavy Legs</option>
@@ -506,7 +511,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="sleepy">😴 Poor Sleep</option>
             <option value="stomach">🤢 Stomach Issues</option>
             <option value="bored">😒 Bored</option>
-          </select>
+          </select>}
         </div>
         <FieldError id="err-type" message={errors.type} />
 
@@ -519,17 +524,17 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="unknown">⚪ Effort unknown</option>
           </select>
 
-          <select name="feel" aria-label="Feel" value={form.feel} onChange={handleChange}>
+          {!simple && <select name="feel" aria-label="Feel" value={form.feel} onChange={handleChange}>
             <option value="easy">🍃 Light</option>
             <option value="medium">😎 Steady</option>
             <option value="hard">🔥 Tough</option>
-          </select>
+          </select>}
         </div>
         <FieldError id="err-intensity" message={errors.intensity || errors.feel} />
 
 
 
-        <div className="tag-section">
+        {!simple && <div className="tag-section">
           <h3>Tags</h3>
 
           <div className="tag-group">
@@ -549,7 +554,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
               );
             })}
           </div>
-        </div>
+        </div>}
 
         <div style={{ height: "20px" }}></div>
 
@@ -599,6 +604,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
         <FieldError id="err-date" message={errors.date} />
         <FieldError id="err-time" message={errors.time} />
 
+        {showStatus && <>
         <select name="status" aria-label="Status" value={form.status} onChange={handleChange} {...invalid("status")}>
           {!form.status && <option value="">Choose: completed or planned?</option>}
           <option value="completed">✅ Completed</option>
@@ -610,6 +616,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             Planned activities don't count toward mileage, jars, PRs or coaching until you mark them completed.
           </div>
         )}
+        </>}
 
         <textarea
           name="notes"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { FiArchive, FiDownload, FiFilter, FiHelpCircle, FiStar, FiUpload } from "react-icons/fi";
+import { FiArchive, FiDownload, FiFilter, FiHelpCircle, FiSettings, FiStar, FiUpload } from "react-icons/fi";
 
 
 import { generateCoachAlerts } from "../utils/coachAlert";
@@ -7,6 +7,7 @@ import { generateCoachAlerts } from "../utils/coachAlert";
 import CoachHelpModal from "../components/CoachHelpModal";
 import StravaModal from "../components/StravaModal";
 import ActivityFilterModal from "../components/ActivityFilterModal";
+import ActivitySettingsModal from "../components/ActivitySettingsModal";
 import BackupModal from "../components/BackupModal";
 import StarsImportModal from "../components/StarsImportModal";
 import { classifyStarsRows, parseStarsBackup } from "../utils/starsImport";
@@ -21,7 +22,7 @@ import {
   deleteAllActivities,
 } from "../utils/activityStore";
 import { saveBackup } from "../utils/backups";
-import { snapshotAll } from "../utils/storage";
+import { readJSON, snapshotAll } from "../utils/storage";
 import { toDisplay, useUnit } from "../utils/units";
 import { vibrate } from "../utils/feedback";
 import {
@@ -101,6 +102,13 @@ export default function Activity({ onEditActivity, onDeleted }) {
   const [stravaConnected, setStravaConnected] = useState(false);
   const [stravaStatus, setStravaStatus] = useState(initialStravaStatus);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Read by AddActivityModal each time it opens.
+  const [simpleForm, setSimpleFormState] = useState(() => readJSON("simpleActivityForm", false));
+  const setSimpleForm = (value) => {
+    setSimpleFormState(value);
+    try { localStorage.setItem("simpleActivityForm", JSON.stringify(value)); } catch { /* storage blocked: applies this visit only */ }
+  };
   const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState("xlsx");
   const [busy, setBusy] = useState(""); // label of the running import, "" when idle
@@ -619,6 +627,13 @@ export default function Activity({ onEditActivity, onDeleted }) {
                 unit={unit}
             />
 
+            <ActivitySettingsModal
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                simpleForm={simpleForm}
+                setSimpleForm={setSimpleForm}
+            />
+
             {starsRows && (
               <StarsImportModal rows={starsRows} unit={unit} onClose={() => setStarsRows(null)} />
             )}
@@ -647,6 +662,7 @@ export default function Activity({ onEditActivity, onDeleted }) {
                   {filteredActivities.length === 1 ? "activity" : "activities"}
                   {rangeWarning && <span className="field-error"> · {rangeWarning}</span>}
               </div>
+              <div className="activity-list-actions">
               <button
                   type="button"
                   onClick={() => setFilterModalOpen(true)}
@@ -657,6 +673,16 @@ export default function Activity({ onEditActivity, onDeleted }) {
                   <FiFilter aria-hidden="true" />
                   Filters
               </button>
+              <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="activity-settings-btn"
+                  aria-label="Activity settings"
+                  title="Activity settings"
+              >
+                  <FiSettings aria-hidden="true" />
+              </button>
+              </div>
             </div>
 
             {filteredActivities.slice(0, visibleCount).map((a) => (

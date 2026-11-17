@@ -694,6 +694,13 @@ textarea {
   margin: 12px 0 10px;
 }
 
+.activity-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .activity-list-header .activity-results-count {
   margin: 0;
   min-width: 0;
@@ -1803,7 +1810,9 @@ page {
   margin-top: 2px;
 }
 
-.profile-edit-btn {
+.profile-edit-btn,
+.calendar-settings-btn,
+.activity-settings-btn {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
@@ -1820,7 +1829,9 @@ page {
   transition: all 0.15s ease;
 }
 
-.profile-edit-btn:hover {
+.profile-edit-btn:hover,
+.calendar-settings-btn:hover,
+.activity-settings-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }

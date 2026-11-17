@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { distLabel, toDisplay, useUnit } from "../utils/units";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -367,7 +367,7 @@ export default function RunCalendar({ activities }) {
 
           <button
             type="button"
-            className="icon-btn"
+            className="calendar-settings-btn"
             onClick={() => setSettingsOpen(true)}
             aria-label="Calendar settings"
             title="Calendar settings"

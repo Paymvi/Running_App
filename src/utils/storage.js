@@ -29,6 +29,7 @@ export const BACKUP_KEYS = [
   "profileTag",
   "profileAvatar",
   "weeklyScaleMode",
+  "simpleActivityForm",
   "calendar_settings_v1",
   "velo_feedback",
   "velo_units",
