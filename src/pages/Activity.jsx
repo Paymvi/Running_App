@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { FiArchive, FiDownload, FiFilter, FiHelpCircle, FiUpload } from "react-icons/fi";
+import { FiArchive, FiDownload, FiFilter, FiHelpCircle, FiStar, FiUpload } from "react-icons/fi";
 
 
 import { generateCoachAlerts } from "../utils/coachAlert";
@@ -8,6 +8,8 @@ import CoachHelpModal from "../components/CoachHelpModal";
 import StravaModal from "../components/StravaModal";
 import ActivityFilterModal from "../components/ActivityFilterModal";
 import BackupModal from "../components/BackupModal";
+import StarsImportModal from "../components/StarsImportModal";
+import { classifyStarsRows, parseStarsBackup } from "../utils/starsImport";
 
 import { parseLocalYMD, normalizeYMD } from "../utils/dateUtils";
 import { activityMiles, activityMinutes, formatDuration } from "../utils/activityModel";
@@ -103,6 +105,8 @@ export default function Activity({ onEditActivity, onDeleted }) {
   const [exportFormat, setExportFormat] = useState("xlsx");
   const [busy, setBusy] = useState(""); // label of the running import, "" when idle
   const fileInputRef = useRef(null);
+  const starsInputRef = useRef(null);
+  const [starsRows, setStarsRows] = useState(null); // preview rows while the Stars dialog is open
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
@@ -400,6 +404,15 @@ export default function Activity({ onEditActivity, onDeleted }) {
       alert("Unsupported file type. Please upload a CSV or Excel file.");
     };
 
+    // Reads only; nothing is saved until the user confirms in the preview.
+    const handleStarsFile = async (file) => {
+      try {
+        setStarsRows(classifyStarsRows(parseStarsBackup(await file.text()), activities));
+      } catch (e) {
+        alert(`Couldn't read the Stars backup: ${e.message || e}`);
+      }
+    };
+
     const fetchStravaActivities = () =>
       runImport("Importing from Strava…", async () => {
         const { raw, error, partial } = await fetchAllStravaActivities((n) =>
@@ -489,7 +502,7 @@ export default function Activity({ onEditActivity, onDeleted }) {
                   </span>
                 </div>
 
-                <div className="toolbar-group" role="group" aria-label="Backup and Strava">
+                <div className="toolbar-group" role="group" aria-label="Backup and other apps">
                   <button
                       type="button"
                       onClick={() => setBackupModalOpen(true)}
@@ -515,6 +528,29 @@ export default function Activity({ onEditActivity, onDeleted }) {
                   />
                   Strava
                   </button>
+
+                  <button
+                      type="button"
+                      onClick={() => starsInputRef.current?.click()}
+                      className="toolbar-btn toolbar-btn-ghost"
+                      aria-label="Import from Stars"
+                      title="Import workouts from a Stars backup (.json)"
+                      disabled={Boolean(busy)}
+                  >
+                  <FiStar aria-hidden="true" />
+                  Stars
+                  </button>
+                  <input
+                      ref={starsInputRef}
+                      type="file"
+                      accept=".json,application/json"
+                      hidden
+                      onChange={(e) => {
+                          const file = e.target.files[0];
+                          e.target.value = "";
+                          if (file) handleStarsFile(file);
+                      }}
+                  />
                 </div>
 
             </div>
@@ -582,6 +618,10 @@ export default function Activity({ onEditActivity, onDeleted }) {
                 onReset={resetFilters}
                 unit={unit}
             />
+
+            {starsRows && (
+              <StarsImportModal rows={starsRows} unit={unit} onClose={() => setStarsRows(null)} />
+            )}
 
             <BackupModal
                 isOpen={backupModalOpen}
