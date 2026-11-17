@@ -1,4 +1,5 @@
 import React from "react";
+import { FiEdit2 } from "react-icons/fi";
 import { formatDistance } from "../../utils/units";
 
 
@@ -85,8 +86,10 @@ export default function ProfileTopSection({
               type="button"
               className="profile-edit-btn"
               onClick={() => setShowEditProfile(true)}
+              aria-label="Edit profile"
+              title="Edit profile"
           >
-              Edit
+              <FiEdit2 aria-hidden="true" />
           </button>
 
       </div>

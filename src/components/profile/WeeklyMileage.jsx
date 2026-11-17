@@ -33,14 +33,14 @@ export default function WeeklyMileage({
 
 
   // SVG coord system
-    const H = 220;
+    const H = 150;
     const pad = { l: 42, r: 18, t: 18, b: 34 };
     const axisW = pad.l; // fixed y-axis column width
 
     const innerH = H - pad.t - pad.b;
 
     // spacing per week (controls how wide the chart is)
-    const slot = 20; // px per week (tweak to taste)
+    const slot = 12; // px per week: ~6 months visible on a phone
     const contextWeeks = 2; // weeks kept visible to the right of the selection when scrolling
     // const W = Math.max(520, pad.l + pad.r + (weeks.length - 1) * slot);
     const W = pad.l + pad.r + weeks.length * slot;
