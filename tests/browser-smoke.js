@@ -283,6 +283,65 @@ for (const path of ["/", "/activity", "/profile"]) {
   })()`);
   check(`320px ${path}: page fits, "+" and tab bar on screen`, fit.scrollW === fit.vw && fit.fab && fit.tab, JSON.stringify(fit));
 }
+
+// ---------- 6d. Constellations (still 320 px): layout, keyboard, dialogs, celebration ----------
+const savedActivities = await evaluate(`localStorage.getItem("activities")`);
+await evaluate(`(() => {
+  const acts = [];
+  for (let i = 0; i < 14; i++) {
+    const lift = i % 3 === 0;
+    acts.push({ id: "c" + i, title: lift ? "Lift" : "Run", type: lift ? "strength" : "run", intensity: lift ? "unknown" : "easy", feel: "easy",
+      status: "completed", date: "2026-10-" + String(i + 1).padStart(2, "0"), time: "", mode: "timeMiles", miles: lift ? "" : 3, duration: lift ? "" : 30, splits: [] });
+  }
+  acts.push({ id: "c-double", title: "Ride", type: "bike", intensity: "easy", feel: "easy", status: "completed", date: "2026-10-14", time: "18:00", mode: "timeMiles", miles: 10, duration: 40, splits: [] });
+  localStorage.setItem("activities", JSON.stringify(acts));
+  localStorage.setItem("velo_motivation", JSON.stringify({ module: "constellations", hidden: false, animations: true, starColors: "type" }));
+})()`);
+await goto("/profile");
+t = await text();
+check("constellations: 14 days (one doubled) = Heron done, Kite 2/12", /Kite · 2\/12 stars/.test(t) && /One star per day with any completed workout/.test(t), t.match(/\w+ · \d+\/12 stars/)?.[0]);
+check("constellations: header shows Star Atlas and count", /Star Atlas ✦/.test(t) && /Constellations/.test(t));
+const cstFit = await evaluate(`(() => { const p = document.querySelector('.motivation-panel').getBoundingClientRect();
+  return { scrollW: document.documentElement.scrollWidth, vw: document.documentElement.clientWidth, left: p.left, right: p.right, width: p.width }; })()`);
+check("constellations at 320px: panel full width, no horizontal scroll", cstFit.scrollW === cstFit.vw && cstFit.left >= 0 && cstFit.right <= cstFit.vw && cstFit.width > 250, JSON.stringify(cstFit));
+await evaluate(`document.querySelector('.motivation-customize').focus()`);
+await key("Tab");
+check("Tab moves from Customize to the first star", await evaluate(`document.activeElement.classList.contains('cst-hit') && /Star 1: Oct 13, 2026/.test(document.activeElement.getAttribute('aria-label'))`));
+await key("Tab");
+await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+await sleep(150);
+const detail = await evaluate(`document.querySelector('.cst-detail').textContent`);
+check("Enter on a star shows its date and every activity that day", /Oct 14, 2026/.test(detail) && /Run/.test(detail) && /Bike · Ride/.test(detail), detail);
+await clickText("button", "Star Atlas →");
+await sleep(300);
+t = await text();
+check("Star Atlas opens with the in-progress sky", (await evaluate(`!!document.querySelector('[aria-labelledby="star-atlas-title"]')`)) && /Season sky 1/.test(t) && /Heron 12\/12/.test(t));
+await key("Escape");
+await evaluate(`document.querySelector('.motivation-customize').click()`);
+await sleep(300);
+check("Customize opens with both modules and focus inside", await evaluate(`(() => { const d = document.querySelector('[aria-labelledby="customize-motivation-title"]');
+  return !!d && d.contains(document.activeElement) && d.querySelectorAll('input[type=radio]').length === 2 && d.querySelector('input[value=constellations]').checked; })()`));
+await key("Escape");
+// A new strength session with no distance or time on a new day celebrates; a second one that day doesn't.
+const addStrength = async () => {
+  await evaluate(`document.querySelector(".floating-btn").click()`);
+  await sleep(400);
+  await evaluate(`(() => { const s = document.querySelector('select[name="type"]');
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(s, "strength");
+    s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+  await setField('input[name="title"]', "Smoke lift");
+  await setField('input[name="miles"]', "");
+  await evaluate(`document.querySelector('.primary-btn').click()`);
+  await sleep(500);
+};
+await addStrength();
+const newStar = await evaluate(`document.querySelector('.jar-drop-modal')?.textContent || ""`);
+check("new strength day celebrates with a new star", /New star/.test(newStar) && /Kite · 3\/12/.test(newStar), newStar);
+await key("Escape");
+await addStrength();
+check("second activity on the same day doesn't celebrate", !(await evaluate(`!!document.querySelector('.jar-drop-modal')`)) && /Kite · 3\/12 stars/.test(await text()));
+await evaluate(`localStorage.removeItem("velo_motivation"); ${savedActivities == null ? `localStorage.removeItem("activities")` : `localStorage.setItem("activities", ${JSON.stringify(savedActivities)})`}`);
 await send("Emulation.clearDeviceMetricsOverride");
 
 // ---------- 6b. Duration field ----------

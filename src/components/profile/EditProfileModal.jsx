@@ -12,6 +12,8 @@ export default function EditProfileModal({
   unit,
   setUnit,
   saveError,
+  motivationHidden,
+  setMotivationHidden,
 }) {
 
   const close = () => setShowEditProfile(false);
@@ -92,6 +94,18 @@ export default function EditProfileModal({
             <option value="km">Kilometers</option>
           </select>
           <div className="field-hint">Only changes how distances are typed and shown; recorded distances never change.</div>
+
+          <label className="edit-profile-label" htmlFor="edit-profile-motivation">Motivation section</label>
+          <select
+            id="edit-profile-motivation"
+            className="edit-profile-input"
+            value={motivationHidden ? "hidden" : "shown"}
+            onChange={(e) => setMotivationHidden(e.target.value === "hidden")}
+          >
+            <option value="shown">Shown</option>
+            <option value="hidden">Hidden</option>
+          </select>
+          <div className="field-hint">Choose the jar or Constellations with Customize on the section itself.</div>
 
           <div className="edit-profile-label">Feedback</div>
           <label className="settings-toggle">

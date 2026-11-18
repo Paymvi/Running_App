@@ -8,8 +8,7 @@ export default function ProfileTopSection({
   fileInputRef,
   handleAvatarChange,
   removeAvatar,
-  jarCount,
-  setShowJarHistory,
+  history, // { label, count, countLabel, open } for the chosen motivation module; null when hidden
   displayName,
   setShowEditProfile,
   stats,
@@ -51,9 +50,11 @@ export default function ProfileTopSection({
 
       <div className="avatar-actions">
 
-          <button type="button" className="avatar-btn" onClick={() => setShowJarHistory(true)}>
-              Past Jars 🫙
+          {history && (
+          <button type="button" className="avatar-btn" onClick={history.open}>
+              {history.label}
           </button>
+          )}
 
           {avatar && (
               <button type="button" className="avatar-btn secondary" onClick={removeAvatar}>
@@ -61,10 +62,12 @@ export default function ProfileTopSection({
               </button>
           )}
 
+          {history && (
           <div className="avatar-metric">
-              <div className="avatar-metric-value">{jarCount}</div>
-              <div className="avatar-metric-label">Jars Completed</div>
+              <div className="avatar-metric-value">{history.count}</div>
+              <div className="avatar-metric-label">{history.countLabel}</div>
           </div>
+          )}
 
       </div>
 

@@ -415,10 +415,16 @@ export function buildJarGroups(activities) {
       label: "Easy Run",
     }));
 
-  const groups = [];
-  for (let i = 0; i < runs.length; i += JAR_SIZE) groups.push(runs.slice(i, i + JAR_SIZE));
+  return buildCycles(runs, JAR_SIZE);
+}
 
-  const completed = groups.filter((g) => g.length === JAR_SIZE);
+// Oldest-first units chunked into cycles of `size`. A full cycle moves to `completed` at once,
+// so `current` is then empty. Shared by the jar and Constellations (motivation.js).
+export function buildCycles(units, size) {
+  const groups = [];
+  for (let i = 0; i < units.length; i += size) groups.push(units.slice(i, i + size));
+
+  const completed = groups.filter((g) => g.length === size);
   const last = groups[groups.length - 1];
-  return { groups, completed, current: last && last.length < JAR_SIZE ? last : [] };
+  return { groups, completed, current: last && last.length < size ? last : [] };
 }

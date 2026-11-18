@@ -6,6 +6,10 @@ import PRPanel from "../components/profile/PRPanel";
 import MonthlySnapshot from "../components/profile/MonthlySnapshot";
 import PastJarsModal from "../components/profile/PastJarsModal";
 import EditProfileModal from "../components/profile/EditProfileModal";
+import ConstellationSky from "../components/motivation/ConstellationSky";
+import StarAtlasModal from "../components/motivation/StarAtlasModal";
+import CustomizeMotivationModal from "../components/motivation/CustomizeMotivationModal";
+import { FiSliders } from "react-icons/fi";
 import TAG_OPTIONS from "../utils/tags";
 import { useActivities } from "../utils/activityStore";
 import { buildJarGroups, isCountable, JAR_SIZE } from "../utils/activityModel";
@@ -15,6 +19,7 @@ import { parseLocalYMD } from "../utils/dateUtils";
 import { resizeImageFile } from "../utils/image";
 import { describeWriteError } from "../utils/storage";
 import { setUnit, useUnit } from "../utils/units";
+import { STARS_PER_CONSTELLATION, buildSky, getMotivationSettings, setMotivationSettings } from "../utils/motivation";
 
 // Saves a small profile setting. Returns an error message, or null when saved.
 function persist(key, value) {
@@ -44,6 +49,9 @@ export default function Profile() {
   const [profileName, setProfileName] = useState(() => readSetting("profileName", "Your Name"));
   const fileInputRef = useRef(null);
   const [showJarHistory, setShowJarHistory] = useState(false);
+  const [showAtlas, setShowAtlas] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [motivation, setMotivation] = useState(getMotivationSettings);
   const [selectedPR, setSelectedPR] = useState(null);
   const [showTrends, setShowTrends] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -63,6 +71,18 @@ export default function Profile() {
     setProfileName(value);
     const error = persist("profileName", value);
     setSaveError(error ? `Name not saved: ${error}` : "");
+  };
+
+  // Returns an error message, or null when saved; the section only changes once saved.
+  const saveMotivation = (next) => {
+    const error = setMotivationSettings(next);
+    if (!error) setMotivation(next);
+    return error;
+  };
+
+  const saveMotivationHidden = (hidden) => {
+    const error = saveMotivation({ ...motivation, hidden });
+    setSaveError(error ? `Not saved: ${error}` : "");
   };
 
   const saveUnit = (value) => setSaveError(setUnit(value) ? "Unit setting not saved: browser storage refused it." : "");
@@ -109,6 +129,23 @@ export default function Profile() {
   const completedJars = jars.completed;
   const jarCount = completedJars.length;
 
+  // CONSTELLATIONS: one star per day with any completed activity, 12 per constellation.
+  const sky = useMemo(() => buildSky(activities), [activities]);
+  const showConstellations = motivation.module === "constellations";
+
+  // The header's history button and count follow the chosen module.
+  const history = motivation.hidden
+    ? null
+    : showConstellations
+      ? { label: "Star Atlas ✦", count: sky.completedConstellations, countLabel: "Constellations", open: () => setShowAtlas(true) }
+      : { label: "Past Jars 🫙", count: jarCount, countLabel: "Jars Completed", open: () => setShowJarHistory(true) };
+
+  const customizeButton = (
+    <button type="button" className="motivation-customize" aria-haspopup="dialog" onClick={() => setShowCustomize(true)}>
+      <FiSliders aria-hidden="true" /> Customize
+    </button>
+  );
+
   const monthlySnapshot = useMemo(() => buildMonthlySnapshot(activities), [activities]);
   const completed = useMemo(() => activities.filter(isCountable), [activities]);
 
@@ -123,8 +160,7 @@ export default function Profile() {
           fileInputRef={fileInputRef}
           handleAvatarChange={handleAvatarChange}
           removeAvatar={removeAvatar}
-          jarCount={jarCount}
-          setShowJarHistory={setShowJarHistory}
+          history={history}
           displayName={displayName}
           setShowEditProfile={setShowEditProfile}
           stats={stats}
@@ -137,22 +173,37 @@ export default function Profile() {
 
 
         {/* MIDDLE AREA: graph left + PR panel right */}
-        <div className="profile-mid">
+        <div className={motivation.hidden ? "profile-mid single" : "profile-mid"}>
 
-            {/* EASY JAR */}
-            <div className="profile-panel">
-            <EasyJar
-                title="Easy Run Jar"
-                subtitle={`${currentJar.length}/${JAR_SIZE} balls`}
-                runs={currentJar}
-            />
+            {/* MOTIVATION: Easy Run Jar (default) or Constellations, or hidden */}
+            {!motivation.hidden && (
+            <div className="profile-panel motivation-panel">
+            {showConstellations ? (
+              <ConstellationSky
+                sky={sky}
+                starColors={motivation.starColors}
+                unit={unit}
+                action={customizeButton}
+                onOpenAtlas={() => setShowAtlas(true)}
+              />
+            ) : (
+              <>
+              <EasyJar
+                  title="Easy Run Jar"
+                  subtitle={`${currentJar.length}/${JAR_SIZE} balls`}
+                  runs={currentJar}
+                  action={customizeButton}
+              />
 
-            {currentJar.length === 0 && jarCount > 0 && (
-                <div className="jar-complete">
-                Jar {jarCount} complete and moved to Past Jars. Fresh jar! 🏆
-                </div>
+              {currentJar.length === 0 && jarCount > 0 && (
+                  <div className="jar-complete">
+                  Jar {jarCount} complete and moved to Past Jars. Fresh jar! 🏆
+                  </div>
+              )}
+              </>
             )}
             </div>
+            )}
 
             <PRPanel
               prs={prs}
@@ -182,6 +233,22 @@ export default function Profile() {
         )}
 
 
+        {showAtlas && (
+          <StarAtlasModal sky={sky} starColors={motivation.starColors} onClose={() => setShowAtlas(false)} />
+        )}
+
+        {showCustomize && (
+          <CustomizeMotivationModal
+            settings={motivation}
+            summaries={{
+              jar: `Now: ${currentJar.length}/${JAR_SIZE} balls · ${jarCount} ${jarCount === 1 ? "jar" : "jars"} completed`,
+              constellations: `Now: ${sky.current.shape.name} · ${sky.current.stars.length}/${STARS_PER_CONSTELLATION} stars · ${sky.days.length} active ${sky.days.length === 1 ? "day" : "days"}`,
+            }}
+            onSave={saveMotivation}
+            onClose={() => setShowCustomize(false)}
+          />
+        )}
+
         {showEditProfile && (
           <EditProfileModal
               showEditProfile={showEditProfile}
@@ -193,6 +260,8 @@ export default function Profile() {
               unit={unit}
               setUnit={saveUnit}
               saveError={saveError}
+              motivationHidden={motivation.hidden}
+              setMotivationHidden={saveMotivationHidden}
             />
         )}
 

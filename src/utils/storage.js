@@ -34,6 +34,7 @@ export const BACKUP_KEYS = [
   "velo_feedback",
   "velo_units",
   "velo_coach_alerts",
+  "velo_motivation",
 ];
 const isRestorableKey = (k) => BACKUP_KEYS.includes(k) || k.startsWith("activities_corrupt_");
 

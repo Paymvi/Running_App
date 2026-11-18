@@ -3885,3 +3885,184 @@ button.profile-avatar-lg {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
 }
+
+
+/* ═══════════════════════════════════════════════
+   ✦ MOTIVATION SECTION (Easy Run Jar / Constellations)
+   ═══════════════════════════════════════════════ */
+
+/* Hidden section: the PR panel takes the row. Phones: one column so the module gets full width. */
+.profile-mid.single { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 600px) {
+  .profile-mid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.jar-head-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.motivation-customize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.motivation-customize svg { color: var(--primary); }
+.motivation-customize:hover { border-color: rgba(255, 255, 255, 0.22); }
+.motivation-customize:focus-visible,
+.cst-atlas-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.edit-profile-actions { gap: 8px; }
+
+.motivation-options {
+  border: none;
+  margin: 0 0 6px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.motivation-options legend { padding: 0; margin-bottom: 6px; }
+.motivation-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.motivation-option.selected { border-color: var(--primary); background: rgba(252, 76, 2, 0.08); }
+.motivation-option input { accent-color: var(--primary); margin-top: 3px; }
+.motivation-option > span { display: grid; gap: 2px; min-width: 0; }
+.motivation-option .field-hint { margin: 0; }
+.motivation-now { font-size: 12px; color: var(--text); opacity: 0.85; }
+.motivation-option:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Constellations */
+.cst-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+/* Wide screens: keep the sky about card-sized instead of filling the whole column. */
+.cst-card .cst-svg { max-width: 460px; margin: 0 auto; }
+.cst-dust { fill: rgba(244, 246, 255, 0.28); }
+.cst-line { stroke: rgba(244, 246, 255, 0.78); stroke-width: 1.2; stroke-linecap: round; }
+.cst-line-guide { stroke: rgba(244, 246, 255, 0.22); stroke-width: 1; stroke-dasharray: 3 4; }
+.cst-guide { fill: none; stroke: rgba(244, 246, 255, 0.38); stroke-width: 1; stroke-dasharray: 2 2; }
+.cst-dim { opacity: 0.45; }
+
+/* Star colours by the day's activity type (fixed size; colour never depends on effort or distance). */
+.cst-star { fill: #f4f6ff; }
+.cst-run { fill: var(--primary); }
+.cst-bike { fill: #facc15; }
+.cst-swim { fill: #2dd4bf; }
+.cst-hike { fill: #a3e635; }
+.cst-workout { fill: #c4a1ff; }
+.cst-strength { fill: #8cc8ff; }
+.cst-white .cst-star { fill: #f4f6ff; }
+
+.cst-hit { cursor: pointer; outline: none; }
+.cst-hit-area { fill: transparent; }
+.cst-ring { fill: none; stroke: transparent; stroke-width: 1.5; }
+.cst-ring-on { stroke: rgba(244, 246, 255, 0.7); }
+.cst-hit:focus-visible .cst-ring { stroke: var(--primary); }
+
+.cst-detail {
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cst-detail b { color: var(--text); }
+.cst-status { font-size: 15px; font-weight: 700; margin-top: 4px; }
+.cst-explain,
+.cst-note { font-size: 12px; color: var(--muted); }
+.cst-note { color: var(--text); opacity: 0.85; }
+
+.cst-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 6px;
+}
+.cst-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cst-legend li { display: inline-flex; align-items: center; gap: 5px; }
+.cst-atlas-btn {
+  margin-left: auto;
+  min-height: 32px;
+  padding: 4px 2px;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.atlas-sky { margin: 0; display: grid; gap: 6px; }
+.atlas-sky .atlas-svg { max-width: 320px; margin: 0 auto; background: rgba(0, 0, 0, 0.2); border-radius: 12px; }
+.atlas-sky figcaption { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.atlas-sky figcaption b { color: var(--text); }
+
+/* Celebration: the new star pops in, then its lines draw. */
+.jar-drop-modal .cst-svg { max-width: 260px; margin: 8px auto 0; }
+.cst-star-new {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cstPop 0.7s ease-out 0.3s backwards;
+}
+.cst-line-new {
+  stroke-dasharray: 1;
+  animation: cstDraw 0.6s ease-out 0.9s backwards;
+}
+@keyframes cstPop {
+  0% { opacity: 0; transform: scale(0); }
+  60% { opacity: 1; transform: scale(1.8); }
+  100% { transform: scale(1); }
+}
+@keyframes cstDraw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* In-app Animations off, or the device asks for reduced motion: show the final frame at once. */
+.motion-off .cst-star-new,
+.motion-off .cst-line-new,
+.motion-off .jar-drop-ball,
+.motion-off.jar-drop-modal {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cst-star-new,
+  .cst-line-new,
+  .jar-drop-ball {
+    animation: none !important;
+  }
+}

@@ -12,7 +12,8 @@ export default function EasyJar({
   runs = [],
   title = "Easy Jar",
   subtitle,
-  animatedIndex = null
+  animatedIndex = null,
+  action = null, // e.g. the Customize button, shown after the subtitle
 }){
   // SVG coordinate system
   const W = 240;
@@ -123,7 +124,10 @@ export default function EasyJar({
     <div className="jar-card">
       <div className="jar-head">
         <div className="jar-title">{title}</div>
-        <div className="jar-sub">{subtitle}</div>
+        <div className="jar-head-side">
+          <div className="jar-sub">{subtitle}</div>
+          {action}
+        </div>
       </div>
 
       <div className="jar-wrap">

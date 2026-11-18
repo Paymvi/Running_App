@@ -4,7 +4,7 @@ import { FiImage, FiPlus, FiX } from "react-icons/fi";
 import useDialog from "../hooks/useDialog";
 import usePhoto, { photoErrorText } from "../hooks/usePhoto";
 import { todayYMD } from "../utils/dateUtils";
-import { activityAverages, activityToForm, validateActivityForm, computeSplitTotals, editMaskedDuration, formatDuration, maskDuration, parseDistance, parseDuration, readDurationInput, splitRows } from "../utils/activityModel";
+import { activityAverages, activityToForm, validateActivityForm, computeSplitTotals, editMaskedDuration, formatDuration, maskDuration, parseDistance, readDurationInput, splitRows } from "../utils/activityModel";
 import { resizeImageFile } from "../utils/image";
 import { readJSON } from "../utils/storage";
 import { distLabel, fromDisplay, speedLabel, useUnit } from "../utils/units";
@@ -243,6 +243,16 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
     if (result && !result.ok && result.error) setSaveError(result.error);
   };
 
+  const intensitySelect = (
+    <select name="intensity" aria-label="Intensity" value={form.intensity} onChange={handleChange}>
+      <option value="easy">🟢 Easy</option>
+      <option value="tempo">🟡 Tempo</option>
+      <option value="intervals">🔴 Intervals</option>
+      <option value="long">🟣 Long</option>
+      <option value="unknown">⚪ Effort unknown</option>
+    </select>
+  );
+
   // Live figures: typed in the form's unit, shown in the same unit.
   const rows = splitRows(form.splits);
   const splitTotals = computeSplitTotals(form.splits);
@@ -381,17 +391,12 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
                     setErrors((prev) => ({ ...prev, duration: typedDuration.error }));
                   }}
                   {...invalid("duration")}
-                  aria-describedby={errors.duration ? "duration-hint err-duration" : "duration-hint"}
                 />
               </span>
             </label>
           </div>
           <FieldError id="err-miles" message={errors.miles} />
           <FieldError id="err-duration" message={errors.duration} />
-          <div id="duration-hint" className="field-hint">
-            Type digits only: 2530 = 25:30, 11500 = 1:15:00
-            {parseDuration(initialActivity?.duration) >= 600 && ". Over 10 hours: HHMMSS"}
-          </div>
 
           {(form.type !== "strength" || typedAverages) && (
             <MetricSummary stats={[["Avg speed", typedAverages?.speed ?? "—"], ["Avg pace", typedAverages?.pace ?? "—"]]} />
@@ -499,7 +504,7 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
             <option value="strength">🏋️ Strength</option>
           </select>
 
-          {!simple && <select name="limiter" aria-label="Limiter" value={form.limiter} onChange={handleChange}>
+          {simple ? intensitySelect : <select name="limiter" aria-label="Limiter" value={form.limiter} onChange={handleChange}>
             <option value="">⚪ No Limiter</option>
 
             <option value="heavy">🪨 Heavy Legs</option>
@@ -515,21 +520,15 @@ export default function AddActivityModal({ isOpen, onClose, onSave, initialActiv
         </div>
         <FieldError id="err-type" message={errors.type} />
 
-        <div className="row">
-          <select name="intensity" aria-label="Intensity" value={form.intensity} onChange={handleChange}>
-            <option value="easy">🟢 Easy</option>
-            <option value="tempo">🟡 Tempo</option>
-            <option value="intervals">🔴 Intervals</option>
-            <option value="long">🟣 Long</option>
-            <option value="unknown">⚪ Effort unknown</option>
-          </select>
+        {!simple && <div className="row">
+          {intensitySelect}
 
-          {!simple && <select name="feel" aria-label="Feel" value={form.feel} onChange={handleChange}>
+          <select name="feel" aria-label="Feel" value={form.feel} onChange={handleChange}>
             <option value="easy">🍃 Light</option>
             <option value="medium">😎 Steady</option>
             <option value="hard">🔥 Tough</option>
-          </select>}
-        </div>
+          </select>
+        </div>}
         <FieldError id="err-intensity" message={errors.intensity || errors.feel} />
 
 

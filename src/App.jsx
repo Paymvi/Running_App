@@ -6,7 +6,7 @@ import AddActivityModal from "./components/AddActivityModal";
 import JarDropModal from "./components/JarDropModal";
 import StorageBanner from "./components/StorageBanner";
 import { saveActivityWithPhoto, deleteActivity, restoreFromTrash, useActivities } from "./utils/activityStore";
-import { isJarEligible } from "./utils/activityModel";
+import { celebrationFor, getMotivationSettings } from "./utils/motivation";
 import { playSound, vibrate } from "./utils/feedback";
 
 import { FiSun, FiBarChart2, FiUser } from "react-icons/fi";
@@ -61,7 +61,7 @@ function NotFound() {
 export default function App({ migration = { status: "current" } }) {
   // The single add/edit modal for every page. `editing` is null when adding.
   const [modal, setModal] = useState({ open: false, editing: null });
-  const [jarDropId, setJarDropId] = useState(null);
+  const [celebration, setCelebration] = useState(null); // { id, kind, settings } after a save
   const [undo, setUndo] = useState(null); // { ids, message } after a delete
   const { activities } = useActivities();
 
@@ -76,8 +76,11 @@ export default function App({ migration = { status: "current" } }) {
     closeEditor();
     vibrate(120);
     playSound("/ball-drop.mp3");
-    // Celebrate only a newly created, completed easy run; never an edit, import or plan.
-    if (result.created && isJarEligible(activity)) setJarDropId(result.id);
+    // Celebrate only a newly created activity that adds progress to the chosen Profile module
+    // (a jar ball or a new star day); never an edit, import, plan or hidden section.
+    const settings = getMotivationSettings();
+    const kind = celebrationFor(result, activity, activities, settings);
+    if (kind) setCelebration({ id: result.id, kind, settings });
     return result;
   };
 
@@ -130,9 +133,9 @@ export default function App({ migration = { status: "current" } }) {
       )}
 
       <JarDropModal
-        activityId={jarDropId}
+        celebration={celebration}
         activities={activities}
-        onClose={() => setJarDropId(null)}
+        onClose={() => setCelebration(null)}
       />
 
       <TabBar />
